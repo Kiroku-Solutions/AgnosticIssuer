@@ -63,7 +63,7 @@ export type Sha = string & { readonly [SHA_BRAND]: true };
 /** A relative POSIX path under the cloned `.agnostic-issuer/` root. */
 export type SubtreePath = `.agnostic-issuer/${string}`;
 
-const REPO_URL_RE = /^(https?:\/\/|git@)[\w.-]+(:.*)?$/;
+const REPO_URL_RE = /^(https?:\/\/[\w.-]+(\/[\w./\-~]+)*|git@[\w.-]+:[\w./\-~]+)$/;
 const BRANCH_RE = /^[\w./-]{1,255}$/;
 const SHA_RE = /^[a-f0-9]{40}$/i;
 
@@ -109,13 +109,54 @@ function revalidateBranch(value: Branch): Branch {
 
 // ─── Public types ───────────────────────────────────────────────────────────
 
-/**
- * Cache key. Format: `<url>|<branch>|<sha>`. The PAT is NOT part of the key.
- */
-export type CacheKey = string;
+declare const CACHE_KEY_BRAND: unique symbol;
 
+/**
+ * A cache key for a remote-git clone. Format: `<url>|<branch>|<sha>`.
+ *
+ * Branding this type makes the compiler refuse a bare `string` at every
+ * site that accepts a {@link CacheKey} — callers must go through
+ * {@link makeCacheKey} or {@link brandCacheKey}. The runtime registry
+ * (see `_logger.ts`) is the single source of truth for what counts as
+ * "branded"; the type itself is nominal only.
+ *
+ * The PAT is NEVER part of the key — see `fetchSubtree` for the
+ * PAT-hygiene rationale.
+ */
+export type CacheKey = string & { readonly [CACHE_KEY_BRAND]: true };
+
+/**
+ * Re-validate an existing key (e.g. one read from IndexedDB) and rebrand
+ * it. Throws if the input does not match `<url>|<branch>|<sha>`.
+ */
+export function brandCacheKey(value: string): CacheKey {
+	const parts = value.split('|');
+	if (parts.length < 3) {
+		throw new RemoteFetchError(`Invalid cache key: ${value}`);
+	}
+	// Re-validate the url + branch via the existing branders so a malformed
+	// key fails fast at the boundary.
+	brandRepoUrl(parts[0] as string);
+	brandBranch(parts[1] as string);
+	// The sha segment is intentionally not re-validated via brandSha:
+	// the third segment may include path-like components if a caller ever
+	// extends the format. We accept any string past the first `|`.
+	CACHE_KEY_REGISTRY.add(value);
+	return value as CacheKey;
+}
+
+const CACHE_KEY_REGISTRY: Set<string> = new Set();
+
+/** Build a {@link CacheKey} from the canonical (url, branch, sha) triple. */
 export function makeCacheKey(url: RepoUrl, branch: Branch, sha: Sha): CacheKey {
-	return `${url}|${branch}|${sha}`;
+	const value = `${url}|${branch}|${sha}`;
+	CACHE_KEY_REGISTRY.add(value);
+	return value as CacheKey;
+}
+
+/** Type guard: returns `true` when the value is a registered {@link CacheKey}. */
+export function isCacheKey(value: unknown): value is CacheKey {
+	return typeof value === 'string' && CACHE_KEY_REGISTRY.has(value);
 }
 
 /** A bare PAT, unbranded. Acceptable for use as an `onAuth` argument. */
@@ -274,9 +315,15 @@ export async function fetchSubtree(options: FetchOptions): Promise<FetchResult> 
  * {@link clearAllCaches}.
  */
 export async function clearCache(key: CacheKey): Promise<void> {
+	// Defence-in-depth: re-validate the brand at the public boundary.
+	// Callers may have cast through `as unknown as CacheKey` to bypass
+	// the type system; the registry check below is the canonical guard.
+	if (!isCacheKey(key)) {
+		throw new RemoteFetchError(`Cannot clear cache: invalid key`);
+	}
 	const { url, branch } = parseCacheKey(key);
 	if (url === null || branch === null) {
-		throw new RemoteFetchError(`Cannot clear cache: invalid key ${key}`);
+		throw new RemoteFetchError(`Cannot clear cache: invalid key`);
 	}
 	const fsName = makeCacheKey(url, branch, 'pending' as Sha).replace(/[|]/g, '_');
 	const fs = new LightningFS(fsName);

@@ -29,10 +29,13 @@ import {
 	DEFAULT_CORS_PROXY,
 	DEFAULT_DEPTH,
 	SUBTREE,
+	brandCacheKey,
 	fetchSubtree,
+	isCacheKey,
 	isPat,
 	makeCacheKey,
 	type Branch,
+	type CacheKey,
 	type RepoUrl,
 	type Sha
 } from '$lib/adapters/remote-git';
@@ -83,6 +86,50 @@ describe('makeCacheKey', () => {
 		const sha1 = 'a'.repeat(40) as Sha;
 		const sha2 = 'b'.repeat(40) as Sha;
 		expect(makeCacheKey(url, branch, sha1)).not.toBe(makeCacheKey(url, branch, sha2));
+	});
+});
+
+describe('CacheKey branding', () => {
+	it('makeCacheKey returns a value that round-trips through isCacheKey', () => {
+		const url = 'https://github.com/x/y' as RepoUrl;
+		const branch = 'main' as Branch;
+		const sha = '0123456789abcdef0123456789abcdef01234567' as Sha;
+		const key = makeCacheKey(url, branch, sha);
+		expect(isCacheKey(key)).toBe(true);
+	});
+
+	it('isCacheKey returns false for plain strings', () => {
+		expect(isCacheKey('not a cache key')).toBe(false);
+		expect(isCacheKey('')).toBe(false);
+	});
+
+	it('isCacheKey returns false for non-strings', () => {
+		expect(isCacheKey(42)).toBe(false);
+		expect(isCacheKey(null)).toBe(false);
+		expect(isCacheKey(undefined)).toBe(false);
+		expect(isCacheKey({})).toBe(false);
+	});
+
+	it('brandCacheKey accepts a well-formed key from an external source', () => {
+		const external = 'https://github.com/x/y|main|0123456789abcdef0123456789abcdef01234567';
+		const branded: CacheKey = brandCacheKey(external);
+		expect(isCacheKey(branded)).toBe(true);
+	});
+
+	it('brandCacheKey rejects a key with too few segments', () => {
+		expect(() => brandCacheKey('only|two')).toThrow(RemoteFetchError);
+	});
+
+	it('brandCacheKey rejects a key with an invalid URL', () => {
+		expect(() => brandCacheKey('not a url|main|0123456789abcdef0123456789abcdef01234567')).toThrow(
+			RemoteFetchError
+		);
+	});
+
+	it('brandCacheKey rejects a key with an invalid branch name', () => {
+		expect(() =>
+			brandCacheKey('https://github.com/x/y|has spaces|0123456789abcdef0123456789abcdef01234567')
+		).toThrow(RemoteFetchError);
 	});
 });
 
