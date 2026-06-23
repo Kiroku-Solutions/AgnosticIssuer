@@ -56,7 +56,7 @@ export default defineConfig({
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}', 'tests/**/*.{test,spec}.{js,ts}'],
 					// Node-environment tests that simulate browser scenarios or pull
-					// in Node-only deps (gray-matter → Buffer). They run in the
+					// in Node-only deps (lightning-fs → Buffer). They run in the
 					// `server` project; running them here would fail because the
 					// browser globals (window) are read-only and Buffer is absent.
 					exclude: [
@@ -77,13 +77,12 @@ export default defineConfig({
 						// re-bundle it for Chromium, which the isomorphic-git API
 						// doesn't support.
 						'tests/adapters/remote-git.test.ts',
-						// The serializer round-trip uses `gray-matter`, which calls
-						// `Buffer.from(...)` internally; Buffer isn't available in
-						// headless Chromium. Runs only in the `server` project.
+						// The serializer round-trip uses `js-yaml` and Node-friendly
+						// APIs. Runs only in the `server` project.
 						'tests/services/serializer.test.ts',
 						// The integration test exercises the full parse → serialize
-						// pipeline through `parseIssueFile`, which needs `gray-matter`
-						// (and therefore `Buffer`). Same reason: server-only.
+						// pipeline through `parseIssueFile`. Runs only in the
+						// `server` project.
 						'tests/services/integration.test.ts'
 					]
 				}

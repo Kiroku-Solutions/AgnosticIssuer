@@ -19,6 +19,12 @@
 	"engines": {
 		"node": ">=20"
 	},
+	"pnpm": {
+		"overrides": {
+			"cookie": "^0.7.0",
+			"js-yaml": "^4.2.0"
+		}
+	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@sveltejs/adapter-static": "^3.0.10",
@@ -54,7 +60,6 @@
 		"@isomorphic-git/lightning-fs": "^4.6.2",
 		"@lucide/svelte": "^1.21.0",
 		"dompurify": "^3.4.11",
-		"gray-matter": "^4.0.3",
 		"isomorphic-git": "^1.38.5",
 		"js-yaml": "^4.2.0",
 		"marked": "^18.0.5"
