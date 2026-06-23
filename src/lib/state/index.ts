@@ -28,7 +28,7 @@ export type { IssueId, IssuesStatus, CreateIssueInput, IssuePatch, IssuesStore }
 export { createIssuesStore } from './issues.ts';
 
 // ─── Filter ───────────────────────────────────────────────────────────────
-export type { FilterState, FilterStore } from './filter.ts';
+export type { FilterState, FilterStore, DateRange } from './filter.ts';
 export { createFilterStore } from './filter.ts';
 
 // ─── View ─────────────────────────────────────────────────────────────────
@@ -37,12 +37,21 @@ export { createViewStore } from './view.ts';
 
 // ─── Theme ────────────────────────────────────────────────────────────────
 export type { Theme, ThemeStore } from './theme.ts';
+export type { ThemeStoreDeps } from './theme.ts';
 export { createThemeStore } from './theme.ts';
 
 // ─── Editor ───────────────────────────────────────────────────────────────
 export type { EditorStore } from './editor.ts';
 export { createEditorStore } from './editor.ts';
 
-// ─── Errors ───────────────────────────────────────────────────────────────
+// ─── Errors ────────────────────────────────────────────────────────────────
 export { StateError, StoreNotReadyError, ConcurrentSaveError } from './errors.ts';
 export type { StateErrorKind } from './errors.ts';
+
+// ─── Context (per-mount store wiring) ──────────────────────────────────────
+export { setStores, getStores } from './context.ts';
+export type { StoreGraph } from './context.ts';
+
+// ─── Internal seam (re-exported for the layout only) ──────────────────────
+export { createStateContext, assertBrowser } from './_context.ts';
+export type { StateContext } from './_context.ts';

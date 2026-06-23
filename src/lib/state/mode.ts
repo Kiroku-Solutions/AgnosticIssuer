@@ -25,8 +25,12 @@
 import { handleStore } from '../adapters/index.ts';
 import { fetchSubtree } from '../adapters/remote-git.ts';
 import type { HandleRecord } from '../adapters/handle-store.ts';
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type {
+	ReadOnlyDirectoryAdapter,
+	WritableDirectoryAdapter
+} from '../adapters/directory-adapter.ts';
 import type { RepoUrl, Branch } from '../adapters/remote-git.ts';
+import { isFsaAvailable } from '../adapters/feature-detect.ts';
 import type { StateContext } from './_context.ts';
 
 /** Top-level application mode. */
@@ -53,8 +57,10 @@ export interface ModeStore {
 	readonly activeHandle: FileSystemDirectoryHandle | null;
 	readonly recentHandles: readonly HandleRecord[];
 	readonly hasRemoteCredentials: boolean;
-	readonly localAdapter: DirectoryAdapter | null;
-	readonly remoteAdapter: DirectoryAdapter | null;
+	/** Writable adapter bound when a local folder handle is active. */
+	readonly localAdapter: WritableDirectoryAdapter | null;
+	/** Read-only adapter bound when a remote repository is open. */
+	readonly remoteAdapter: ReadOnlyDirectoryAdapter | null;
 
 	readonly bootstrap: () => Promise<void>;
 	readonly openLocalFolder: (handle: FileSystemDirectoryHandle) => Promise<void>;
@@ -70,8 +76,8 @@ export interface ModeStore {
  * Kept minimal: only the surface the mode store actually uses.
  */
 export interface ModeStoreDeps {
-	/** Factory that turns a directory handle into a {@link DirectoryAdapter}. */
-	readonly createLocalAdapter?: (handle: FileSystemDirectoryHandle) => DirectoryAdapter;
+	/** Factory that turns a directory handle into a {@link WritableDirectoryAdapter}. */
+	readonly createLocalAdapter?: (handle: FileSystemDirectoryHandle) => WritableDirectoryAdapter;
 	/** IndexedDB-backed handle persistence. Defaults to the singleton from `handle-store.ts`. */
 	readonly handles?: typeof handleStore;
 }
@@ -96,8 +102,8 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 	let mode: Mode = 'home';
 	let activeHandle: FileSystemDirectoryHandle | null = null;
 	let recentHandles: HandleRecord[] = [];
-	let localAdapter: DirectoryAdapter | null = null;
-	let remoteAdapter: DirectoryAdapter | null = null;
+	let localAdapter: WritableDirectoryAdapter | null = null;
+	let remoteAdapter: ReadOnlyDirectoryAdapter | null = null;
 	// PAT lives ONLY in this closure. Never read after openRemote returns.
 	let _patScope: { url: RepoUrl; branch: Branch } | null = null;
 
@@ -184,11 +190,20 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 	}
 
 	async function switchFolder(): Promise<FileSystemDirectoryHandle | null> {
-		// In production this opens the picker via window.showDirectoryPicker.
-		// The store exposes the seam via deps.createLocalAdapter's caller.
-		// For now we simply return the current handle so the UI layer can
-		// orchestrate the picker.
-		return activeHandle;
+		// Open the directory picker via the FSA API and bind the new handle.
+		// Step 6 (UC-6) wires this to the toolbar's "Switch folder" button.
+		// In environments without FSA (Firefox / Safari) we throw so the UI
+		// can fall back to the home screen.
+		if (!isFsaAvailable()) {
+			throw new Error('Directory picker is unavailable in this environment');
+		}
+		const handle = await (
+			window as unknown as {
+				showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
+			}
+		).showDirectoryPicker();
+		await openLocalFolder(handle);
+		return handle;
 	}
 
 	async function openRemote(creds: RemoteCredentials, pat: string): Promise<void> {
@@ -204,10 +219,14 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 			depth: 1
 		});
 		// Drop PAT reference; keep only the URL + branch as the "I have
-		// remote credentials" signal. The fetchSubtree result is the adapter.
+		// remote credentials" signal. The fetchSubtree result is the
+		// ReadOnlyRemoteAdapter — assignable to ReadOnlyDirectoryAdapter
+		// directly because the structural shape matches (and a future
+		// contributor who tries to call writeTextFile on it will hit the
+		// ReadOnlyDirectoryAdapter surface, which lacks that method).
 		void pat;
 		_patScope = { url: creds.url, branch: creds.branch };
-		remoteAdapter = fetchResult.adapter as unknown as DirectoryAdapter;
+		remoteAdapter = fetchResult.adapter;
 		// Remote Mode is read-only; clear any local session markers.
 		activeHandle = null;
 		localAdapter = null;

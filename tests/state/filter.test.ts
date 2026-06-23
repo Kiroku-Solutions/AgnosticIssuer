@@ -58,6 +58,36 @@ describe('createFilterStore — set/clear', () => {
 		store.clear();
 		expect(store.filter).toEqual({});
 	});
+
+	it('date ranges (FR-7 creation_date / updated_date) round-trip via set/serialize/parse', () => {
+		const store = createFilterStore();
+		store.set({ creationDate: { from: '2026-01-01', to: '2026-12-31' } });
+		expect(store.filter.creationDate).toEqual({ from: '2026-01-01', to: '2026-12-31' });
+		const round = createFilterStore();
+		round.parse(store.serialize());
+		expect(round.filter).toEqual(store.filter);
+	});
+
+	it('rejects malformed date strings in set() and in URL parse()', () => {
+		const store = createFilterStore();
+		store.set({ creationDate: { from: 'not-a-date', to: '2026-13-40' } });
+		expect(store.filter.creationDate).toBeUndefined();
+
+		const url = new URLSearchParams('created_from=2026-99-99&updated_to=abc');
+		const s2 = createFilterStore();
+		s2.parse(url);
+		expect(s2.filter.creationDate).toBeUndefined();
+		expect(s2.filter.updatedDate).toBeUndefined();
+	});
+
+	it('preserves an existing date bound when only one side is patched', () => {
+		const store = createFilterStore();
+		store.set({ creationDate: { from: '2026-01-01', to: '2026-12-31' } });
+		// Patch only `to`: `from` must be preserved.
+		store.set({ creationDate: { from: '2026-01-01', to: '2026-06-30' } });
+		expect(store.filter.creationDate?.from).toBe('2026-01-01');
+		expect(store.filter.creationDate?.to).toBe('2026-06-30');
+	});
 });
 
 describe('createFilterStore — serialize round-trip', () => {

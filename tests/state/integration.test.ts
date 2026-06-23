@@ -258,7 +258,8 @@ describe('state layer integration — full CRUD journey', () => {
 		expect(snap.files['.nomad.md/issues/0002-doomed.md']).toBeUndefined();
 		const trashFiles = Object.keys(snap.files).filter((p) => p.startsWith('.nomad.md/.trash/'));
 		expect(trashFiles).toHaveLength(1);
-		expect(trashFiles[0]).toMatch(/-0002-doomed\.md$/);
+		// ERS §6.5: `<timestamp>-<id>-<slug>.md` — id=2, slug=doomed.
+		expect(trashFiles[0]).toMatch(/\.nomad\.md\/\.trash\/\d+-2-doomed\.md$/);
 	});
 
 	it('save round-trip via editor.save() preserves integrity hash (FR-15)', async () => {

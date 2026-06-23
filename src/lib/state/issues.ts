@@ -33,17 +33,15 @@
  */
 import type { Config, Issue, LoadedIssue, Template } from '../types/index.ts';
 import {
-	buildIssueFilename,
+	createIssue,
 	loadIssues,
-	nextIssueId,
-	parseIssueFile,
-	serializeIssue,
+	moveIssueToTrash,
+	saveIssue,
 	validateIssue,
 	type ValidationContext,
 	type ValidationError
 } from '../services/index.ts';
 import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
-import { moveToTrash } from '../adapters/trash.ts';
 import type { ConfigStore } from './config.ts';
 import type { StateContext } from './_context.ts';
 import type { TemplatesStore } from './templates.ts';
@@ -211,46 +209,31 @@ export function createIssuesStore(
 	}
 
 	/**
-	 * Build the default `Issue` for a newly created record. Pulls defaults
-	 * from the config store (default status) and the templates store (status
-	 * set). The caller is expected to have loaded both stores already.
+	 * Resolve the default status for a newly created issue, preferring the
+	 * config store's `default_status` and falling back to `'open'`. Pulled
+	 * out so {@link create} doesn't need to know about the config store's
+	 * shape directly — the service-layer default-issue builder stays pure.
 	 */
-	function buildDefaultIssue(input: CreateIssueInput): Issue {
+	function defaultStatus(): string {
 		const cfg: Config | null = deps.config.config;
-		const defaultStatus = cfg?.default_status ?? 'open';
-		const today = todayIso();
-		return {
-			id: nextIssueId(issues.map((li) => li.issue)),
-			title: input.title,
-			author: input.author,
-			creationDate: today,
-			updatedDate: today,
-			issueType: input.issueType,
-			status: defaultStatus,
-			assignee: null,
-			labels: [],
-			relations: [],
-			startDate: null,
-			endDate: null,
-			duration: null,
-			integrityHash: null,
-			customFields: {},
-			sections: [],
-			integrityWarning: false
-		};
+		return cfg?.default_status ?? 'open';
 	}
 
 	async function create(input: CreateIssueInput): Promise<IssueId> {
 		const adapter = adapterProvider();
 		if (!adapter) throw new Error('Cannot create issue: no adapter bound');
-		const issue: Issue = buildDefaultIssue(input);
-		const filename = buildIssueFilename(issue.id, issue.title);
-		const sourcePath = `.nomad.md/issues/${filename}`;
-		const text = await serializeIssue(issue);
-		await adapter.writeTextFile(sourcePath, text);
-		const loaded = await parseIssueFile(text, sourcePath);
+		const loaded = await createIssue(
+			adapter,
+			{
+				title: input.title,
+				issueType: input.issueType,
+				author: input.author,
+				status: defaultStatus()
+			},
+			issues.map((li) => li.issue)
+		);
 		issues.push(loaded);
-		return issue.id;
+		return loaded.issue.id;
 	}
 
 	/**
@@ -326,9 +309,10 @@ export function createIssuesStore(
 			errors.delete(id);
 			const adapter = adapterProvider();
 			if (!adapter) throw new Error(`Cannot save: no adapter bound`);
-			const text = await serializeIssue(loaded.issue);
-			await adapter.writeTextFile(loaded.sourcePath, text);
-			const refreshed = await parseIssueFile(text, loaded.sourcePath);
+			// Delegate serialize + write + reparse to the service layer.
+			// This restores the unidirectional state → service → adapter
+			// dependency the plan promised (closing the audit-flagged leak).
+			const refreshed = await saveIssue(adapter, loaded.issue, loaded.sourcePath);
 			// Splice the refreshed record into the issues array so the cache
 			// reflects what was actually written.
 			const idx = issues.findIndex((li) => li.issue.id === id);
@@ -369,7 +353,10 @@ export function createIssuesStore(
 		if (!loaded) return;
 		const adapter = adapterProvider();
 		if (!adapter) throw new Error('Cannot remove: no adapter bound');
-		await moveToTrash(adapter, loaded.sourcePath);
+		// Route through the service layer so the ERS §6.5 trash filename
+		// (`<timestamp>-<id>-<slug>.md`) is honoured without the state
+		// layer reaching into the adapter helpers directly.
+		await moveIssueToTrash(adapter, loaded.issue, loaded.sourcePath);
 		issues = issues.filter((li) => li.issue.id !== id);
 		dirty.delete(id);
 		pendingSaves.delete(id);

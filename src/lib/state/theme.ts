@@ -3,18 +3,16 @@
  * persists it to `localStorage` so the user's choice survives a reload.
  *
  * Behaviour:
- *  - On construction we read `localStorage.nomad.md.theme` and default to
- *    `'light'` if missing / unrecognised. The plan allows for honouring
- *    `prefers-color-scheme` as a fallback; we deliberately keep the
- *    bootstrap deterministic (always `'light'`) so a reload of an empty
- *    install is consistent. A future enhancement can chain the OS
- *    preference after a `null` read.
+ *  - On construction we read `localStorage.nomad.md.theme` first, then
+ *    fall back to the OS-level `prefers-color-scheme` media query, then
+ *    to `'light'` as a last resort (ERS FR-14).
  *  - `setTheme(t)` updates the in-memory state and writes through to
- *    `localStorage` synchronously. Same rationale as `viewStore`.
+ *    `localStorage` synchronously.
  *  - `toggle()` flips between `'light'` and `'dark'` and persists.
  *  - Browser-only: every read/write gates on `assertBrowser()`. The test
  *    suite runs in Node and injects a fake `localStorage` on `globalThis`
- *    so the assertion passes.
+ *    so the assertion passes; the media-query check is no-op outside the
+ *    browser.
  *
  * Dependencies: none. Pure factory; no module-level state.
  */
@@ -40,17 +38,34 @@ export interface ThemeStore {
 }
 
 /**
+ * Read the OS-level `prefers-color-scheme` setting via the provided
+ * `matchMedia`. Returns the resolved theme or `null` if `matchMedia` is
+ * not available (SSR / Node test) so callers can fall through to a safe
+ * default.
+ */
+function readOsPreference(matchMedia: typeof globalThis.matchMedia): Theme | null {
+	if (typeof matchMedia !== 'function') return null;
+	const mql = matchMedia('(prefers-color-scheme: dark)');
+	return mql.matches ? 'dark' : 'light';
+}
+
+export interface ThemeStoreDeps {
+	/** Inject the `localStorage`-shaped object. Defaults to the global `localStorage`. */
+	readonly storage?: Storage;
+	/** Inject `matchMedia`; defaults to `globalThis.matchMedia`. Tests pass `undefined`. */
+	readonly matchMedia?: typeof globalThis.matchMedia;
+}
+
+/**
  * Build a {@link ThemeStore}.
  *
- * @param storage  Inject the `localStorage`-shaped object. Defaults to the
- *                 global `localStorage` so production callers omit the
- *                 argument; tests pass a fake.
+ * @param deps  Optional test seams; production callers omit this.
  */
-export function createThemeStore(storage?: Storage): ThemeStore {
+export function createThemeStore(deps: ThemeStoreDeps = {}): ThemeStore {
 	assertBrowser();
-	const ls: Storage = storage ?? globalThis.localStorage;
+	const ls: Storage = deps.storage ?? globalThis.localStorage;
 
-	let theme: Theme = readInitial(ls);
+	let theme: Theme = readInitial(ls, deps.matchMedia ?? globalThis.matchMedia);
 
 	function setTheme(t: Theme): void {
 		assertBrowser();
@@ -71,8 +86,17 @@ export function createThemeStore(storage?: Storage): ThemeStore {
 	};
 }
 
-function readInitial(ls: Storage): Theme {
+/**
+ * Resolve the initial theme at construction time:
+ *  1. `localStorage[STORAGE_KEY]` if it's a known theme.
+ *  2. `prefers-color-scheme` if `matchMedia` is available.
+ *  3. `'light'` as the safe default.
+ */
+function readInitial(ls: Storage, matchMedia: typeof globalThis.matchMedia | undefined): Theme {
 	const raw = ls.getItem(STORAGE_KEY);
 	if (isTheme(raw)) return raw;
+	if (matchMedia) {
+		return readOsPreference(matchMedia) ?? 'light';
+	}
 	return 'light';
 }

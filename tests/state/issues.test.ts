@@ -294,12 +294,13 @@ describe('createIssuesStore — remove', () => {
 
 		const snap = fs.snapshot();
 		// seedIssueFile names the file `<padded>-issue.md`, so the trashed
-		// file should end with `0001-issue.md`.
+		// file should follow ERS §6.5: `<timestamp>-<id>-<slug>.md`.
+		// The issue has id=1 and title="Doomed still" (slug: doomed-still).
 		const originalPath = '.nomad.md/issues/0001-issue.md';
 		expect(snap.files[originalPath]).toBeUndefined();
 		const trashFiles = Object.keys(snap.files).filter((p) => p.startsWith('.nomad.md/.trash/'));
 		expect(trashFiles).toHaveLength(1);
-		expect(trashFiles[0]).toMatch(/\.nomad\.md\/\.trash\/\d+-[0-9a-f]{8}-0001-issue\.md$/);
+		expect(trashFiles[0]).toMatch(/\.nomad\.md\/\.trash\/\d+-1-doomed-still\.md$/);
 	});
 });
 
@@ -566,5 +567,133 @@ describe('createIssuesStore — applyPatch reference identity', () => {
 		expect(issues.byId.get(1)?.issue.customFields).toBe(heldRef);
 		expect(heldRef?.['severity']).toBe('low'); // untouched key preserved
 		expect(heldRef?.['priority']).toBe('p1'); // new key added in place
+	});
+});
+
+// -----------------------------------------------------------------------------
+// 18. Concurrent save on DIFFERENT ids — should run in parallel (issue.ts:289)
+// -----------------------------------------------------------------------------
+describe('createIssuesStore — concurrent save on different ids', () => {
+	it('two save() calls for distinct ids both succeed and run concurrently', async () => {
+		const fs = new MemoryFsAdapter();
+		await seedIssueFile(fs, makeIssue({ id: 1, title: 'One' }));
+		await seedIssueFile(fs, makeIssue({ id: 2, title: 'Two' }));
+		const { issues } = await makeStores(fs);
+		await issues.load();
+
+		const order: number[] = [];
+		// Mark both dirty before awaiting saves so the writes actually run.
+		issues.update(1, { title: 'One edited' });
+		issues.update(2, { title: 'Two edited' });
+
+		const [r1, r2] = await Promise.all([issues.save(1), issues.save(2)]);
+		order.push(1, 2);
+		expect(r1).toBeUndefined();
+		expect(r2).toBeUndefined();
+
+		// Both should be on disk with the new titles.
+		const reloaded = await makeStores(fs);
+		await reloaded.issues.load();
+		expect(reloaded.issues.byId.get(1)?.issue.title).toBe('One edited');
+		expect(reloaded.issues.byId.get(2)?.issue.title).toBe('Two edited');
+		expect(order).toEqual([1, 2]);
+	});
+});
+
+// -----------------------------------------------------------------------------
+// 19. save() with config not loaded — surfaces a typed error (issue.ts:282)
+// -----------------------------------------------------------------------------
+describe('createIssuesStore — save before config load', () => {
+	it('save() throws an actionable error if the config store is not loaded', async () => {
+		const fs = new MemoryFsAdapter();
+		await seedIssueFile(fs, makeIssue({ id: 1 }));
+		// Construct a fresh config + templates + issues store without
+		// calling .load() on config or templates.
+		const config = createConfigStore(() => fs);
+		const templates = createTemplatesStore(() => fs);
+		const issues = createIssuesStore(() => fs, { config, templates });
+		await issues.load();
+		issues.update(1, { title: 'Edited' });
+		await expect(issues.save(1)).rejects.toThrow(/Cannot validate: config store is not loaded/);
+	});
+});
+
+// -----------------------------------------------------------------------------
+// 20. validate() with config not loaded — returns [] silently (issue.ts:366)
+// -----------------------------------------------------------------------------
+describe('createIssuesStore — validate before config load', () => {
+	it('validate() returns an empty error list without throwing when config is unloaded', async () => {
+		const fs = new MemoryFsAdapter();
+		await seedIssueFile(fs, makeIssue({ id: 1 }));
+		const config = createConfigStore(() => fs);
+		const templates = createTemplatesStore(() => fs);
+		const issues = createIssuesStore(() => fs, { config, templates });
+		await issues.load();
+		expect(issues.validate(1)).toEqual([]);
+	});
+
+	it('validate() returns an empty error list for an unknown id without throwing', async () => {
+		const fs = new MemoryFsAdapter();
+		const { issues } = await makeStores(fs);
+		await issues.load();
+		expect(issues.validate(9999)).toEqual([]);
+	});
+});
+
+// -----------------------------------------------------------------------------
+// 21. StateContext signal abort hooks into load() (issue.ts:374)
+// -----------------------------------------------------------------------------
+describe('createIssuesStore — ctx signal aborts in-flight load', () => {
+	it('aborting the ctx.signal mid-load sets status back to idle and keeps the previous issue set', async () => {
+		const fs = new MemoryFsAdapter();
+		await seedIssueFile(fs, makeIssue({ id: 1 }));
+		const controller = new AbortController();
+		const ctx = createStateContext(fs, controller.signal);
+		const config = createConfigStore(() => fs);
+		const templates = createTemplatesStore(() => fs);
+		const issues = createIssuesStore(() => fs, { config, templates }, ctx);
+		// Kick off a load and abort it synchronously — the listener fires
+		// `abortInFlightLoad()` and the in-flight controller rejects with
+		// an AbortError, which `load()` swallows (it leaves the previous
+		// issue set untouched per the documented "stale-data" semantics).
+		const pending = issues.load();
+		controller.abort();
+		await pending;
+		// Status stays 'idle' because no load has yet completed cleanly;
+		// the store does not flip to 'error' on an abort.
+		expect(issues.status).not.toBe('error');
+	});
+
+	it('without a ctx.signal the store completes a normal load (regression)', async () => {
+		const fs = new MemoryFsAdapter();
+		await seedIssueFile(fs, makeIssue({ id: 1 }));
+		const ctx = createStateContext(fs);
+		const config = createConfigStore(() => fs);
+		const templates = createTemplatesStore(() => fs);
+		const issues = createIssuesStore(() => fs, { config, templates }, ctx);
+		await issues.load();
+		expect(issues.status).toBe('ready');
+		expect(issues.issues).toHaveLength(1);
+	});
+});
+
+// -----------------------------------------------------------------------------
+// 22. error state surfaces the underlying failure (issue.ts:198-200)
+// -----------------------------------------------------------------------------
+describe('createIssuesStore — load error state', () => {
+	it('non-abort error during load surfaces status="error" + the error object', async () => {
+		const fs = new MemoryFsAdapter();
+		await seedIssueFile(fs, makeIssue({ id: 1 }));
+		// Force readTextFile to throw — `listDirectory` swallows its own
+		// errors (treats missing dir as empty), but a read failure inside
+		// the parse loop propagates out of `loadIssues` and is caught by
+		// the store's outer try/catch.
+		fs.readTextFile = async () => {
+			throw new Error('disk on fire');
+		};
+		const { issues } = await makeStores(fs);
+		await issues.load();
+		expect(issues.status).toBe('error');
+		expect(issues.error?.message).toContain('disk on fire');
 	});
 });

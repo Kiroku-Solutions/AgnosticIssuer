@@ -1,6 +1,6 @@
 /**
- * Remote Git adapter — implements the partial-clone flow defined in ERS FR-5
- * and FR-12, plus the IndexedDB cache contract from FR-10.
+ * Remote Git adapter — implements the read-only remote-mode flow defined in
+ * ERS FR-5 and FR-12, plus the IndexedDB cache contract from FR-10.
  *
  * ## Scope
  *
@@ -8,9 +8,20 @@
  *   never opens pull requests. The user is responsible for version control.
  *   (C-2)
  *
- * - **Partial clone.** Only the `.nomad.md/` subtree of the remote
- *   repository is fetched. The rest of the repository is never downloaded.
- *   (FR-12)
+ * - **Shallow + single-branch fetch.** We use `git.fetch({ depth: 1,
+ *   singleBranch: true })` so only the branch tip is downloaded (ERS
+ *   Appendix D). The full repository history is never fetched.
+ *
+ * - **Subtree materialisation.** After the fetch, the adapter walks the
+ *   cloned tree and exposes only the `.nomad.md/` subtree to callers via
+ *   its `readTextFile` / `listDirectory` methods; `splitPath` rejects any
+ *   `..` segment that tries to escape the subtree. This is a *client-side*
+ *   subtree gating, not a server-side partial clone — the entire branch tip
+ *   still lands in IndexedDB under the LightningFS database. A hostile
+ *   repo with a multi-GB binary at the tip will fill the cache before any
+ *   subtree check runs. This is the documented trade-off; switching to a
+ *   true partial clone requires `isomorphic-git`'s `partial: true` + filter
+ *   pipeline which is still labelled experimental upstream.
  *
  * - **CORS proxy.** All network traffic goes through a configurable proxy
  *   (default `https://cors.isomorphic-git.org`). The proxy operator can
@@ -43,7 +54,11 @@ import http from 'isomorphic-git/http/web';
 import LightningFS from '@isomorphic-git/lightning-fs';
 import { brandPat, brandProxyUrl, debug, error, info, warn, isBrandedPat } from './_logger.ts';
 import { AdapterNotFoundError, RemoteAuthError, RemoteFetchError } from './errors.ts';
-import { splitPath, type DirectoryEntry } from './directory-adapter.ts';
+import {
+	splitPath,
+	type DirectoryEntry,
+	type ReadOnlyDirectoryAdapter
+} from './directory-adapter.ts';
 
 // ─── Branded types ──────────────────────────────────────────────────────────
 
@@ -141,17 +156,56 @@ export function brandCacheKey(value: string): CacheKey {
 	// The sha segment is intentionally not re-validated via brandSha:
 	// the third segment may include path-like components if a caller ever
 	// extends the format. We accept any string past the first `|`.
-	CACHE_KEY_REGISTRY.add(value);
+	registerCacheKey(value);
 	return value as CacheKey;
 }
 
 const CACHE_KEY_REGISTRY: Set<string> = new Set();
+/**
+ * Upper bound on the registry size — caps the URL leak surface if a long
+ * browsing session opens many remotes. Once the bound is reached, the
+ * oldest entry (insertion order) is evicted. 50 is generous for normal
+ * use (a developer rarely opens >5 distinct remotes per session) but
+ * cheap to hold in memory.
+ */
+const CACHE_KEY_REGISTRY_LIMIT = 50;
+
+/**
+ * Insert `value` into {@link CACHE_KEY_REGISTRY} with FIFO eviction. The
+ * audit (`docs/audits/2026-06-23/cybersecurity-audit.md`) flagged the
+ * previous unbounded `Set.add` as a privacy leak — full URLs were held
+ * for the lifetime of the page.
+ */
+function registerCacheKey(value: string): void {
+	if (CACHE_KEY_REGISTRY.has(value)) {
+		// No-op on re-insertion; preserves insertion order for eviction.
+		return;
+	}
+	if (CACHE_KEY_REGISTRY.size >= CACHE_KEY_REGISTRY_LIMIT) {
+		const oldest = CACHE_KEY_REGISTRY.values().next().value;
+		if (oldest !== undefined) CACHE_KEY_REGISTRY.delete(oldest);
+	}
+	CACHE_KEY_REGISTRY.add(value);
+}
 
 /** Build a {@link CacheKey} from the canonical (url, branch, sha) triple. */
 export function makeCacheKey(url: RepoUrl, branch: Branch, sha: Sha): CacheKey {
 	const value = `${url}|${branch}|${sha}`;
-	CACHE_KEY_REGISTRY.add(value);
+	registerCacheKey(value);
 	return value as CacheKey;
+}
+
+/**
+ * LightningFS does not accept `|` in database names (it normalises them
+ * internally). The LightningFS DB name is reused across SHAs to keep
+ * deltas cheap (FR-10 "Reload reuses the cache"); only the `(url, branch)`
+ * pair participates, with `|` swapped for `_`.
+ *
+ * Kept separate from {@link makeCacheKey} so the public contract — the
+ * spec-mandated `<url>|<branch>|<sha>` CacheKey — stays clean.
+ */
+export function makeLfsDbName(url: RepoUrl, branch: Branch): string {
+	return `${url}|${branch}`.replace(/[|]/g, '_');
 }
 
 /** Type guard: returns `true` when the value is a registered {@link CacheKey}. */
@@ -194,14 +248,14 @@ export interface FetchResult {
 	readonly proxyWarning: string;
 }
 
-/** Constructor for the in-memory portion of the adapter. */
-export interface ReadonlyRemoteAdapter {
+/**
+ * The remote (LightningFS-backed) adapter surface. Extends the shared
+ * `ReadOnlyDirectoryAdapter` so the state layer's `remoteAdapter` slot can
+ * hold a remote value without an unsafe `as unknown as` cast.
+ */
+export interface ReadonlyRemoteAdapter extends ReadOnlyDirectoryAdapter {
 	/** Resolve the SHA currently checked out (the branch tip). */
 	headSha(): Promise<Sha>;
-	/** Read a file at `<subtree-root>/<rel>` (POSIX, no leading `/`). */
-	readTextFile(rel: string): Promise<string>;
-	/** List a directory at `<subtree-root>/<rel>` (POSIX). */
-	listDirectory(rel: string): Promise<DirectoryEntry[]>;
 	/** Existence check for a path (no throw). */
 	exists(rel: string): Promise<boolean>;
 }
@@ -239,10 +293,11 @@ export async function fetchSubtree(options: FetchOptions): Promise<FetchResult> 
 	info(`Fetching ${repoUrl} on branch ${branch} (depth ${depth}) via proxy`, corsProxy);
 
 	// The LightningFS database name MUST NOT contain the PAT. We derive a
-	// deterministic name from the (url, branch) pair; the SHA is appended
-	// later once known, but the database is reused across SHAs to keep
-	// deltas cheap (FR-10: "Reload reuses the cache and only fetches deltas").
-	const fsName = makeCacheKey(repoUrl, branch, 'pending' as Sha).replace(/[|]/g, '_');
+	// deterministic name from the (url, branch) pair; the database is
+	// reused across SHAs to keep deltas cheap (FR-10: "Reload reuses the
+	// cache and only fetches deltas"). The sha is recorded separately on
+	// the CacheKey once we resolve it.
+	const fsName = makeLfsDbName(repoUrl, branch);
 	const fs = new LightningFS(fsName);
 
 	// Sanity: the LightningFS database name above is deterministic but does

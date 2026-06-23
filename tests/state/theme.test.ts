@@ -50,17 +50,17 @@ afterEach(() => {
 
 describe('createThemeStore — defaults', () => {
 	it("defaults to 'light' when localStorage is empty", () => {
-		const store = createThemeStore(makeStorage());
+		const store = createThemeStore({ storage: makeStorage() });
 		expect(store.theme).toBe('light');
 	});
 
 	it("defaults to 'light' when the stored value is unrecognised", () => {
-		const store = createThemeStore(makeStorage({ 'nomad.md.theme': 'high-contrast' }));
+		const store = createThemeStore({ storage: makeStorage({ 'nomad.md.theme': 'high-contrast' }) });
 		expect(store.theme).toBe('light');
 	});
 
 	it('reads an existing valid value from localStorage', () => {
-		const store = createThemeStore(makeStorage({ 'nomad.md.theme': 'dark' }));
+		const store = createThemeStore({ storage: makeStorage({ 'nomad.md.theme': 'dark' }) });
 		expect(store.theme).toBe('dark');
 	});
 });
@@ -68,7 +68,7 @@ describe('createThemeStore — defaults', () => {
 describe('createThemeStore — toggle', () => {
 	it('toggles light → dark and persists', () => {
 		const ls = makeStorage();
-		const store = createThemeStore(ls);
+		const store = createThemeStore({ storage: ls });
 		store.toggle();
 		expect(store.theme).toBe('dark');
 		expect(ls.getItem('nomad.md.theme')).toBe('dark');
@@ -76,7 +76,7 @@ describe('createThemeStore — toggle', () => {
 
 	it('toggles dark → light and persists', () => {
 		const ls = makeStorage({ 'nomad.md.theme': 'dark' });
-		const store = createThemeStore(ls);
+		const store = createThemeStore({ storage: ls });
 		store.toggle();
 		expect(store.theme).toBe('light');
 		expect(ls.getItem('nomad.md.theme')).toBe('light');
@@ -84,9 +84,9 @@ describe('createThemeStore — toggle', () => {
 
 	it('a fresh store reads the same value back (reload survival)', () => {
 		const ls = makeStorage();
-		const a = createThemeStore(ls);
+		const a = createThemeStore({ storage: ls });
 		a.toggle(); // light → dark
-		const b = createThemeStore(ls);
+		const b = createThemeStore({ storage: ls });
 		expect(b.theme).toBe('dark');
 	});
 });
@@ -94,9 +94,42 @@ describe('createThemeStore — toggle', () => {
 describe('createThemeStore — setTheme', () => {
 	it('writes the given value to localStorage', () => {
 		const ls = makeStorage();
-		const store = createThemeStore(ls);
+		const store = createThemeStore({ storage: ls });
 		store.setTheme('dark');
 		expect(store.theme).toBe('dark');
 		expect(ls.getItem('nomad.md.theme')).toBe('dark');
+	});
+});
+
+describe('createThemeStore — prefers-color-scheme fallback (FR-14)', () => {
+	function makeMatchMedia(prefersDark: boolean): typeof globalThis.matchMedia {
+		return ((query: string) => ({
+			matches: prefersDark && query === '(prefers-color-scheme: dark)',
+			media: query,
+			onchange: null,
+			addListener: () => undefined,
+			removeListener: () => undefined,
+			addEventListener: () => undefined,
+			removeEventListener: () => undefined,
+			dispatchEvent: () => false
+		})) as unknown as typeof globalThis.matchMedia;
+	}
+
+	it("defaults to 'dark' when the OS prefers dark and storage is empty", () => {
+		const ls = makeStorage();
+		const store = createThemeStore({ storage: ls, matchMedia: makeMatchMedia(true) });
+		expect(store.theme).toBe('dark');
+	});
+
+	it("defaults to 'light' when the OS prefers light and storage is empty", () => {
+		const ls = makeStorage();
+		const store = createThemeStore({ storage: ls, matchMedia: makeMatchMedia(false) });
+		expect(store.theme).toBe('light');
+	});
+
+	it('the stored value beats the OS preference (FR-14 explicit user choice)', () => {
+		const ls = makeStorage({ 'nomad.md.theme': 'light' });
+		const store = createThemeStore({ storage: ls, matchMedia: makeMatchMedia(true) });
+		expect(store.theme).toBe('light');
 	});
 });
