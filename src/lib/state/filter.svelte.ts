@@ -2,6 +2,12 @@
  * Filter store — mirrors the active URL query string (`?status=open&...&q=…`)
  * into a plain POJO that views can read synchronously.
  *
+ * Reactivity: `filter` is a Svelte 5 `$state` slot. Consumers reading
+ * `store.filter` get fine-grained reactivity. The whole `FilterState`
+ * is replaced on every `set` / `clear` / `parse` call (no in-place
+ * mutation), so the `$state` proxy sees a fresh object and re-runs
+ * downstream `$derived` consumers correctly.
+ *
  * Behaviour:
  *  - `filter` holds the current selection. Empty / unset values are stored as
  *    `undefined` (never `''`) so `set/clear/serialize` are idempotent.
@@ -90,7 +96,7 @@ export interface FilterStore {
  * contract from plan §C.5.
  */
 export function createFilterStore(): FilterStore {
-	let filter: FilterState = {};
+	let filter = $state<FilterState>({});
 
 	/**
 	 * Treat any falsy / whitespace-only string as "absent". This keeps
@@ -110,6 +116,9 @@ export function createFilterStore(): FilterStore {
 			// 2026-02-30. `Date` accepts those as overflow (April 9 in
 			// the example), so we have to round-trip via `toISOString`
 			// and compare against the input.
+			// The `Date` is local validation state only — it is never
+			// stored, never exposed, never enters the reactive graph.
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity
 			const d = new Date(`${trimmed}T00:00:00.000Z`);
 			if (Number.isNaN(d.getTime())) return undefined;
 			if (d.toISOString().slice(0, 10) !== trimmed) return undefined;
@@ -124,6 +133,9 @@ export function createFilterStore(): FilterStore {
 		// keys are preserved — this matches the documented "shallow-merge"
 		// contract (the existing key is left alone unless the caller names
 		// it explicitly, including explicitly as `undefined` to delete).
+		// Local set built for `O(1)` membership lookup during the loop;
+		// never escapes `set()`, never enters the reactive graph.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const SCALAR_KEY_SET = new Set<string>(SCALAR_KEYS);
 		for (const [k, v] of Object.entries(patch)) {
 			if (SCALAR_KEY_SET.has(k)) {
@@ -160,6 +172,11 @@ export function createFilterStore(): FilterStore {
 
 	function serialize(): URLSearchParams {
 		assertBrowser();
+		// Local accumulator for the URL-serialise pass; returned to the
+		// caller, never stored in the reactive graph. The reactive channel
+		// is the `filter` $state slot; the URLSearchParams is a pure
+		// derived value computed on each `serialize()` call.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const out = new URLSearchParams();
 		for (const key of SCALAR_KEYS) {
 			const value = filter[key];

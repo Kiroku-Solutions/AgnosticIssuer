@@ -20,7 +20,7 @@
  *  - The integrity hash is recomputed inside `serializeIssue`; the parsed
  *    result will have `integrityWarning: false` by construction.
  */
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type { WritableDirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { Issue, LoadedIssue } from '../types/index.ts';
 import { buildIssueFilename, nextIssueId, parseIssueFile, serializeIssue } from './index.ts';
 
@@ -87,7 +87,7 @@ export function issuePath(id: number, title: string): string {
  * adapter's atomic-write contract guarantees no partial file is left behind.
  */
 export async function saveIssue(
-	adapter: DirectoryAdapter,
+	adapter: WritableDirectoryAdapter,
 	issue: Issue,
 	sourcePath: string
 ): Promise<LoadedIssue> {
@@ -106,7 +106,7 @@ export async function saveIssue(
  * (ERS §6.1.1).
  */
 export async function createIssue(
-	adapter: DirectoryAdapter,
+	adapter: WritableDirectoryAdapter,
 	input: CreateIssueInput,
 	existingIssues: ReadonlyArray<{ id: number }>
 ): Promise<LoadedIssue> {

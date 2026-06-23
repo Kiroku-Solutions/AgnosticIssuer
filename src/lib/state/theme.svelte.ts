@@ -2,6 +2,8 @@
  * Theme store — tracks the active colour theme (`'light' | 'dark'`) and
  * persists it to `localStorage` so the user's choice survives a reload.
  *
+ * Reactivity: `theme` is a Svelte 5 `$state` slot.
+ *
  * Behaviour:
  *  - On construction we read `localStorage.nomad.md.theme` first, then
  *    fall back to the OS-level `prefers-color-scheme` media query, then
@@ -65,7 +67,7 @@ export function createThemeStore(deps: ThemeStoreDeps = {}): ThemeStore {
 	assertBrowser();
 	const ls: Storage = deps.storage ?? globalThis.localStorage;
 
-	let theme: Theme = readInitial(ls, deps.matchMedia ?? globalThis.matchMedia);
+	let theme = $state<Theme>(readInitial(ls, deps.matchMedia ?? globalThis.matchMedia));
 
 	function setTheme(t: Theme): void {
 		assertBrowser();

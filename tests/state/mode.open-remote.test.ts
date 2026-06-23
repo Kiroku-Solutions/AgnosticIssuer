@@ -23,7 +23,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as remoteGit from '$lib/adapters/remote-git';
 import type { HandleStore } from '$lib/adapters/handle-store';
-import { createModeStore } from '$lib/state/mode';
+import { createModeStore } from '$lib/state';
 
 const KNOWN_PAT = 'ghp_' + 'A'.repeat(36);
 

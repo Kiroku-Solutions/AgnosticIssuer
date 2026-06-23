@@ -25,8 +25,8 @@
  *    place for Step 6 to wire them).
  * 3. Abort the previous controller when a new action supersedes it.
  *
- * The `assertBrowser` and `debouncedSave` helpers below are deliberately
- * generic — they are useful across multiple stores.
+ * The `assertBrowser` helper below is deliberately generic — it is useful
+ * across multiple stores.
  */
 
 import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
@@ -66,113 +66,4 @@ export function assertBrowser(): void {
 	if (typeof window === 'undefined') {
 		throw new StateError('not-in-browser', 'Browser-only API called outside the browser');
 	}
-}
-
-/**
- * A small debouncer with cancellation semantics.
- *
- * Used by `editorStore` (auto-save) and any other store that wants to coalesce
- * bursts of writes. The returned `schedule` returns the promise that will
- * resolve when the most recently scheduled `fn` settles; `cancel` discards
- * the pending timer and the returned promise resolves with `undefined`.
- *
- * Superseded `schedule` calls (a new call arrives before the previous timer
- * fires) resolve with `undefined` immediately. Errors from the most recent
- * `fn` propagate to that schedule call's returned promise.
- */
-export interface DebouncedSave {
-	/**
-	 * Arm the debouncer. If `schedule` is called again before `delayMs`
-	 * elapses, the previous timer is discarded, the previous returned
-	 * promise resolves to `undefined`, and the new `fn` replaces the old one.
-	 */
-	readonly schedule: <T>(fn: () => Promise<T>) => Promise<T | undefined>;
-	/** Cancel any pending timer. The in-flight promise resolves to `undefined`. */
-	readonly cancel: () => void;
-	/** True if a timer is currently armed. Useful for UI indicators. */
-	readonly pending: () => boolean;
-}
-
-/**
- * Build a {@link DebouncedSave}.
- *
- * Implementation notes:
- *  - The timer is cleared on every new `schedule` call (debouncing, not
- *    throttling — the most recent call wins).
- *  - There is no `flush()` action; auto-save in `editorStore` uses an
- *    explicit `save()` action for that.
- *  - Superseded promises are settled (resolved undefined) immediately so
- *    `await` callers do not leak handles.
- */
-export function debouncedSave(delayMs: number): DebouncedSave {
-	let timer: ReturnType<typeof setTimeout> | null = null;
-	/**
-	 * Pending resolvers to settle when a previous `schedule` is superseded.
-	 * One entry per live superseded promise. We keep them as `undefined`
-	 * resolvers only — superseded promises never reject.
-	 */
-	let supersededResolvers: Array<() => void> = [];
-
-	function clearTimer(): void {
-		if (timer !== null) {
-			clearTimeout(timer);
-			timer = null;
-		}
-	}
-
-	/** Resolve all currently-superseded promises to `undefined`. */
-	function settleSuperseded(): void {
-		const toSettle = supersededResolvers;
-		supersededResolvers = [];
-		for (const r of toSettle) r();
-	}
-
-	function schedule<T>(fn: () => Promise<T>): Promise<T | undefined> {
-		clearTimer();
-		settleSuperseded();
-
-		return new Promise<T | undefined>((resolve, reject) => {
-			let settled = false;
-			const safeResolve = (v: T): void => {
-				if (settled) return;
-				settled = true;
-				resolve(v);
-			};
-			const safeReject = (err: unknown): void => {
-				if (settled) return;
-				settled = true;
-				reject(err);
-			};
-
-			function notifySuperseded(): void {
-				safeResolve(undefined as unknown as T);
-			}
-
-			supersededResolvers.push(notifySuperseded);
-
-			timer = setTimeout(() => {
-				timer = null;
-				// Remove ourselves from supersededResolvers so the next
-				// schedule() doesn't re-resolve us to undefined after we win.
-				const idx = supersededResolvers.indexOf(notifySuperseded);
-				if (idx >= 0) supersededResolvers.splice(idx, 1);
-
-				fn().then(
-					(v) => safeResolve(v),
-					(err: unknown) => safeReject(err)
-				);
-			}, delayMs);
-		});
-	}
-
-	function cancel(): void {
-		clearTimer();
-		settleSuperseded();
-	}
-
-	function isPending(): boolean {
-		return timer !== null;
-	}
-
-	return { schedule, cancel, pending: isPending };
 }

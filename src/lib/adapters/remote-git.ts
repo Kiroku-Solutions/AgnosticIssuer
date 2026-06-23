@@ -82,11 +82,54 @@ const REPO_URL_RE = /^(https?:\/\/[\w.-]+(\/[\w./\-~]+)*|git@[\w.-]+:[\w./\-~]+)
 const BRANCH_RE = /^[\w./-]{1,255}$/;
 const SHA_RE = /^[a-f0-9]{40}$/i;
 
+// ─── Brand registries ───────────────────────────────────────────────────────
+//
+// Each of {RepoUrl, Branch, Sha} has a bounded `Set` registry that tracks
+// every value the corresponding brander has accepted. The membership is the
+// runtime marker for "this value has been validated"; the type brand is
+// nominal only. Registries use FIFO eviction (insertion-order) so a long
+// browsing session that opens many remotes cannot leak URLs / branch names
+// / SHAs indefinitely — the committee audit
+// (`docs/audits/2026-06-23/cybersecurity-audit.md`) flagged the unbounded
+// pattern as a privacy leak surface.
+
+/** Upper bound on every per-brand registry. Mirror {@link CACHE_KEY_REGISTRY_LIMIT}. */
+const REMOTE_BRAND_REGISTRY_LIMIT = 200;
+
+const REPO_URL_REGISTRY: Set<string> = new Set();
+const BRANCH_REGISTRY: Set<string> = new Set();
+const SHA_REGISTRY: Set<string> = new Set();
+
+function registerInRegistry(registry: Set<string>, value: string): void {
+	if (registry.has(value)) return;
+	if (registry.size >= REMOTE_BRAND_REGISTRY_LIMIT) {
+		const oldest = registry.values().next().value;
+		if (oldest !== undefined) registry.delete(oldest);
+	}
+	registry.add(value);
+}
+
+/** Insert a {@link RepoUrl} into the registry with FIFO eviction. */
+export function registerRepoUrl(value: string): void {
+	registerInRegistry(REPO_URL_REGISTRY, value);
+}
+
+/** Insert a {@link Branch} into the registry with FIFO eviction. */
+export function registerBranch(value: string): void {
+	registerInRegistry(BRANCH_REGISTRY, value);
+}
+
+/** Insert a {@link Sha} into the registry with FIFO eviction. */
+export function registerSha(value: string): void {
+	registerInRegistry(SHA_REGISTRY, value);
+}
+
 function brandRepoUrl(value: string): RepoUrl {
 	const trimmed = value.trim();
 	if (!REPO_URL_RE.test(trimmed)) {
 		throw new RemoteFetchError(`Invalid repository URL: ${value}`);
 	}
+	registerRepoUrl(trimmed);
 	return trimmed as RepoUrl;
 }
 
@@ -95,15 +138,17 @@ function brandBranch(value: string): Branch {
 	if (!BRANCH_RE.test(trimmed)) {
 		throw new RemoteFetchError(`Invalid branch name: ${value}`);
 	}
+	registerBranch(trimmed);
 	return trimmed as Branch;
 }
 
 function brandSha(value: string): Sha {
-	const trimmed = value.trim();
+	const trimmed = value.trim().toLowerCase();
 	if (!SHA_RE.test(trimmed)) {
 		throw new RemoteFetchError(`Invalid SHA: ${value}`);
 	}
-	return trimmed.toLowerCase() as Sha;
+	registerSha(trimmed);
+	return trimmed as Sha;
 }
 
 /** Re-validate a {@link RepoUrl} that may have been cast through `unknown`. */
@@ -120,6 +165,116 @@ function revalidateBranch(value: Branch): Branch {
 		throw new RemoteFetchError('Invalid branch name');
 	}
 	return value;
+}
+
+/** Type guard: returns `true` when `value` is a registered {@link RepoUrl}. */
+export function isRepoUrl(value: unknown): value is RepoUrl {
+	return typeof value === 'string' && REPO_URL_REGISTRY.has(value);
+}
+
+/** Type guard: returns `true` when `value` is a registered {@link Branch}. */
+export function isBranch(value: unknown): value is Branch {
+	return typeof value === 'string' && BRANCH_REGISTRY.has(value);
+}
+
+/** Type guard: returns `true` when `value` is a registered {@link Sha}. */
+export function isSha(value: unknown): value is Sha {
+	return typeof value === 'string' && SHA_REGISTRY.has(value);
+}
+
+// ─── Wire-level filter detection (git.fetch) ─────────────────────────────────
+
+/**
+ * Capability matrix for the wire-level filter options exposed by the
+ * installed `isomorphic-git`'s `git.fetch`. Each flag is `true` when the
+ * parameter name appears in the function source (so a future release that
+ * adds path-level filtering would be picked up automatically).
+ *
+ * For `isomorphic-git@1.38.5` (the version pinned in `package.json`):
+ *  - `exclude`: present, but documented as a *ref* filter (not a path
+ *    filter); see `node_modules/isomorphic-git/index.d.ts:1503`.
+ *  - `relative`: present, but only affects `depth` semantics on a
+ *    deepen-fetch; see `index.d.ts:1501`.
+ *  - `partial`: NOT exposed on `git.fetch`. (Only the `clone` variant
+ *    mentions partial clones in upstream docs.)
+ *  - `filter`: NOT exposed on `git.fetch`. (`filter` exists on
+ *    `statusMatrix` at `index.d.ts:3338` but that is a post-fetch
+ *    query, not a wire-level path filter.)
+ */
+export interface FetchFilterSupport {
+	readonly exclude: boolean;
+	readonly partial: boolean;
+	readonly filter: boolean;
+	readonly relative: boolean;
+}
+
+/**
+ * Probe the installed `isomorphic-git` for the wire-level filter options
+ * it advertises on `git.fetch`. The detection runs once at module load
+ * — `fetchSubtree` reads the cached result on every call.
+ *
+ * Strategy: serialise `git.fetch` via `Function.prototype.toString` and
+ * regex-match the parameter names. isomorphic-git's published bundle
+ * is unminified (its source ships the parameter names verbatim), so
+ * the regex sees the canonical names. If upstream ever ships a
+ * minified bundle, every flag would degrade to `false` and the
+ * one-shot warn would fire — a safe, fail-closed behaviour.
+ */
+export function detectFetchFilterSupport(): FetchFilterSupport {
+	try {
+		const sig = git.fetch.toString();
+		return {
+			// Word-boundary anchors so `exclude` does not match `excluded`.
+			exclude: /\bexclude\b/.test(sig),
+			partial: /\bpartial\b/.test(sig),
+			filter: /\bfilter\b/.test(sig),
+			relative: /\brelative\b/.test(sig)
+		};
+	} catch {
+		// `toString` may throw if the function was created via
+		// `Reflect`/`Proxy` or bound in a way that hides its source.
+		// Treat as "no support" — the caller falls back to the
+		// pre-existing unfiltered call shape.
+		return { exclude: false, partial: false, filter: false, relative: false };
+	}
+}
+
+/**
+ * One-shot guard for the "no wire-level filter" warn. The flag flips to
+ * `true` on the first call and stays true for the remainder of the
+ * session, so dev consoles see exactly one `[adapter:warn]` per page
+ * load even across many `fetchSubtree` invocations.
+ */
+let noFilterWarnedThisSession = false;
+
+function logNoFilterWarningOnce(): void {
+	if (noFilterWarnedThisSession) return;
+	noFilterWarnedThisSession = true;
+	// Use the version embedded in the installed isomorphic-git bundle so
+	// the warn log identifies exactly which build is missing the
+	// capability (rather than a hand-maintained constant that could
+	// drift from the lockfile).
+	let version = 'unknown';
+	try {
+		version = git.version();
+	} catch {
+		// git.version is exported but defensively guarded in case a
+		// future build changes the export shape.
+	}
+	warn(
+		`isomorphic-git ${version} has no partial-clone path filter; ` +
+			`entire branch tip lands in LightningFS until upstream wires ` +
+			`\`--filter=blob:none\``
+	);
+}
+
+/**
+ * Test-only helper: clear the one-shot warn flag so unit tests can
+ * assert the warn fires on every fresh `fetchSubtree` invocation.
+ * Not exported from the public `adapters/index.ts` barrel.
+ */
+export function _resetNoFilterWarningForTests(): void {
+	noFilterWarnedThisSession = false;
 }
 
 // ─── Public types ───────────────────────────────────────────────────────────
@@ -143,6 +298,14 @@ export type CacheKey = string & { readonly [CACHE_KEY_BRAND]: true };
 /**
  * Re-validate an existing key (e.g. one read from IndexedDB) and rebrand
  * it. Throws if the input does not match `<url>|<branch>|<sha>`.
+ *
+ * The SHA segment is validated against {@link SHA_RE} (40 hex chars,
+ * case-insensitive). The committee audit
+ * (`docs/audits/2026-06-23/cybersecurity-audit.md:340`) flagged the prior
+ * "accept any string past the first `|`" behaviour as a high-severity
+ * privacy leak: a malformed key like `<url>|<branch>|<script>…</script>`
+ * would land in the bounded `CACHE_KEY_REGISTRY` and in the LightningFS
+ * database name. This guard closes that path.
  */
 export function brandCacheKey(value: string): CacheKey {
 	const parts = value.split('|');
@@ -153,9 +316,14 @@ export function brandCacheKey(value: string): CacheKey {
 	// key fails fast at the boundary.
 	brandRepoUrl(parts[0] as string);
 	brandBranch(parts[1] as string);
-	// The sha segment is intentionally not re-validated via brandSha:
-	// the third segment may include path-like components if a caller ever
-	// extends the format. We accept any string past the first `|`.
+	// Join the trailing segments so a key with extra `|` parts still gets
+	// the SHA check applied to whatever string the caller supplied
+	// (the SHA regex is strict — 40 hex chars — so any extra segment
+	// fails the check, which is the desired fail-closed behaviour).
+	const shaSegment = parts.slice(2).join('|');
+	if (!SHA_RE.test(shaSegment)) {
+		throw new RemoteFetchError(`Invalid SHA segment in cache key: ${value}`);
+	}
 	registerCacheKey(value);
 	return value as CacheKey;
 }
@@ -190,6 +358,15 @@ function registerCacheKey(value: string): void {
 
 /** Build a {@link CacheKey} from the canonical (url, branch, sha) triple. */
 export function makeCacheKey(url: RepoUrl, branch: Branch, sha: Sha): CacheKey {
+	// Defensive: confirm each input is in its respective registry. If a
+	// caller has cast through `unknown as …` to bypass the type system,
+	// the guards return `false` and the corresponding brander
+	// re-validates + registers the value (throwing on a regex mismatch).
+	// For well-formed branded inputs the guards are no-ops and the
+	// branders are also no-ops on registry re-insertion.
+	if (!isRepoUrl(url)) brandRepoUrl(url);
+	if (!isBranch(branch)) brandBranch(branch);
+	if (!isSha(sha)) brandSha(sha);
 	const value = `${url}|${branch}|${sha}`;
 	registerCacheKey(value);
 	return value as CacheKey;
@@ -329,19 +506,48 @@ export async function fetchSubtree(options: FetchOptions): Promise<FetchResult> 
 	// module-level state, no IndexedDB.
 	const onAuth = pat === null ? () => ({}) : () => ({ username: pat });
 
+	// Probe the installed isomorphic-git for wire-level filter / partial
+	// capabilities. See `detectFetchFilterSupport` for the full rationale;
+	// in short: isomorphic-git@1.38.5 advertises `exclude` (ref filter,
+	// not path filter) and `relative` (no-op on initial shallow fetch),
+	// but does not expose `partial` or `filter`. We pass what the API
+	// supports and warn once per session when nothing is available, so
+	// the dev console (and our own audit) records the limitation.
+	const filterSupport = detectFetchFilterSupport();
+	const fetchOptions: Parameters<typeof git.fetch>[0] = {
+		fs,
+		http,
+		dir: '/',
+		ref: branch,
+		singleBranch: true,
+		depth,
+		// isomorphic-git's onAuth contract: return `{ username, password }`
+		// or an empty object for anonymous access.
+		onAuth,
+		corsProxy: options.corsProxy ?? DEFAULT_CORS_PROXY
+	};
+	// `exclude` in isomorphic-git@1.38.5 is documented as a ref filter
+	// (not a path filter); passing `[]` is a no-op for normal repos but
+	// keeps the call shape forward-compatible with future releases that
+	// wire up `--filter=blob:none` / sparse-checkout.
+	if (filterSupport.exclude) {
+		fetchOptions.exclude = [];
+	}
+	// `relative` only affects `depth` semantics on a deepen fetch; passing
+	// it on an initial shallow clone is a no-op. Forward-compat again.
+	if (filterSupport.relative) {
+		fetchOptions.relative = true;
+	}
+	// One-shot warn when no wire-level filter / partial support is
+	// available. A hostile remote with a multi-GB binary at the branch
+	// tip will still fill the LightningFS database; this is the
+	// documented limitation until upstream ships a path-filter pipeline.
+	if (!filterSupport.exclude && !filterSupport.partial && !filterSupport.filter) {
+		logNoFilterWarningOnce();
+	}
+
 	try {
-		await git.fetch({
-			fs,
-			http,
-			dir: '/',
-			ref: branch,
-			singleBranch: true,
-			depth,
-			// isomorphic-git's onAuth contract: return `{ username, password }`
-			// or an empty object for anonymous access.
-			onAuth,
-			corsProxy: options.corsProxy ?? DEFAULT_CORS_PROXY
-		});
+		await git.fetch(fetchOptions);
 	} catch (cause) {
 		throw translateFetchError(cause);
 	}

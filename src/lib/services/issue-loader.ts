@@ -1,4 +1,4 @@
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type { ReadOnlyDirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { LoadedIssue } from '../types/index.ts';
 import { parseIssueFile } from './parser.ts';
 
@@ -12,7 +12,7 @@ const ISSUES_DIR = '.nomad.md/issues';
  * parser's default tolerance — they are returned with `integrityWarning`
  * set, and the rest of the set is still usable.
  */
-export async function loadIssues(adapter: DirectoryAdapter): Promise<LoadedIssue[]> {
+export async function loadIssues(adapter: ReadOnlyDirectoryAdapter): Promise<LoadedIssue[]> {
 	let entries;
 	try {
 		entries = await adapter.listDirectory(ISSUES_DIR);

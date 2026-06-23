@@ -13,7 +13,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createConfigStore } from '$lib/state/config';
+import { createConfigStore } from '$lib/state';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
 
 const VALID_CONFIG = JSON.stringify({

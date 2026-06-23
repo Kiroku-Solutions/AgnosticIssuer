@@ -2,16 +2,17 @@
  * View store — tracks the active view mode (`'list' | 'kanban' | 'gantt'`)
  * and persists it to `localStorage` so the user's choice survives a reload.
  *
+ * Reactivity: `view` is a Svelte 5 `$state` slot; consumers that read
+ * `store.view` get fine-grained reactivity for free (no manual `$state`
+ * wrapping at the call site).
+ *
  * Behaviour:
  *  - On construction we read `localStorage.nomad.md.view` and default to
  *    `'list'` if missing / unrecognised. Unrecognised values are silently
  *    coerced to `'list'` (defensive — we never want a stale key to block
  *    the UI).
  *  - `setView(v)` updates the in-memory state and writes through to
- *    `localStorage` synchronously. The debounced write mentioned in plan
- *    §C.6 is only needed for the auto-write `$effect`; since we expose
- *    `setView` as the single mutation verb, a synchronous write is
- *    semantically equivalent and cheaper.
+ *    `localStorage` synchronously.
  *  - Browser-only: every read/write gates on `assertBrowser()`. The test
  *    suite runs in Node and injects a fake `localStorage` on `globalThis`
  *    so the assertion passes.
@@ -48,7 +49,7 @@ export function createViewStore(storage?: Storage): ViewStore {
 	assertBrowser();
 	const ls: Storage = storage ?? globalThis.localStorage;
 
-	let view: View = readInitial(ls);
+	let view = $state<View>(readInitial(ls));
 
 	function setView(v: View): void {
 		assertBrowser();

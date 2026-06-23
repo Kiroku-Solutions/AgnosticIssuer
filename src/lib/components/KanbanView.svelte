@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getStores, type IssueId } from '$lib/state';
+	import { getStores } from '$lib/state';
 	import type { LoadedIssue } from '$lib/types';
 
 	const { issues, filter, config, editor } = getStores();
@@ -35,7 +35,7 @@
 		return rows.filter((li) => li.issue.status === status);
 	}
 
-	function open(id: IssueId): void {
+	function open(id: number): void {
 		editor.open(id);
 	}
 </script>

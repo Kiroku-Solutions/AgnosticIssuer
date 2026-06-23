@@ -20,10 +20,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createEditorStore } from '$lib/state/editor';
-import { createIssuesStore } from '$lib/state/issues';
-import { createConfigStore } from '$lib/state/config';
-import { createTemplatesStore } from '$lib/state/templates';
+import { createEditorStore } from '$lib/state';
+import { createIssuesStore } from '$lib/state';
+import { createConfigStore } from '$lib/state';
+import { createTemplatesStore } from '$lib/state';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
 import { serializeIssue } from '$lib/services/serializer';
 import type { Issue, LoadedIssue } from '$lib/types';

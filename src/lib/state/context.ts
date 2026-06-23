@@ -18,14 +18,14 @@
  * pick up cross-store updates without a full `.svelte.ts` refactor.
  */
 import { getContext, setContext } from 'svelte';
-import type { ConfigStore } from './config.ts';
-import type { EditorStore } from './editor.ts';
-import type { FilterStore } from './filter.ts';
-import type { IssuesStore } from './issues.ts';
-import type { ModeStore } from './mode.ts';
-import type { TemplatesStore } from './templates.ts';
-import type { ThemeStore } from './theme.ts';
-import type { ViewStore } from './view.ts';
+import type { ConfigStore } from './config.svelte.ts';
+import type { EditorStore } from './editor.svelte.ts';
+import type { FilterStore } from './filter.svelte.ts';
+import type { IssuesStore } from './issues.svelte.ts';
+import type { ModeStore } from './mode.svelte.ts';
+import type { TemplatesStore } from './templates.svelte.ts';
+import type { ThemeStore } from './theme.svelte.ts';
+import type { ViewStore } from './view.svelte.ts';
 
 export interface StoreGraph {
 	readonly mode: ModeStore;

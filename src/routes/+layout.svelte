@@ -1,4 +1,10 @@
 <script lang="ts">
+	// Must be the first import of the script block — guarantees
+	// `globalThis.Buffer` is defined before `isomorphic-git`'s sub-modules
+	// evaluate. See `src/lib/polyfills/buffer.ts` for the rationale and
+	// `docs/audits/2026-06-23/architecture-audit.md:353` for the audit
+	// finding this closes.
+	import '$lib/polyfills/buffer';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
@@ -15,6 +21,10 @@
 		setStores
 	} from '$lib/state';
 	import { handleStore, LocalFsAdapter } from '$lib/adapters';
+	import type {
+		ReadOnlyDirectoryAdapter,
+		WritableDirectoryAdapter
+	} from '$lib/adapters/directory-adapter';
 	import { isFsaAvailable } from '$lib/adapters/feature-detect';
 
 	let { children } = $props();
@@ -46,14 +56,15 @@
 			LocalFsAdapter.fromHandle(handle)
 	});
 	// Adapter provider that resolves to the active adapter (local or
-	// remote). In Remote Mode the adapter is read-only by ERS contract
-	// (C-2); we cast through `unknown` because the data-store APIs all
-	// accept the writable shape, but the Remote Mode UI disables every
-	// write affordance so the write methods are never actually called.
-	const adapterProvider = (): typeof mode.localAdapter => {
-		return (mode.localAdapter ??
-			(mode.remoteAdapter as unknown as typeof mode.localAdapter) ??
-			null) as typeof mode.localAdapter;
+	// remote). The return type is the union of `WritableDirectoryAdapter |
+	// ReadOnlyDirectoryAdapter | null` so the read-only remote adapter is
+	// not dishonestly cast to the writable shape. Local Mode returns the
+	// FSA-backed writable adapter; Remote Mode returns the
+	// isomorphic-git-backed read-only adapter; on the home screen (no
+	// folder / no remote open) the provider returns `null` and the data
+	// stores stay in their 'idle' status.
+	const adapterProvider = (): WritableDirectoryAdapter | ReadOnlyDirectoryAdapter | null => {
+		return mode.localAdapter ?? mode.remoteAdapter ?? null;
 	};
 	const config = createConfigStore(adapterProvider);
 	const templates = createTemplatesStore(adapterProvider);

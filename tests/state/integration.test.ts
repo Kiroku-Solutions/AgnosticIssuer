@@ -18,12 +18,12 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
-import { createModeStore } from '$lib/state/mode';
-import { createConfigStore } from '$lib/state/config';
-import { createTemplatesStore } from '$lib/state/templates';
-import { createIssuesStore } from '$lib/state/issues';
-import { createEditorStore } from '$lib/state/editor';
-import { createStateContext } from '$lib/state/_context';
+import { createModeStore } from '$lib/state';
+import { createConfigStore } from '$lib/state';
+import { createTemplatesStore } from '$lib/state';
+import { createIssuesStore } from '$lib/state';
+import { createEditorStore } from '$lib/state';
+import { createStateContext } from '$lib/state';
 import { serializeIssue } from '$lib/services/serializer';
 import type { HandleRecord, HandleStore } from '$lib/adapters/handle-store';
 import type { Issue } from '$lib/types';

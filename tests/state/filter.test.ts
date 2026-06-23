@@ -15,7 +15,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createFilterStore, type FilterState } from '$lib/state/filter';
+import { createFilterStore, type FilterState } from '$lib/state';
 
 let originalWindow: unknown;
 beforeEach(() => {

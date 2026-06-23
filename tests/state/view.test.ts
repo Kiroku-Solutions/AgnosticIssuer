@@ -14,7 +14,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createViewStore } from '$lib/state/view';
+import { createViewStore } from '$lib/state';
 
 /** Minimal in-memory `Storage` for tests. */
 function makeStorage(initial: Record<string, string> = {}): Storage {

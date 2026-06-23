@@ -29,10 +29,10 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createIssuesStore } from '$lib/state/issues';
-import { createConfigStore } from '$lib/state/config';
-import { createTemplatesStore } from '$lib/state/templates';
-import { createStateContext } from '$lib/state/_context';
+import { createIssuesStore } from '$lib/state';
+import { createConfigStore } from '$lib/state';
+import { createTemplatesStore } from '$lib/state';
+import { createStateContext } from '$lib/state';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
 import { canonicalForm, serializeIssue } from '$lib/services/serializer';
 import { computeIntegrityHash } from '$lib/services/integrity';

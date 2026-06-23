@@ -21,7 +21,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createModeStore } from '$lib/state/mode';
+import { createModeStore } from '$lib/state';
 import type { HandleRecord, HandleStore } from '$lib/adapters/handle-store';
 
 // ─── Fakes ──────────────────────────────────────────────────────────────────

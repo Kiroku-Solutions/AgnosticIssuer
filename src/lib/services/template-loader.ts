@@ -1,4 +1,4 @@
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type { ReadOnlyDirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { FieldType, Template } from '../types/index.ts';
 import { FIELD_TYPES } from '../types/index.ts';
 
@@ -91,7 +91,7 @@ function assertTemplate(value: unknown, filename: string): Template {
  * Malformed templates abort the load with an actionable error (the editor
  * cannot function without a schema).
  */
-export async function loadTemplates(adapter: DirectoryAdapter): Promise<Template[]> {
+export async function loadTemplates(adapter: ReadOnlyDirectoryAdapter): Promise<Template[]> {
 	let entries;
 	try {
 		entries = await adapter.listDirectory(TEMPLATES_DIR);

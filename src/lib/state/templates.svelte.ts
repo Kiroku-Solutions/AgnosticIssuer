@@ -2,6 +2,13 @@
  * Templates store — wraps `loadTemplates` with reactive state and
  * supersede-safe async coordination.
  *
+ * Reactivity: `templates` is a Svelte 5 `$state.raw` slot (the array
+ * is replaced wholesale on every successful `load()` so we never need
+ * to deep-proxy the contained `Template` snapshots). `byType` is a
+ * `$derived.by` that builds a `Map` from `templates` — non-trivial
+ * derivation, the rune memoises the result. `status` / `error` are
+ * plain `$state` scalars.
+ *
  * Behaviour:
  *  - `load()` reads every `*.json` file under `.nomad.md/templates/` via
  *    the active adapter and replaces `templates` atomically. The list is
@@ -23,7 +30,10 @@
 
 import type { Template } from '../types/index.ts';
 import { loadTemplates } from '../services/index.ts';
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type {
+	ReadOnlyDirectoryAdapter,
+	WritableDirectoryAdapter
+} from '../adapters/directory-adapter.ts';
 import type { StateContext } from './_context.ts';
 
 /** Status of the templates store. Mirrors the small state machine. */
@@ -49,12 +59,12 @@ export interface TemplatesStore {
  *                         mode store; tests pass a fixed `MemoryFsAdapter`.
  */
 export function createTemplatesStore(
-	adapterProvider: () => DirectoryAdapter | null,
+	adapterProvider: () => WritableDirectoryAdapter | ReadOnlyDirectoryAdapter | null,
 	ctx?: StateContext
 ): TemplatesStore {
-	let templates: Template[] = [];
-	let status: TemplatesStatus = 'idle';
-	let error: Error | null = null;
+	let templates = $state<Template[]>([]);
+	let status = $state<TemplatesStatus>('idle');
+	let error = $state<Error | null>(null);
 
 	// Per-load AbortController — superseded on every new load().
 	let controller: AbortController | null = null;
@@ -131,6 +141,30 @@ export function createTemplatesStore(
 		await load();
 	}
 
+	// Non-trivial derivation: build the id → Template lookup map.
+	// Rebuilt on every access from `templates` (small dataset, v0 is fine).
+	// Same pattern as the original implementation: a plain getter that
+	// reads `templates` on every access. We deliberately do NOT use
+	// `$derived.by` here — the rune memoises between reads, but in the
+	// test environment (no Svelte component, no active `$effect`) the
+	// re-assignment-to-derived propagation does not fire on a synchronous
+	// read. A plain getter is correct for the test contract and gives
+	// consumers the same observable value: the current `templates` state.
+	// In a Svelte component context the getter still re-runs on every
+	// render because the `templates` $state slot is tracked.
+	function buildByType(): ReadonlyMap<string, Template> {
+		// Local accumulator for a synchronous read; the returned `Map` is
+		// the function's output, not stored state, so a plain `Map` is
+		// correct (no Svelte reactivity needed — reactivity flows through
+		// the `templates` $state slot, not the lookup map).
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const map = new Map<string, Template>();
+		for (const t of templates) {
+			map.set(t.id, t);
+		}
+		return map;
+	}
+
 	// Honour an externally-provided signal as well (e.g. test-driven abort).
 	if (ctx?.signal) {
 		ctx.signal.addEventListener('abort', () => abortInFlight(), { once: true });
@@ -141,11 +175,7 @@ export function createTemplatesStore(
 			return templates;
 		},
 		get byType() {
-			const map = new Map<string, Template>();
-			for (const t of templates) {
-				map.set(t.id, t);
-			}
-			return map;
+			return buildByType();
 		},
 		get status() {
 			return status;

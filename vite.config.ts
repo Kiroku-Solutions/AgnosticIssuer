@@ -25,17 +25,25 @@ export default defineConfig({
 			})
 		})
 	],
-	// isomorphic-git's browser bundle expects `globalThis.Buffer` to be
-	// defined (it is the entry point for many sub-modules). Node has it
-	// natively; browsers do not. We declare the global with a string
-	// expression that resolves to `undefined` in environments that lack
-	// it (Vitest on Node sees `Buffer` via the Node runtime; Vitest in
-	// the browser sees the global as undefined). The actual polyfill
-	// for production browser builds is loaded by the SvelteKit client
-	// entry when Remote Mode is activated (Step 6). (Plan §10.3.)
-	define: {
-		'globalThis.Buffer': 'globalThis.Buffer'
-	},
+	// ─── Vite `define` / `optimizeDeps` rationale ───────────────────────────
+	//
+	// `define` is INTENTIONALLY omitted. An earlier entry mapped the
+	// browser-shim key to its own identifier text, which Vite inlines
+	// verbatim — so the shim resolved to `undefined` in real browsers
+	// and the production bundle threw a ReferenceError as soon as
+	// isomorphic-git evaluated. That was the architecture-audit.md:353
+	// finding. The real polyfill now lives in
+	// `src/lib/polyfills/buffer.ts` and is imported as the first
+	// statement of `src/routes/+layout.svelte`, so it runs before any
+	// code that pulls isomorphic-git into the bundle. The layout-level
+	// import is the canonical install path for the browser build; no
+	// build-time `define` shim is required (or even helpful).
+	//
+	// `optimizeDeps.exclude`: isomorphic-git's ESM source uses dynamic
+	// sub-imports that Vite's pre-bundler mangles. Excluding the package
+	// lets its own ESM resolution kick in. This entry is unrelated to
+	// the polyfill — it would still be needed even with the shim in
+	// place.
 	optimizeDeps: {
 		// isomorphic-git has dynamic sub-imports that confuse Vite's
 		// pre-bundler. Excluding it from the optimization step lets the
@@ -69,6 +77,18 @@ export default defineConfig({
 						'tests/state/**',
 						'tests/adapters/feature-detect.test.ts',
 						'tests/adapters/memory-fs.test.ts',
+						// Buffer polyfill is Node-only — the polyfill's fast
+						// path returns the Node-native constructor, and the
+						// test asserts the Node-native constructor is present.
+						// Chromium has no native Buffer, so the "sanity" check
+						// would fail. Run only in the `server` project.
+						'tests/adapters/buffer.test.ts',
+						// Remote-git live test pulls `isomorphic-git` (and
+						// its `async-lock` transitive dep) which Chromium's
+						// bundler cannot ESM-rewrite cleanly. It is a
+						// Node-only structural test gated on
+						// `RUN_LIVE_TESTS=1`; run only in the `server` project.
+						'tests/adapters/remote-git.live.test.ts',
 						// The local-fs test uses a pure-TS FSA mock; it has no business
 						// in a real Chromium FSA context (File.text is sync in Chromium,
 						// not Promise<string> like in Node).  Run it in the server project.

@@ -2,6 +2,14 @@
  * Editor store — owns the in-flight edit buffer for a single issue and
  * delegates persistence to the issues store.
  *
+ * Reactivity: `activeId`, `isDirty` are Svelte 5 `$state` slots;
+ * `draft` is `$state.raw` (a single `LoadedIssue` snapshot — the rune
+ * avoids deep-proxying its nested arrays/maps; the rune proxy on a
+ * draft object would interfere with the clone-based save/discard
+ * contract). The public `errors` and `integrityWarning` getters
+ * stay as plain passthroughs — they re-run on every read and do not
+ * benefit from `$derived` memoisation.
+ *
  * Behaviour:
  *  - `open(id)` deep-clones the {@link LoadedIssue} from `issues.byId` into
  *    a `draft` and resets the dirty flag. The clone is the only handle the
@@ -49,9 +57,9 @@
 import type { Issue, IssueSection, LoadedIssue, FrontmatterValue } from '../types/index.ts';
 import { FIELD_TO_YAML } from '../types/index.ts';
 import type { ValidationError } from '../services/validator.ts';
-import type { ConfigStore } from './config.ts';
-import type { TemplatesStore } from './templates.ts';
-import type { IssueId, IssuesStore } from './issues.ts';
+import type { ConfigStore } from './config.svelte.ts';
+import type { TemplatesStore } from './templates.svelte.ts';
+import type { IssuesStore } from './issues.svelte.ts';
 
 /**
  * System frontmatter keys live on `Issue` directly; everything else is a
@@ -73,14 +81,20 @@ function cloneLoaded(src: LoadedIssue): LoadedIssue {
 }
 
 export interface EditorStore {
-	readonly activeId: IssueId | null;
+	/**
+	 * The id of the issue currently loaded in the editor's draft buffer.
+	 * `null` when no issue is open. Plain `number` so call sites (and the
+	 * comparison `expect(activeId).toBe(1)` test pattern) work without
+	 * having to brand first.
+	 */
+	readonly activeId: number | null;
 	readonly draft: LoadedIssue | null;
 	readonly isDirty: boolean;
 	readonly integrityWarning: boolean;
 	readonly errors: readonly ValidationError[];
 
 	/** Clone the given issue into the draft buffer. No-op if not found. */
-	readonly open: (id: IssueId) => void;
+	readonly open: (id: number) => void;
 	/** Clear the editor — resets `activeId`, `draft`, `isDirty`. */
 	readonly close: () => void;
 	/**
@@ -117,11 +131,11 @@ export interface EditorStoreDeps {
 export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 	const { issues } = deps;
 
-	let activeId: IssueId | null = null;
-	let draft: LoadedIssue | null = null;
-	let isDirty = false;
+	let activeId = $state<number | null>(null);
+	let draft = $state.raw<LoadedIssue | null>(null);
+	let isDirty = $state<boolean>(false);
 
-	function open(id: IssueId): void {
+	function open(id: number): void {
 		const source = issues.byId.get(id);
 		if (!source) {
 			// Unknown id — close rather than open a half-state. The caller
@@ -232,27 +246,25 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 
 /**
  * Build a shallow copy of an `Issue` suitable for `issues.update(id, patch)`.
- * `customFields` is spread into a new map so the patch is a snapshot,
- * not a live reference to the draft.
+ *
+ * Driven by `FIELD_TO_YAML` as the single source of truth for system fields:
+ * adding a new system field to `types/issue.ts` automatically flows through
+ * this helper — no hand-maintained list to drift. `customFields` and
+ * `sections` are not in `FIELD_TO_YAML` (they are not system fields per
+ * ERS §6.1), so they are handled explicitly after the loop, along with
+ * the FR-15 `integrityWarning` flag.
+ *
+ * `customFields` is spread into a new map and `sections` is deep-cloned
+ * element-by-element so the patch is a snapshot, not a live reference
+ * to the draft.
  */
 function cloneIssueFields(issue: Issue): Partial<Issue> {
-	return {
-		id: issue.id,
-		title: issue.title,
-		author: issue.author,
-		creationDate: issue.creationDate,
-		updatedDate: issue.updatedDate,
-		issueType: issue.issueType,
-		status: issue.status,
-		assignee: issue.assignee,
-		labels: [...issue.labels],
-		relations: issue.relations.map((r) => ({ ...r })),
-		startDate: issue.startDate,
-		endDate: issue.endDate,
-		duration: issue.duration,
-		integrityHash: issue.integrityHash,
-		customFields: { ...issue.customFields },
-		sections: issue.sections.map((s) => ({ ...s })),
-		integrityWarning: issue.integrityWarning
-	};
+	const out: Record<string, unknown> = {};
+	for (const camel of Object.keys(FIELD_TO_YAML)) {
+		out[camel] = issue[camel as keyof Issue];
+	}
+	out.customFields = { ...issue.customFields };
+	out.sections = issue.sections.map((s) => ({ ...s }));
+	out.integrityWarning = issue.integrityWarning;
+	return out as Partial<Issue>;
 }

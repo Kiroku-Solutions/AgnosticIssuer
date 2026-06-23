@@ -17,7 +17,7 @@
  * for collision avoidance is replaced by the millisecond timestamp, which
  * is monotonic.
  */
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type { WritableDirectoryAdapter } from '../adapters/directory-adapter.ts';
 import { splitPath } from '../adapters/directory-adapter.ts';
 import type { Issue } from '../types/index.ts';
 import { slugify } from './slugs.ts';
@@ -46,7 +46,7 @@ export function trashedIssuePath(
  * soft-delete path.
  */
 export async function moveIssueToTrash(
-	adapter: DirectoryAdapter,
+	adapter: WritableDirectoryAdapter,
 	issue: Pick<Issue, 'id' | 'title'>,
 	sourcePath: string
 ): Promise<string> {

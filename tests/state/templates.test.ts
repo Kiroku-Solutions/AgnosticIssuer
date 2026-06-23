@@ -17,7 +17,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createTemplatesStore } from '$lib/state/templates';
+import { createTemplatesStore } from '$lib/state';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
 
 const VALID_BUG = JSON.stringify({

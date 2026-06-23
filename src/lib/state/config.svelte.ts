@@ -2,6 +2,11 @@
  * Config store — wraps `loadConfig` with reactive state and supersede-safe
  * async coordination.
  *
+ * Reactivity: `config`, `status`, `error` are Svelte 5 `$state` slots.
+ * Consumers reading `store.config` / `store.status` / `store.error`
+ * get fine-grained reactivity. The store factory itself does not
+ * contain `$effect` (effects belong in components).
+ *
  * Behaviour:
  *  - `load()` reads `.nomad.md/config.json` via the active adapter and
  *    populates `config`. The service throws on missing / malformed files;
@@ -20,7 +25,10 @@
 
 import type { Config } from '../types/index.ts';
 import { loadConfig } from '../services/index.ts';
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type {
+	ReadOnlyDirectoryAdapter,
+	WritableDirectoryAdapter
+} from '../adapters/directory-adapter.ts';
 import type { StateContext } from './_context.ts';
 
 /** Status of the config store. Mirrors the small state machine. */
@@ -44,12 +52,12 @@ export interface ConfigStore {
  *                         mode store; tests pass a fixed `MemoryFsAdapter`.
  */
 export function createConfigStore(
-	adapterProvider: () => DirectoryAdapter | null,
+	adapterProvider: () => WritableDirectoryAdapter | ReadOnlyDirectoryAdapter | null,
 	ctx?: StateContext
 ): ConfigStore {
-	let config: Config | null = null;
-	let status: ConfigStatus = 'idle';
-	let error: Error | null = null;
+	let config = $state<Config | null>(null);
+	let status = $state<ConfigStatus>('idle');
+	let error = $state<Error | null>(null);
 
 	// Per-load AbortController — superseded on every new load().
 	let controller: AbortController | null = null;

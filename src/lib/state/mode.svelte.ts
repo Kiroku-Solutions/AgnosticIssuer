@@ -2,6 +2,14 @@
  * Mode store — the top-level state machine that decides which "surface"
  * of the app is active.
  *
+ * Reactivity: `mode`, `activeHandle`, `localAdapter`, `remoteAdapter`,
+ * `proxyWarning` are Svelte 5 `$state` slots; `recentHandles` is
+ * `$state.raw` (the array is replaced wholesale on every refresh — a
+ * deep proxy would interfere with the HandleRecord shape). The PAT
+ * lives ONLY in the `_patScope` closure variable — it is deliberately
+ * **not** a rune, so it is invisible to the reactivity graph
+ * (NFR-2 security contract).
+ *
  * Three modes:
  *  - `home`   : no folder open. The home screen invites the user to open
  *               a local folder or paste a remote URL.
@@ -16,6 +24,8 @@
  *    dropped on return. There is no `pat: string` property anywhere on
  *    `ModeStore`. The only public surface for credential state is
  *    `hasRemoteCredentials: boolean`.
+ *  - The `proxyWarning` accessor (FR-12) is safe to expose: it contains
+ *    only the proxy host, never the PAT or the Authorization header.
  *
  * Persisted folder handles (ERS §5.5) live in IndexedDB. The store
  * reads/writes them via `handleStore` (Step 4) on `bootstrap()` and
@@ -57,6 +67,16 @@ export interface ModeStore {
 	readonly activeHandle: FileSystemDirectoryHandle | null;
 	readonly recentHandles: readonly HandleRecord[];
 	readonly hasRemoteCredentials: boolean;
+	/**
+	 * CORS proxy warning text returned by the most recent `openRemote`
+	 * call. `null` when no remote is active, or after `signOut()`.
+	 *
+	 * Safe to expose on the public surface: it contains only the proxy
+	 * host (e.g. `cors.isomorphic-git.org`), never the PAT or the
+	 * Authorization header (NFR-2). The UI is expected to surface this
+	 * as a non-blocking banner (FR-12).
+	 */
+	readonly proxyWarning: string | null;
 	/** Writable adapter bound when a local folder handle is active. */
 	readonly localAdapter: WritableDirectoryAdapter | null;
 	/** Read-only adapter bound when a remote repository is open. */
@@ -93,25 +113,23 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 	const handles = deps.handles ?? handleStore;
 	const createLocal = deps.createLocalAdapter;
 
-	// ─── Reactive state ────────────────────────────────────────────────────
-	// We use plain mutable variables (not $state) because the store factory
-	// returns a frozen-shape interface. Components that want reactive access
-	// wrap reads in a `$state` cell in their own component; this layer is the
-	// single source of truth and mutability here is OK because callers see a
-	// stable interface.
-	let mode: Mode = 'home';
-	let activeHandle: FileSystemDirectoryHandle | null = null;
-	let recentHandles: HandleRecord[] = [];
-	let localAdapter: WritableDirectoryAdapter | null = null;
-	let remoteAdapter: ReadOnlyDirectoryAdapter | null = null;
+	// ─── Reactive state (Svelte 5 runes) ────────────────────────────────
+	let mode = $state<Mode>('home');
+	let activeHandle = $state<FileSystemDirectoryHandle | null>(null);
+	let recentHandles = $state.raw<HandleRecord[]>([]);
+	let localAdapter = $state<WritableDirectoryAdapter | null>(null);
+	let remoteAdapter = $state<ReadOnlyDirectoryAdapter | null>(null);
+	// CORS proxy warning text. Populated by openRemote from
+	// fetchSubtree's `proxyWarning` field; cleared on signOut. Safe to
+	// expose on the public surface — see the `proxyWarning` getter.
+	let proxyWarning = $state<string | null>(null);
 	// PAT lives ONLY in this closure. Never read after openRemote returns.
+	// Deliberately NOT a rune — keeping it out of the reactivity graph is
+	// a security boundary (NFR-2): no consumer can subscribe to a PAT slot
+	// because there is no PAT slot in the public surface.
 	let _patScope: { url: RepoUrl; branch: Branch } | null = null;
 
-	// ─── Internal helpers ──────────────────────────────────────────────────
-
-	function setMode(next: Mode): void {
-		mode = next;
-	}
+	// ─── Internal helpers ──────────────────────────────────────────────
 
 	function hasRemoteCredentials(): boolean {
 		return _patScope !== null;
@@ -147,19 +165,19 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		return h.requestPermission({ mode: 'readwrite' });
 	}
 
-	// ─── Public actions ────────────────────────────────────────────────────
+	// ─── Public actions ────────────────────────────────────────────────
 
 	async function bootstrap(): Promise<void> {
 		const record = await handles.getActive();
 		if (!record) {
-			setMode('home');
+			mode = 'home';
 			await readRecent();
 			return;
 		}
 		const permission = await tryQueryPermission(record.handle);
 		if (permission !== 'granted') {
 			// Persist as recent but do NOT make it active.
-			setMode('home');
+			mode = 'home';
 			await readRecent();
 			return;
 		}
@@ -167,7 +185,7 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		if (createLocal) {
 			localAdapter = createLocal(record.handle);
 		}
-		setMode('local');
+		mode = 'local';
 		await readRecent();
 	}
 
@@ -176,7 +194,7 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		const effective = permission === 'granted' ? 'granted' : await tryRequestPermission(handle);
 		if (effective !== 'granted') {
 			// User denied; stay on home and surface the recent list.
-			setMode('home');
+			mode = 'home';
 			await readRecent();
 			return;
 		}
@@ -186,7 +204,7 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		_patScope = null;
 		remoteAdapter = null;
 		await persistHandle(handle);
-		setMode('local');
+		mode = 'local';
 	}
 
 	async function switchFolder(): Promise<FileSystemDirectoryHandle | null> {
@@ -206,31 +224,53 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		return handle;
 	}
 
-	async function openRemote(creds: RemoteCredentials, pat: string): Promise<void> {
-		// PAT consumed only inside this closure. We pass it to fetchSubtree
-		// (which forwards it to isomorphic-git's `onAuth`) and then let the
-		// local `pat` binding drop on return. The `_patScope` retains only the
-		// non-secret URL + branch so the rest of the app can know we have
-		// credentials without ever seeing the value.
+	/**
+	 * Consume a raw PAT and return the (non-secret) credentials pair plus
+	 * a read-only remote adapter and the proxy-warning text.
+	 *
+	 * PAT lifetime contract (NFR-2):
+	 *  - The `pat` parameter exists ONLY in this function's argument list.
+	 *  - It is forwarded to `isomorphic-git` via `fetchSubtree`'s `onAuth`
+	 *    callback and then dropped on return.
+	 *  - Nothing outside this function ever observes the PAT value. The
+	 *    returned `scope` is the non-secret `(url, branch)` pair, which
+	 *    the rest of the app uses as the "I have remote credentials"
+	 *    signal without ever seeing the secret.
+	 *  - The returned `adapter` is a read-only surface; there is no path
+	 *    by which a PAT could be carried through it.
+	 */
+	async function consumePatAndFetch(
+		creds: RemoteCredentials,
+		pat: string
+	): Promise<{
+		adapter: ReadOnlyDirectoryAdapter;
+		scope: { url: RepoUrl; branch: Branch };
+		proxyWarning: string;
+	}> {
 		const fetchResult = await fetchSubtree({
 			url: creds.url,
 			branch: creds.branch,
 			pat,
 			depth: 1
 		});
-		// Drop PAT reference; keep only the URL + branch as the "I have
-		// remote credentials" signal. The fetchSubtree result is the
-		// ReadOnlyRemoteAdapter — assignable to ReadOnlyDirectoryAdapter
-		// directly because the structural shape matches (and a future
-		// contributor who tries to call writeTextFile on it will hit the
-		// ReadOnlyDirectoryAdapter surface, which lacks that method).
-		void pat;
-		_patScope = { url: creds.url, branch: creds.branch };
-		remoteAdapter = fetchResult.adapter;
+		return {
+			adapter: fetchResult.adapter,
+			scope: { url: creds.url, branch: creds.branch },
+			proxyWarning: fetchResult.proxyWarning
+		};
+	}
+
+	async function openRemote(creds: RemoteCredentials, pat: string): Promise<void> {
+		const { adapter, scope, proxyWarning: warning } = await consumePatAndFetch(creds, pat);
+		_patScope = scope;
+		remoteAdapter = adapter;
+		// Capture the CORS proxy warning text for the UI (FR-12). Safe
+		// to expose — see the `proxyWarning` getter docstring.
+		proxyWarning = warning;
 		// Remote Mode is read-only; clear any local session markers.
 		activeHandle = null;
 		localAdapter = null;
-		setMode('remote');
+		mode = 'remote';
 	}
 
 	async function signOut(): Promise<void> {
@@ -238,9 +278,10 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		remoteAdapter = null;
 		activeHandle = null;
 		localAdapter = null;
+		proxyWarning = null;
 		await handles.clearActive();
 		await readRecent();
-		setMode('home');
+		mode = 'home';
 	}
 
 	return {
@@ -255,6 +296,9 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		},
 		get hasRemoteCredentials() {
 			return hasRemoteCredentials();
+		},
+		get proxyWarning() {
+			return proxyWarning;
 		},
 		get localAdapter() {
 			return localAdapter;

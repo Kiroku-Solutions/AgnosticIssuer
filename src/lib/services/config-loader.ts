@@ -1,4 +1,4 @@
-import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
+import type { ReadOnlyDirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { Config } from '../types/index.ts';
 
 const CONFIG_PATH = '.nomad.md/config.json';
@@ -132,7 +132,7 @@ function assertConfig(value: unknown): Config {
  *
  * Throws an actionable error if the file is missing or malformed (ERS FR-3).
  */
-export async function loadConfig(adapter: DirectoryAdapter): Promise<Config> {
+export async function loadConfig(adapter: ReadOnlyDirectoryAdapter): Promise<Config> {
 	let text: string;
 	try {
 		text = await adapter.readTextFile(CONFIG_PATH);

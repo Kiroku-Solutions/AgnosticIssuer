@@ -68,12 +68,12 @@ export type SafeHtml = string & { readonly [SAFE_HTML_BRAND]: true };
  * Trade-off: the set holds references to the branded strings, preventing
  * GC. For the PAT and ProxyUrl cases this is fine — these are short-lived
  * (the PAT is dropped when `fetchSubtree` returns; the proxy URL is a
- * module-level constant). For `SafeHtml` we don't need a registry because
- * the renderer wraps the result in a `WeakRef`-friendly shape.
+ * module-level constant). `SafeHtml` is purely a compile-time guard; the
+ * renderer is the only consumer and inspects values through the brand type
+ * alone, so no runtime registry is kept (removed in t1-state-types-layout).
  */
 const PAT_REGISTRY = new Set<string>();
 const PROXY_REGISTRY = new Set<string>();
-const SAFE_HTML_REGISTRY = new Set<string>();
 
 /** Brand a string as a PAT. Only the remote-git module should call this. */
 export function brandPat(value: string): Pat {
@@ -89,7 +89,6 @@ export function brandProxyUrl(value: string): ProxyUrl {
 
 /** Brand a string as sanitised HTML. Only the renderer module should call this. */
 export function brandSafeHtml(value: string): SafeHtml {
-	SAFE_HTML_REGISTRY.add(value);
 	return value as SafeHtml;
 }
 
@@ -101,11 +100,6 @@ export function isBrandedPat(value: unknown): value is Pat {
 /** Runtime check for a {@link ProxyUrl} value. */
 export function isBrandedProxy(value: unknown): value is ProxyUrl {
 	return typeof value === 'string' && PROXY_REGISTRY.has(value);
-}
-
-/** Runtime check for a {@link SafeHtml} value. */
-export function isSafeHtml(value: unknown): value is SafeHtml {
-	return typeof value === 'string' && SAFE_HTML_REGISTRY.has(value);
 }
 
 // ─── Redaction ───────────────────────────────────────────────────────────────
