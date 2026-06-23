@@ -61,6 +61,12 @@ export default defineConfig({
 					// browser globals (window) are read-only and Buffer is absent.
 					exclude: [
 						'src/lib/server/**',
+						// State-layer tests are pure logic and belong to the
+						// `server` Vitest project. The `client` (Chromium)
+						// project would try to run them in a real browser where
+						// `window` is a read-only Window accessor and cannot be
+						// unset to test the not-in-browser guard.
+						'tests/state/**',
 						'tests/adapters/feature-detect.test.ts',
 						'tests/adapters/memory-fs.test.ts',
 						// The local-fs test uses a pure-TS FSA mock; it has no business
