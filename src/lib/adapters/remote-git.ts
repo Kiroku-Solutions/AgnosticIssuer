@@ -8,7 +8,7 @@
  *   never opens pull requests. The user is responsible for version control.
  *   (C-2)
  *
- * - **Partial clone.** Only the `.agnostic-issuer/` subtree of the remote
+ * - **Partial clone.** Only the `.nomad.md/` subtree of the remote
  *   repository is fetched. The rest of the repository is never downloaded.
  *   (FR-12)
  *
@@ -60,8 +60,8 @@ export type Branch = string & { readonly [BRANCH_BRAND]: true };
 /** A 40-char hex SHA. Validated by {@link brandSha}. */
 export type Sha = string & { readonly [SHA_BRAND]: true };
 
-/** A relative POSIX path under the cloned `.agnostic-issuer/` root. */
-export type SubtreePath = `.agnostic-issuer/${string}`;
+/** A relative POSIX path under the cloned `.nomad.md/` root. */
+export type SubtreePath = `.nomad.md/${string}`;
 
 const REPO_URL_RE = /^(https?:\/\/[\w.-]+(\/[\w./\-~]+)*|git@[\w.-]+:[\w./\-~]+)$/;
 const BRANCH_RE = /^[\w./-]{1,255}$/;
@@ -186,7 +186,7 @@ export interface FetchResult {
 	readonly url: RepoUrl;
 	readonly branch: Branch;
 	readonly sha: Sha;
-	/** The adapter rooted at the cloned `.agnostic-issuer/` subtree. */
+	/** The adapter rooted at the cloned `.nomad.md/` subtree. */
 	readonly adapter: ReadonlyRemoteAdapter;
 	/** Cache key under which the clone is stored. */
 	readonly cacheKey: CacheKey;
@@ -215,12 +215,12 @@ export const DEFAULT_CORS_PROXY = 'https://cors.isomorphic-git.org';
 export const DEFAULT_DEPTH = 1;
 
 /** The subtree we always clone. Hard-coded; do not expose as an option. */
-export const SUBTREE = '.agnostic-issuer' as const;
+export const SUBTREE = '.nomad.md' as const;
 
 // ─── Adapter implementation ─────────────────────────────────────────────────
 
 /**
- * Fetch the `.agnostic-issuer/` subtree of a remote Git repository and
+ * Fetch the `.nomad.md/` subtree of a remote Git repository and
  * return a {@link ReadonlyRemoteAdapter} rooted at the subtree.
  *
  * The returned adapter is a *snapshot*: it does not pick up subsequent

@@ -32,7 +32,7 @@ describe('moveToTrash', () => {
 
 		const trashPath = await moveToTrash(fs, 'notes.txt');
 
-		expect(trashPath).toMatch(/^\.agnostic-issuer\/\.trash\/\d+-notes\.txt$/);
+		expect(trashPath).toMatch(/^\.nomad.md\/\.trash\/\d+-notes\.txt$/);
 		expect(trashPath).toContain('-notes.txt');
 
 		const content = await fs.readTextFile(trashPath);
@@ -55,7 +55,7 @@ describe('moveToTrash', () => {
 		expect(timestamp).toBeGreaterThan(0);
 	});
 
-	it('creates .agnostic-issuer/.trash/ implicitly on first move', async () => {
+	it('creates .nomad.md/.trash/ implicitly on first move', async () => {
 		await fs.writeTextFile('todo.txt', 'buy milk');
 
 		await moveToTrash(fs, 'todo.txt');
@@ -77,12 +77,12 @@ describe('moveToTrash', () => {
 	});
 
 	it('handles nested paths correctly', async () => {
-		await fs.writeTextFile('.agnostic-issuer/issues/0001-test.md', 'content');
+		await fs.writeTextFile('.nomad.md/issues/0001-test.md', 'content');
 
-		const trashPath = await moveToTrash(fs, '.agnostic-issuer/issues/0001-test.md');
+		const trashPath = await moveToTrash(fs, '.nomad.md/issues/0001-test.md');
 
 		expect(trashPath).toContain('-0001-test.md');
-		await expect(fs.readTextFile('.agnostic-issuer/issues/0001-test.md')).rejects.toThrow(
+		await expect(fs.readTextFile('.nomad.md/issues/0001-test.md')).rejects.toThrow(
 			AdapterNotFoundError
 		);
 	});
@@ -148,7 +148,7 @@ describe('emptyTrash', () => {
 });
 
 describe('TRASH_DIRECTORY constant', () => {
-	it('is ".agnostic-issuer/.trash"', () => {
-		expect(TRASH_DIRECTORY).toBe('.agnostic-issuer/.trash');
+	it('is ".nomad.md/.trash"', () => {
+		expect(TRASH_DIRECTORY).toBe('.nomad.md/.trash');
 	});
 });

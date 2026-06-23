@@ -42,8 +42,8 @@ import {
 import { AdapterError, RemoteAuthError, RemoteFetchError } from '$lib/adapters/errors';
 
 describe('public constants', () => {
-	it('SUBTREE is ".agnostic-issuer"', () => {
-		expect(SUBTREE).toBe('.agnostic-issuer');
+	it('SUBTREE is ".nomad.md"', () => {
+		expect(SUBTREE).toBe('.nomad.md');
 	});
 
 	it('DEFAULT_DEPTH is 1 (ERS Appendix D)', () => {
@@ -57,7 +57,7 @@ describe('public constants', () => {
 
 describe('makeCacheKey', () => {
 	it('produces "<url>|<branch>|<sha>"', () => {
-		const url = 'https://github.com/agnostic-issuer/test' as RepoUrl;
+		const url = 'https://github.com/nomad-md/test' as RepoUrl;
 		const branch = 'main' as Branch;
 		const sha = 'a'.repeat(40) as Sha;
 		expect(makeCacheKey(url, branch, sha)).toBe(`${url}|${branch}|${sha}`);

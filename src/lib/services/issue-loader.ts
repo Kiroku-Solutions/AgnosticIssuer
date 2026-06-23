@@ -2,10 +2,10 @@ import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { LoadedIssue } from '../types/index.ts';
 import { parseIssueFile } from './parser.ts';
 
-const ISSUES_DIR = '.agnostic-issuer/issues';
+const ISSUES_DIR = '.nomad.md/issues';
 
 /**
- * Load and parse every `*.md` file under `.agnostic-issuer/issues/`.
+ * Load and parse every `*.md` file under `.nomad.md/issues/`.
  *
  * A missing issues directory is treated as an empty set (the user simply
  * has no issues yet). Malformed individual issues are skipped with the

@@ -2,7 +2,7 @@ import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { FieldType, Template } from '../types/index.ts';
 import { FIELD_TYPES } from '../types/index.ts';
 
-const TEMPLATES_DIR = '.agnostic-issuer/templates';
+const TEMPLATES_DIR = '.nomad.md/templates';
 
 const VALID_FIELD_TYPES: ReadonlySet<FieldType> = new Set<FieldType>(FIELD_TYPES);
 
@@ -78,7 +78,7 @@ function assertTemplate(value: unknown, filename: string): Template {
 }
 
 /**
- * Load every `*.json` file under `.agnostic-issuer/templates/`.
+ * Load every `*.json` file under `.nomad.md/templates/`.
  *
  * Malformed templates abort the load with an actionable error (the editor
  * cannot function without a schema).
@@ -90,7 +90,7 @@ export async function loadTemplates(adapter: DirectoryAdapter): Promise<Template
 	} catch (cause) {
 		throw new Error(
 			`Could not list ${TEMPLATES_DIR}: ${(cause as Error).message}. ` +
-				'Make sure the selected folder contains an AgnosticIssuer setup.',
+				'Make sure the selected folder contains a nomad.md setup.',
 			{ cause }
 		);
 	}

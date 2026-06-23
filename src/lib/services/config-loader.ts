@@ -1,7 +1,7 @@
 import type { DirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { Config } from '../types/index.ts';
 
-const CONFIG_PATH = '.agnostic-issuer/config.json';
+const CONFIG_PATH = '.nomad.md/config.json';
 
 function isString(value: unknown): value is string {
 	return typeof value === 'string' && value.length > 0;
@@ -57,7 +57,7 @@ function assertConfig(value: unknown): Config {
 }
 
 /**
- * Load and validate `.agnostic-issuer/config.json`.
+ * Load and validate `.nomad.md/config.json`.
  *
  * Throws an actionable error if the file is missing or malformed (ERS FR-3).
  */
@@ -68,8 +68,8 @@ export async function loadConfig(adapter: DirectoryAdapter): Promise<Config> {
 	} catch (cause) {
 		throw new Error(
 			`Could not read ${CONFIG_PATH}. ` +
-				'Make sure the selected folder contains an AgnosticIssuer setup ' +
-				'(a `.agnostic-issuer/config.json` file). ' +
+				'Make sure the selected folder contains a nomad.md setup ' +
+				'(a `.nomad.md/config.json` file). ' +
 				`Underlying error: ${(cause as Error).message}`,
 			{ cause }
 		);

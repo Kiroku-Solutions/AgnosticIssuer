@@ -91,7 +91,7 @@ export class LocalFsAdapter implements DirectoryAdapter {
 			// The `id` lets the browser remember the user's choice per origin,
 			// so subsequent calls skip the picker and re-request permission.
 			handle = await window.showDirectoryPicker({
-				id: 'agnostic-issuer-folder',
+				id: 'nomad-md-folder',
 				mode: 'readwrite'
 			});
 		} catch (cause) {

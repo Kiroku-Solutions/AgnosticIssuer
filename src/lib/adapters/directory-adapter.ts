@@ -3,7 +3,7 @@
  *
  * Both the FSA-backed implementation (step 4) and the in-memory test mock
  * implement this interface. Paths are POSIX-style and relative to the adapter
- * root, e.g. `.agnostic-issuer/config.json`.
+ * root, e.g. `.nomad.md/config.json`.
  *
  * The service layer treats the adapter as opaque: it never sees a
  * `FileSystemDirectoryHandle` or any other browser-specific type.
