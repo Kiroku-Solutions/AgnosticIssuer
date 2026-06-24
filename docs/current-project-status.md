@@ -1,6 +1,6 @@
 # Current Project Status — nomad\.md
 
-> Last updated at end of **Step 5** of the v0 plan.
+> Last updated at end of **Step 6** of the v0 plan.
 > Source of truth for what is currently implemented and what comes next.
 
 ## Goal (v0, locked-in scope)
@@ -18,7 +18,7 @@ ERS scope covered by v0: FR-1, FR-2, FR-3, FR-4, FR-5 (read-only), FR-8, FR-9, F
 | 3   | Service layer (parser, serializer, integrity, validator, slugs, loaders)                                          | **Done** |
 | 4   | Adapter layer (directory adapter, local-fs, memory-fs, handle-store, renderer, remote-git) + integration test e2e | **Done** |
 | 5   | State layer (9 runes-based stores + barrel + integration test)                                                    | **Done** |
-| 6   | UI layer (layout, home, local views, editor, components)                                                          | Pending  |
+| 6   | UI layer (chrome, home, local + remote views, editor, settings, a11y, CSP, i18n)                                  | **Done** |
 | 7   | Service-layer tests + adapter memory-fs mock                                                                      | Pending  |
 | 8   | Verify (`pnpm check && pnpm lint && pnpm test`) + manual smoke test                                               | Pending  |
 
@@ -391,11 +391,193 @@ Before declaring Step 5 Done, the author should be able to answer yes to all of 
 
 ## Next step
 
-**Step 6 — UI layer.** Build the presentation layer using Svelte components. This includes the layout, home view, local and remote views, the editor, and general components.
+**Step 7 + Step 8** — wire up the remaining service-layer holes, then
+verify + run the manual smoke. The v0 contract is "local CRUD on the
+desktop, read-only remote on the web, every string ready for i18n,
+every surface passes WCAG 2.1 AA, every byte that ships is
+integrity-stamped and CSP-bounded." Step 7 polishes what's there; it
+does not add new product surfaces.
 
-### Step 6 scope
-- `+layout.svelte` (global routing and mode switching)
-- `home` view (welcome screen, open local/remote)
-- `local` and `remote` views (list, kanban, gantt)
-- `editor` (issue creation and editing panel)
-- Shared UI components (buttons, dialogs, warnings)
+### Step 7 scope (carry-overs from Step 6)
+
+- **`configStore.save()` writer** — unblocks the CORS-proxy field in
+  the Settings panel (currently read-only with a "coming in a
+  follow-up" note).
+- **`onRefreshSuccess` wiring** — the `modeStore.refreshRemote` method
+  accepts an `onRefreshSuccess` callback that defaults to a no-op; the
+  layout has not yet wired a "re-load issues / config / templates"
+  callback after a successful remote refresh.
+- **`createUiStore`** — a new `src/lib/state/ui.svelte.ts` with
+  `settingsOpen` + `editorOpen` slots. Unblocks the 6I "skip when
+  Settings panel is open" guard in `FilterUrlSync`; opens the door
+  to keyboard-trap coordination between the editor and the settings
+  panel.
+- **Per-key `clearCache` surface in `modeStore`** — unblocks the
+  "Clear remote cache" command in Settings (currently disabled with a
+  tooltip).
+- **Type-change confirm dialog** in the editor (currently the type
+  field is read-only with a tooltip).
+- **Live `RUN_LIVE_TESTS=1` remote integration** — the carry-over
+  from Step 4 (`tests/adapters/remote-git.live.test.ts`).
+- **Service-layer test coverage** — round-trip tests for every
+  service module that is currently only covered by the integration
+  test in `tests/services/integration.test.ts`.
+
+### Step 8 scope (verify + manual smoke)
+
+- **Human runs the smoke at `docs/smoke-tests/step-6.md`** in Chromium
+  (Local Mode) and Firefox (Remote Mode). The agent-environment
+  verification subset is documented in
+  `docs/smoke-tests/step-6-results.md`.
+- **Real screen-reader smoke** on NVDA / VoiceOver / Orca.
+- **High-contrast mode** (`forced-colors: active` media query).
+- **Gantt long descriptions** (`aria-describedby` + a hidden prose
+  block).
+- **YAML cosmetic divergences** (date quoting, block vs flow style).
+- **Per-build CSP nonce** (v1 fix: promote the no-flash script to a
+  separate file under `static/`).
+- **`pako` → `fflate` swap** (drops ~30 KB from the bundle and
+  removes the only CSP allow-list entry).
+- **Mobile breakpoints** (NFR-5 explicitly excludes mobile in v1;
+  revisit post-launch).
+- **Fuzz / property-based tests**.
+- **Coverage on `local-fs.ts` + `handle-store.ts`** in the `client`
+  Vitest project.
+- **Kanban DnD Enter/Space keybinding** — full keyboard parity test.
+- **`pnpm check && pnpm lint && pnpm test && pnpm build && pnpm audit`**
+  green at the end.
+
+Full Step 6 retrospective lives in
+`docs/changelogs/step-6-report.md`. The smoke scripts are at
+`docs/smoke-tests/step-6.md` and `docs/smoke-tests/step-6-results.md`.
+The a11y audit is at `docs/audits/2026-06-23/step-6-a11y.md`; the
+CSP / SRI / Trusted Types audit is at
+`docs/audits/2026-06-23/step-6-csp.md`.
+
+---
+
+## Step 6 — what landed (Chrome + Polish)
+
+Step 6 turned the reactive store graph into a working SPA. The
+chrome — three-region layout, home hero with recent folders,
+three-view local mode with DnD, read-only remote view, template-
+driven editor with Markdown preview, settings panel, global
+integrity-warning banner, filter URL sync, single-map i18n, a11y
+audit, CSP + SRI + Trusted Types — ships in 13 sub-phases (6A
+through 6M). 815 tests pass (+201 since Step 5's 614); the
+verification chain is green.
+
+### Files added
+
+| Group                  | Files                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Design system / tokens | `src/lib/ui/tokens.css` (107 lines), `src/lib/ui/colors.ts`, `src/lib/ui/format.ts`, `src/lib/ui/index.ts`, `src/lib/ui/strings.ts` (405 lines), `src/app.html` (no-flash + CSP meta fallbacks), `src/routes/layout.css` (`@plugin 'daisyui';`)                                                                     |
+| Primitive library      | 17 thin Svelte 5 wrappers under `src/lib/ui/`: `Alert`, `Badge`, `Button`, `Card`, `Checkbox`, `EmptyState`, `IconButton`, `Input`, `Menu`, `Modal`, `Radio`, `Select`, `Skeleton`, `Tabs`, `Textarea`, `Toolbar`, `Tooltip`                                                                                          |
+| Components             | `AppShell`, `EditorPanel`, `EmptyTrashModal`, `FilterBar`, `FilterUrlSync`, `FormFields`, `GanttView`, `HowItWorksStrip`, `IntegrityWarningBanner`, `KanbanView`, `LeftRail`, `ListView`, `LocalToolbar`, `MarkdownPreview`, `NewIssueModal`, `ProxyWarningBanner`, `RecentFoldersList`, `RefreshPatPrompt`, `RemoteToolbar`, `SettingsPanel`, `ThemeToggle`, `TopBar` (under `src/lib/components/`) |
+| Routes                 | `src/routes/+layout.svelte` (rewrite), `src/routes/+page.svelte` (rewrite), `src/routes/local/+page.svelte` (rewrite), `src/routes/remote/+page.svelte` (rewrite), `src/routes/wizard/+page.svelte` (re-skin)                                                                                                       |
+| State                  | `src/lib/state/mode.svelte.ts` (`refreshRemote`, `lastFetchedAt`, `RemotePatRequiredError`), `src/lib/state/theme.svelte.ts` (`system` preference + `matchMedia` listener)                                                                                                                                           |
+| Static / hosting       | `static/_headers`, `static/_redirects`                                                                                                                                                                                                                                                                             |
+| Lint scripts           | `scripts/check-i18n.mjs` (346 lines), `scripts/check-csp.mjs` (306 lines), `scripts/add-sri.mjs` (polished)                                                                                                                                                                                                          |
+| Tests                  | `tests/ui/{tabs,modal,app-shell,recent-folders,kanban-dnd,list-keyboard,remote-toolbar,form-fields,markdown-preview,settings-panel,filter-url-sync,strings}.svelte.test.ts`, `tests/ui/{KanbanDndHarness,MarkdownPreviewHarness,ModalHarness,TabsHarness,FilterUrlSyncHarness}.svelte`, `tests/a11y/{step-6.a11y,keyboard-nav}.test.ts`, `tests/state/mode.refresh-remote.test.ts` |
+| Docs                   | `docs/step-6-ui-layer-plan.md`, `docs/audits/2026-06-23/step-6-a11y.md`, `docs/audits/2026-06-23/step-6-csp.md`, `docs/hosting/github-pages.md`, `docs/changelogs/step-6-report.md`, `docs/smoke-tests/step-6.md`, `docs/smoke-tests/step-6-results.md`, `SECURITY.md` (updated)                                       |
+
+### Files modified
+
+- `package.json` — added `axe-core@^4.12.1`; `svelte-dnd-action@^0.9.70`
+  (the ERS-listed dep that was never installed); wired
+  `check-i18n` + `check-csp` into `pnpm lint`.
+- `pnpm-lock.yaml` — refreshed.
+- `vite.config.ts` — extended `optimizeDeps.include` with 30
+  lucide-svelte icons (used across the chrome) and a wildcard
+  exclude for `tests/ui/*.svelte.test.ts`.
+- `src/lib/index.ts` — re-exports.
+- `src/lib/state/index.ts` — `RemotePatRequiredError` export.
+- `tests/state/theme.test.ts` — +8 cases for the system preference.
+
+### Key design decisions
+
+- **Hybrid design system (per `docs/step-6-ui-layer-plan.md` §3).**
+  daisyUI 5 for primitives (Button, Input, Tabs, Modal, …); custom
+  hero surfaces (TopBar, LeftRail, Home, Editor, Wizard, Settings,
+  Integrity banner). The two systems don't overlap — primitives
+  consume daisyUI classes, hero surfaces consume `tokens.css`.
+- **`svelte-dnd-action` for Kanban DnD.** Full keyboard parity
+  (mouse, touch, ←/→/↑/↓/Enter). Remote Mode makes the drop a no-op
+  with a tooltip.
+- **Template-driven editor (FormFields).** Maps every field type
+  (`text`, `date`, `number`, `select`, `multi-select`, `user`,
+  `relations`) to the right 6B primitive; obligatory fields show a
+  `*`; inline errors from `editor.errors` filtered by field key.
+- **Three-way theme picker with `matchMedia` listener.** The
+  `effectiveTheme` getter resolves `'system'` via
+  `matchMedia('(prefers-color-scheme: dark)').matches`; the listener
+  re-resolves on every OS theme change.
+- **Single-map i18n.** `src/lib/ui/strings.ts` (405 lines, flat-but-
+  grouped by surface) + a `t(key, params?)` helper. The
+  `scripts/check-i18n.mjs` lint fails the build if any literal
+  English string lands in a `.svelte` file outside the map.
+- **Minimum-viable CSP + Trusted Types + SRI.** `static/_headers`
+  ships the audit's CSP template with a small strengthening (added
+  `blob:` for DOMPurify image sinks + the `trusted-types nomad-md
+  dompurify default` policy name). Every `<link rel="modulepreload">`
+  and module `<script>` is stamped with `integrity="sha384-…"` via
+  `scripts/add-sri.mjs`. `scripts/check-csp.mjs` scans the build
+  output for `eval(`, `Function(`, `document.write(`.
+
+### Verification
+
+| Check                                                          | Result                                                                                              |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                                   | 0 errors, 0 warnings                                                                                |
+| `pnpm lint` (Prettier + ESLint + `check-i18n` + `check-csp`)   | Clean; `0 hard-coded English strings across 27 .svelte files`; `0 violations, 1 allow-listed warning(s)` (pako) |
+| `pnpm test`                                                    | **815 passing**, 1 skipped across **51 files** (+201 vs Step 5's 614)                              |
+| `pnpm build`                                                   | Succeeds; `build/_headers`, `build/_redirects`, `build/integrity.json` emitted                      |
+| `pnpm audit`                                                   | 0 advisories                                                                                        |
+| WCAG 2.1 AA (axe-core 4.12.1)                                  | 0 serious + critical violations across 9 surfaces                                                   |
+| Keyboard-only walkthrough (UC-1)                               | 6 cases in `tests/a11y/keyboard-nav.test.ts`                                                        |
+
+### Security / quality items folded into Step 6 (all closed)
+
+- **Transport-layer headers (CSP / HSTS / X-Content-Type-Options /
+  Referrer-Policy / Permissions-Policy / COOP / COEP / CORP).**
+  Scorecard moves from 1/5 → 5/5. Shipped in `static/_headers`.
+- **Subresource Integrity.** Every modulepreload + module script
+  stamped with `integrity="sha384-…"` + `crossorigin="anonymous"`.
+  `build/integrity.json` emitted; re-read verification confirms no
+  partial-write failure mode.
+- **Trusted Types.** `require-trusted-types-for 'script'` +
+  `trusted-types nomad-md dompurify default`. DOMPurify is the
+  documented Trusted Types sink.
+- **GitHub Pages equivalent.** `docs/hosting/github-pages.md`
+  documents the `<meta http-equiv>` fallback (covers
+  `frame-ancestors 'none'`) and the residual HSTS / Trusted Types
+  gap when shipping on a host that doesn't honour `_headers`.
+- **CVE-2026-53550 (js-yaml ≤4.1.1) + CVE-2024-47764 (cookie
+  <0.7.0).** Both stay at 0 via the `pnpm.overrides` from Step 5.
+
+### Known gaps / follow-ups (carry into Step 7 / 8)
+
+- `onRefreshSuccess` dep in `ModeStore` is unwired (6F hand-off).
+- `FilterUrlSync` "skip when Settings panel is open" guard is
+  deferred (6I hand-off).
+- `pako` → `fflate` swap (6L follow-up; drops the only CSP
+  allow-list entry).
+- Per-build CSP nonce (6L follow-up).
+- Real screen-reader smoke (6K follow-up).
+- In-app template editor (the wizard's "Create your own" disabled
+  radio).
+- `configStore.save()` writer for the CORS proxy.
+- Mobile breakpoints (NFR-5 explicitly excludes mobile in v1; the
+  design degrades to single column at `md:`-width without
+  horizontal scroll on every surface except the Editor's 40 rem
+  fixed drawer).
+- Fuzz / property-based tests (deferred to Step 8 polish).
+- The "Empty trash" + "Clear remote cache" affordances are wired
+  (trash works; cache is disabled with a tooltip until the per-key
+  surface is exposed).
+- Coverage on `local-fs.ts` and `handle-store.ts` (the `client`
+  Vitest project doesn't enable coverage instrumentation by
+  default).
+- Kanban DnD Enter/Space keybinding (6E's open question #4).
+- Gantt `aria-roledescription` + bar-by-bar descriptions (6K's open
+  follow-up).
