@@ -1,14 +1,27 @@
 <!--
-	GanttView — plain-SVG horizontal timeline (FR-6, NFR-4). Auto-fit X
-	axis to min/max start/end dates; default `group_by = 'issue_type'`
-	(honours `config.gantt.group_by`). Dependency arrows for blocks /
-	depends_on when both endpoints are dated. Click a bar → editor.open.
+	GanttView.svelte — plain-SVG horizontal timeline (FR-6, NFR-4).
+	Auto-fit X axis to min/max start/end dates; default
+	`group_by = 'issue_type'` (honours `config.gantt.group_by`).
+	Dependency arrows for blocks / depends_on when both endpoints
+	are dated. Click a bar → editor.open.
+
+	Sub-phase 6E polish:
+	  - `colorFor(type)` now reads from `templatesStore.byType`; the
+	    hard-coded 4-entry palette is gone. A deterministic 32-bit
+	    hash → oklch fallback (see `$lib/ui/colors.ts`) covers
+	    templates without a `color`.
+	  - Empty state: when no issues are dated, render a 6B `EmptyState`
+	    (hero surface, with the standard icon + title + body).
+	    The existing textual fallback `<details>` block is preserved
+	    so screen readers and keyboard users have a tabular view too.
 -->
 <script lang="ts">
 	import { getStores, brandIssueId, type IssueId } from '$lib/state';
+	import { EmptyState } from '$lib/ui';
+	import { fallbackColor } from '$lib/ui/colors';
 	import type { LoadedIssue } from '$lib/types';
 
-	const { issues, filter, config, editor } = getStores();
+	const { issues, filter, config, editor, templates } = getStores();
 
 	const COL_W = 200;
 	const ROW_H = 28;
@@ -203,106 +216,120 @@
 		Math.max(PAD_T + AXIS_H + groupKeys.length * (ROW_H + GAP) + PAD_B, 120)
 	);
 
-	const palette: Record<string, string> = {
-		epic: '#f97316',
-		'user-story': '#0ea5e9',
-		task: '#10b981',
-		bug: '#e74c3c'
-	};
-	const colorFor = (t: string): string => palette[t] ?? '#64748b';
+	/**
+	 * Look up a colour for a given issue type. Reads
+	 * `templatesStore.byType`; falls back to a deterministic
+	 * hash → oklch colour (see `$lib/ui/colors.ts`) so missing
+	 * template colours never blow up the renderer. The lookup
+	 * is a pure function of the inputs (no `Date.now()` or
+	 * randomness) so it is SSR-safe.
+	 */
+	function colorFor(t: string): string {
+		const fromTemplate = templates.byType.get(t)?.color;
+		return fromTemplate ?? fallbackColor(t);
+	}
 
 	function open(id: IssueId): void {
 		editor.open(id);
 	}
+
+	const isEmpty = $derived(grouped.length === 0 && undated.length === 0);
 </script>
 
-<div class="p-4 space-y-6">
-	<div class="overflow-x-auto bg-base-100 border border-base-300 rounded">
-		<svg
-			role="img"
-			aria-label="Gantt timeline"
-			width={svgWidth}
-			height={svgHeight}
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<defs>
-				<marker
-					id="gantt-arrow"
-					viewBox="0 0 10 10"
-					refX="9"
-					refY="5"
-					markerUnits="strokeWidth"
-					markerWidth="8"
-					markerHeight="8"
-					orient="auto-start-reverse"
-				>
-					<path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
-				</marker>
-			</defs>
+<div class="space-y-6 p-4">
+	{#if isEmpty}
+		<EmptyState
+			title="No issues are scheduled yet"
+			body="Add start and end dates to issues in the Editor to see them on the Gantt."
+		/>
+	{:else}
+		<div class="overflow-x-auto rounded border border-base-300 bg-base-100">
+			<svg
+				role="img"
+				aria-label="Gantt timeline"
+				width={svgWidth}
+				height={svgHeight}
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<defs>
+					<marker
+						id="gantt-arrow"
+						viewBox="0 0 10 10"
+						refX="9"
+						refY="5"
+						markerUnits="strokeWidth"
+						markerWidth="8"
+						markerHeight="8"
+						orient="auto-start-reverse"
+					>
+						<path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+					</marker>
+				</defs>
 
-			<g>
-				<line
-					x1={PAD_L}
-					y1={PAD_T + AXIS_H - 1}
-					x2={svgWidth - PAD_R}
-					y2={PAD_T + AXIS_H - 1}
-					stroke="#cbd5e1"
-				/>
-				{#each axisTicks as t (t.x)}
-					<line x1={t.x} y1={PAD_T + 8} x2={t.x} y2={PAD_T + AXIS_H - 1} stroke="#e2e8f0" />
-					<text x={t.x} y={PAD_T + 12} font-size="10" fill="#64748b" text-anchor="middle"
-						>{t.label}</text
+				<g>
+					<line
+						x1={PAD_L}
+						y1={PAD_T + AXIS_H - 1}
+						x2={svgWidth - PAD_R}
+						y2={PAD_T + AXIS_H - 1}
+						stroke="#cbd5e1"
+					/>
+					{#each axisTicks as t (t.x)}
+						<line x1={t.x} y1={PAD_T + 8} x2={t.x} y2={PAD_T + AXIS_H - 1} stroke="#e2e8f0" />
+						<text x={t.x} y={PAD_T + 12} font-size="10" fill="#64748b" text-anchor="middle"
+							>{t.label}</text
+						>
+					{/each}
+				</g>
+
+				{#each groupKeys as g, i (g)}
+					<text x={8} y={yFor(i, 0) + BAR_H / 2 + 4} font-size="11" font-weight="600" fill="#475569"
+						>{g}</text
 					>
 				{/each}
-			</g>
 
-			{#each groupKeys as g, i (g)}
-				<text x={8} y={yFor(i, 0) + BAR_H / 2 + 4} font-size="11" font-weight="600" fill="#475569"
-					>{g}</text
-				>
-			{/each}
-
-			{#each bars as bar (bar.id)}
-				<g
-					class="cursor-pointer"
-					onclick={() => open(bar.id)}
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							open(bar.id);
-						}
-					}}
-					role="button"
-					tabindex="0"
-					aria-label={`Issue ${bar.id}: ${bar.title}`}
-				>
-					<rect
-						x={bar.x}
-						y={bar.y}
-						width={bar.w}
-						height={bar.h}
-						rx="3"
-						ry="3"
-						fill={colorFor(bar.type)}
-						opacity="0.85"
-					/>
-					<text x={bar.x + 6} y={bar.y + bar.h / 2 + 4} font-size="11" fill="#fff">
-						{bar.title.length > 30 ? bar.title.slice(0, 30) + '…' : bar.title}
-					</text>
-				</g>
-			{/each}
-
-			<g fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#gantt-arrow)">
-				{#each arrows as a, i (i)}
-					<path d={a.d} />
+				{#each bars as bar (bar.id)}
+					<g
+						class="cursor-pointer"
+						onclick={() => open(bar.id)}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								open(bar.id);
+							}
+						}}
+						role="button"
+						tabindex="0"
+						aria-label={`Issue ${bar.id}: ${bar.title}`}
+					>
+						<rect
+							x={bar.x}
+							y={bar.y}
+							width={bar.w}
+							height={bar.h}
+							rx="3"
+							ry="3"
+							fill={colorFor(bar.type)}
+							opacity="0.85"
+						/>
+						<text x={bar.x + 6} y={bar.y + bar.h / 2 + 4} font-size="11" fill="#fff">
+							{bar.title.length > 30 ? bar.title.slice(0, 30) + '…' : bar.title}
+						</text>
+					</g>
 				{/each}
-			</g>
-		</svg>
-	</div>
 
-	<details class="bg-base-200 rounded p-3 text-sm">
+				<g fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#gantt-arrow)">
+					{#each arrows as a, i (i)}
+						<path d={a.d} />
+					{/each}
+				</g>
+			</svg>
+		</div>
+	{/if}
+
+	<details class="rounded bg-base-200 p-3 text-sm">
 		<summary class="cursor-pointer font-semibold">Textual fallback (NFR-4 accessibility)</summary>
-		<div class="overflow-x-auto mt-3">
+		<div class="mt-3 overflow-x-auto">
 			<table class="table table-zebra table-xs">
 				<thead>
 					<tr>
@@ -337,7 +364,7 @@
 					{/each}
 					{#if bars.length === 0 && undated.length === 0}
 						<tr>
-							<td colspan="7" class="text-center opacity-60 py-6"
+							<td colspan="7" class="py-6 text-center opacity-60"
 								>No issues match the current filter.</td
 							>
 						</tr>
