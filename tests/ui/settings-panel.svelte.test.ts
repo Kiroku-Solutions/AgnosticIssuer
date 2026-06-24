@@ -112,14 +112,17 @@ function buildStub(opts: {
 			switchFolder: () => Promise.resolve(null),
 			openRemote: () => Promise.resolve(),
 			refreshRemote: () => Promise.resolve(),
+			clearRemoteCache: () => Promise.resolve(),
 			signOut: () => Promise.resolve()
 		},
 		config: {
 			config,
 			status: 'ready',
 			error: null,
+			isReadOnly: !opts.hasLocalAdapter,
 			load: () => Promise.resolve(),
-			refresh: () => Promise.resolve()
+			refresh: () => Promise.resolve(),
+			save: () => Promise.resolve()
 		},
 		templates: {
 			templates: [],
@@ -180,6 +183,16 @@ function buildStub(opts: {
 				setThemeCalls.push(t);
 			},
 			toggle: () => {}
+		},
+		ui: {
+			settingsOpen: false,
+			openSettings: () => {},
+			closeSettings: () => {},
+			toggleSettings: () => {},
+			editorOpen: false,
+			openEditor: () => {},
+			closeEditor: () => {},
+			toggleEditor: () => {}
 		}
 	};
 }

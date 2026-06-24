@@ -153,7 +153,13 @@ export default defineConfig({
 						// The integration test exercises the full parse → serialize
 						// pipeline through `parseIssueFile`. Runs only in the
 						// `server` project.
-						'tests/services/integration.test.ts'
+						'tests/services/integration.test.ts',
+						// Phase 7E: post-build header / SRI / CSP nonce tests
+						// read `build/`, `static/_headers`, and
+						// `scripts/check-csp.mjs` from disk. Chromium has no
+						// `node:fs` and the `build/` directory may not exist
+						// in a fresh checkout. Run only in the `server` project.
+						'tests/build/**'
 					]
 				}
 			},

@@ -247,7 +247,13 @@ export const STRINGS = {
 			'Issue type cannot be changed after creation — create a new issue instead.',
 		assigneePlaceholder: 'Unassigned',
 		selectPlaceholder: 'Select…',
-		noIssues: 'No issues'
+		noIssues: 'No issues',
+		changeTypeTitle: 'Change issue type?',
+		changeTypeBody: (params: Params) =>
+			`Switching from "${params.old}" to "${params.new}" will reload the editor with the new template. Unsaved changes will be lost.`,
+		changeTypeConfirm: 'Change type',
+		changeTypeCancel: 'Cancel',
+		changeTypeAria: (params: Params) => `Confirm change from ${params.old} to ${params.new}`
 	},
 
 	markdown: {
@@ -270,7 +276,10 @@ export const STRINGS = {
 		recentHeading: 'Recent folders',
 		commandsHeading: 'Commands',
 		clearCache: 'Clear remote cache',
-		clearCacheRemoteTooltip: 'Clear cached remote clones (per-key) — wired in a follow-up',
+		clearCacheBusy: 'Clearing…',
+		clearCacheDone: 'Cache cleared. The next refresh will re-fetch the subtree.',
+		clearCacheError: (params: Params) => `Failed to clear cache: ${params.message}`,
+		clearCacheRemoteTooltip: 'Clear the cached remote clone for this repository',
 		clearCacheSignInTooltip: 'Sign in to a remote repository to enable this',
 		emptyTrash: (params: Params) => `Empty trash${Number(params.n) > 0 ? ` (${params.n})` : ''}`,
 		emptyTrashLocalTooltip: 'Empty the local .nomad.md/.trash/ folder',

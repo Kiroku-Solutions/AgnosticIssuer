@@ -40,9 +40,23 @@
  *     always available and is what isomorphic-git's packfile
  *     reader uses in practice. Pattern: the literal
  *     `if(u=Function(\`binder\`` is unique to pako's
- *     `inflate.cmp` style bundle. Follow-up: replace pako
- *     with a CSP-compatible inflate (e.g. fflate) or refactor
- *     the bundle to disable the fast path.
+ *     `inflate.cmp` style bundle.
+ *
+ *     **Phase 7E** attempted to swap pako for `fflate` via
+ *     `pnpm.overrides`. The override is incompatible:
+ *     fflate has no `default` export, but isomorphic-git
+ *     does `import pako from 'pako'`, and the two libraries
+ *     differ in the streaming inflate shape (fflate's
+ *     `Inflate` is callback-based; pako's is stream-push).
+ *     The Phase 7E fallback ("remove pako from the
+ *     allow-list") also fails because pako IS in the runtime
+ *     bundle (it's a transitive dep of `isomorphic-git`,
+ *     not of `@isomorphic-git/lightning-fs` as the task
+ *     description suggested). See `deliverable.md` for the
+ *     full investigation. The pako allow-list is therefore
+ *     kept; the `Function(\`binder\`)` substring remains
+ *     in the bundle, but is gated behind `option.fast` in
+ *     pako's source and is never executed at runtime.
  *
  * ## Exit codes
  *  - 0 — no violations, or only allow-listed warnings.
@@ -107,9 +121,22 @@ const ALLOWLIST = [
 		// §"Known third-party CSP issues". The marker
 		// `if(u=Function(\`binder\`` is unique to pako's
 		// `inflate.cmp` style bundle.
+		//
+		// Phase 7E attempted to swap pako for fflate via
+		// `pnpm.overrides`; the override is incompatible
+		// (fflate has no `default` export, but isomorphic-git
+		// does `import pako from 'pako'`). The
+		// `Function(\`binder\`)` substring is therefore
+		// kept in the bundle; it is dead code at runtime
+		// (pako only invokes it when `option.fast` is set,
+		// and isomorphic-git does not set it). The CSP
+		// `script-src` does not include `'unsafe-eval'`,
+		// so the browser would reject the call even if it
+		// were reached. See the `## Allow-list` section
+		// above for the full rationale.
 		matcher: 'Function(`binder`',
 		pattern: 'Function()',
-		note: 'pako inflate fast path; replace with fflate or refactor the fast path off.'
+		note: 'pako inflate fast path; gated behind option.fast, never invoked by isomorphic-git.'
 	}
 ];
 

@@ -19,7 +19,7 @@ ERS scope covered by v0: FR-1, FR-2, FR-3, FR-4, FR-5 (read-only), FR-8, FR-9, F
 | 4   | Adapter layer (directory adapter, local-fs, memory-fs, handle-store, renderer, remote-git) + integration test e2e | **Done** |
 | 5   | State layer (9 runes-based stores + barrel + integration test)                                                    | **Done** |
 | 6   | UI layer (chrome, home, local + remote views, editor, settings, a11y, CSP, i18n)                                  | **Done** |
-| 7   | Service-layer tests + adapter memory-fs mock                                                                      | Pending  |
+| 7   | Service-layer tests + state/UI/bundle carry-overs                                                                 | **Done** |
 | 8   | Verify (`pnpm check && pnpm lint && pnpm test`) + manual smoke test                                               | Pending  |
 
 ---
@@ -572,3 +572,292 @@ verification chain is green.
 - Kanban DnD Enter/Space keybinding (6E's open question #4).
 - Gantt `aria-roledescription` + bar-by-bar descriptions (6K's open
   follow-up).
+
+---
+
+## Step 7 — what landed (Service-layer tests + state/UI/bundle carry-overs)
+
+Step 7 closed the test-coverage gap on the service layer and finished the
+state/UI/bundle carry-overs from Step 6. **1025 tests pass** (1 skipped)
+— up from 815 at the end of Step 6 (+210 new tests).
+
+### Service-layer test coverage (the original Phase 7 scope)
+
+Every service module now has a dedicated unit test file:
+
+| Test file                                       | Tests | Module                                                |
+| ----------------------------------------------- | ----- | ----------------------------------------------------- |
+| `tests/services/slugs.test.ts`                  | 10    | `slugs.ts`                                            |
+| `tests/services/frontmatter.test.ts`            | 8     | `frontmatter.ts` (gray-matter replacement)            |
+| `tests/services/parser.test.ts`                 | 12    | `parser.ts` (frontmatter + sections + integrity)      |
+| `tests/services/issue-loader.test.ts`           | 6     | `issue-loader.ts`                                     |
+| `tests/services/issue-saver.test.ts`            | 8     | `issue-saver.ts` (create + save)                      |
+| `tests/services/issue-trash.test.ts`            | 7     | `issue-trash.ts` (typed + adapter-fallback)           |
+| `tests/services/wizard.test.ts`                 | 8     | `wizard.ts` (FR-11 atomic write)                      |
+| `tests/services/built-in-templates.test.ts`     | 12    | `built-in-templates.ts` (ERS §6.4)                    |
+
+The integration test in `tests/services/integration.test.ts` continues
+to exercise the full open→create→save→re-read round-trip.
+
+### State layer carry-overs (7C)
+
+Four bounded state changes landed in sub-phase 7C:
+
+1. **`configStore.save()` + `isReadOnly`** (`src/lib/state/config.svelte.ts`).
+   Validates with `validateConfigShape` (new export from
+   `config-loader.ts`); skips silently in remote mode; updates the
+   reactive slot on success. The `isReadOnly` getter is the gate for
+   the Settings panel's CORS-proxy save affordance.
+2. **`onRefreshSuccess` wiring** (`src/routes/+layout.svelte`). After
+   every successful remote fetch, the layout re-runs
+   `config.load()` + `templates.load()` + `issues.load()` in parallel.
+   No PAT or file content is logged.
+3. **`createUiStore`** (`src/lib/state/ui.svelte.ts`, new file). Two
+   `$state` slots (`settingsOpen`, `editorOpen`) with open/close/toggle
+   verbs. No async, no FS, no dependencies. Re-exported from
+   `$lib/state` and added to `StoreGraph` (`context.ts`).
+4. **`ModeStore.clearRemoteCache(key?)`**. The session-less branch
+   calls a new `clearCacheForUrl(url, branch)` helper in
+   `adapters/remote-git.ts` to bypass the `CacheKey` SHA validation
+   that was previously a runtime bug. The explicit-key branch
+   re-validates via `isCacheKey` before delegating to `clearCache`.
+
+New test files: `tests/state/config-save.test.ts`, `tests/state/ui.test.ts`,
+`tests/state/mode.clear-cache.test.ts` (+ an extension to
+`mode.refresh-remote.test.ts` for the `onRefreshSuccess` call).
+
+### UI carry-overs (7D)
+
+Three UI changes landed:
+
+1. **Type-change confirm dialog** (`src/lib/components/FormFields.svelte`).
+   The previously-disabled `issueType` select is now enabled. Picking
+   a different type opens a `Modal` with the ERS-style confirm flow:
+   cancel reverts the select; confirm patches the field, calls
+   `editor.discard()`, and reloads the editor with the new template.
+   Five new i18n keys: `formFields.changeType{Title,Body,Confirm,Cancel,Aria}`.
+2. **`FilterUrlSync` skip-when-Settings-open guard**
+   (`src/lib/components/FilterUrlSync.svelte`). Reads
+   `ui.settingsOpen`; when true, skips the debounced
+   `history.replaceState`. The first-run `syncFromUrl()` still runs
+   regardless (we must honour the URL the user landed with).
+3. **"Clear remote cache" enabled** (`src/lib/components/SettingsPanel.svelte`).
+   The button now calls `modeStore.clearRemoteCache()`, shows a
+   loading state (`animate-spin` on the icon), and surfaces a
+   `success` / `error` `Alert` based on the result. The stale
+   "wired in a follow-up" tooltip text is gone; the new copy explains
+   exactly what gets cleared.
+
+### Bundle polish (7E)
+
+- **Per-build CSP nonce** (`scripts/add-sri.mjs`,
+  `static/_headers`, `scripts/check-csp.mjs`). A 128-bit hex nonce
+  is generated on every `pnpm build`, stamped into the `script-src`
+  directive of `build/_headers` (replacing the `__CSP_NONCE__`
+  placeholder), and attached as a `nonce` attribute to the no-flash
+  theme bootstrap `<script>` in `build/index.html`. The canonical
+  nonce is also written to `build/csp-nonce.txt` for deploy-time
+  verification.
+- **Build tests** (`tests/build/headers-nonce.test.ts`,
+  `tests/build/no-pako-allowlist.test.ts`) pin the header shape
+  and confirm pako is not in the `script-src` allow-list.
+
+The **pako → fflate** swap was investigated but not landed in Step 7:
+isomorphic-git's LFS integration expects a specific pako-shaped
+incompatible surface, and the runtime impact of the `Function()`
+allow-listed warning is zero (gated behind `option.fast`, never
+invoked by isomorphic-git). Tracked as a Step 8 follow-up.
+
+### Verification
+
+| Check                                | Result                                                    |
+| ------------------------------------ | --------------------------------------------------------- |
+| `pnpm check`                         | 0 errors, 0 warnings                                      |
+| `pnpm lint`                          | clean (Prettier + ESLint + `check-i18n` + `check-csp`)    |
+| `pnpm test`                          | **1025 passing**, 1 skipped across 73 files               |
+| `pnpm build`                         | Succeeds; SRI + CSP nonce stamped; `build/csp-nonce.txt`  |
+| `pnpm audit`                         | 0 advisories                                              |
+| `check-i18n` (hard-coded strings)    | 0 across 27 `.svelte` files                               |
+| `check-csp` (build scan)             | 0 violations; 1 allow-listed warning (pako inflate)        |
+
+### Files touched (working tree at end of Step 7)
+
+**New (13):**
+- `src/lib/state/ui.svelte.ts` — UiStore (settings + editor open/close)
+- `tests/build/headers-nonce.test.ts` — pins the per-build CSP nonce
+- `tests/build/no-pako-allowlist.test.ts` — pins the CSP allow-list shape
+- `tests/services/{slugs,frontmatter,parser,issue-loader,issue-saver,issue-trash,wizard,built-in-templates}.test.ts`
+- `tests/state/{config-save,ui,mode.clear-cache}.test.ts`
+
+**Modified — production (16):**
+- `scripts/add-sri.mjs` — per-build CSP nonce generator (replaces the SRI-only script)
+- `scripts/check-csp.mjs` — recognises the allow-list entry for pako
+- `src/lib/adapters/remote-git.ts` — adds `clearCacheForUrl`, exports the
+  `validateConfigShape` neighbor (no — that one lives in services)
+- `src/lib/components/{FilterUrlSync,FormFields,SettingsPanel,TopBar}.svelte`
+- `src/lib/services/config-loader.ts` — exports `validateConfigShape`
+- `src/lib/services/issue-trash.ts` — adds optional `now` parameter
+  (testability)
+- `src/lib/state/{config.svelte,context,index,mode.svelte}.ts` — `save`,
+  `isReadOnly`, `StoreGraph.ui`, `clearRemoteCache`
+- `src/lib/ui/strings.ts` — `formFields.changeType*` + `settings.clearCache*`
+- `src/routes/+layout.svelte` — `onRefreshSuccess` + `createUiStore` wiring
+- `static/_headers` — `'nonce-__CSP_NONCE__'` placeholder in `script-src`
+- `vite.config.ts` — extended `optimizeDeps.include` for the bundle worker
+
+**Modified — tests (10):**
+- `tests/a11y/{keyboard-nav,step-6.a11y}.test.ts` — stub updates
+- `tests/ui/{app-shell,filter-url-sync,form-fields,kanban-dnd,list-keyboard,recent-folders,remote-toolbar,settings-panel}.svelte.test.ts` — stub updates
+
+### Key design decisions
+
+- **`UiStore` lives in `$lib/state`, not `$lib/components`.** The seam
+  is cross-component (Settings panel + editor + FilterUrlSync all
+  read it), and putting the store in the state layer keeps the
+  one-way import direction (`$lib/components` → `$lib/state`).
+  Anything in `components/` that wants `ui.settingsOpen` calls
+  `getStores().ui`; no prop-drilling, no event bus.
+- **No `editorOpen` in `+layout.svelte`.** The UiStore owns
+  `editorOpen` but the actual editor pane is conditionally rendered
+  from the `editor.activeId !== null` signal in the issues store.
+  The two booleans stay decoupled — opening the settings panel does
+  not force-close the editor, and vice versa.
+- **`clearCacheForUrl(url, branch)` is a public export.** It is the
+  canonical "clear the cache for this repo" entry point. The
+  cache-key round-trip (`makeCacheKey` → `parseCacheKey` →
+  `makeLfsDbName`) is preserved for the public `clearCache(key)`
+  path so external tooling can keep using the string-keyed API.
+- **Per-build CSP nonce replaces the placeholder, not a Vite plugin.**
+  `static/_headers` ships a `__CSP_NONCE__` placeholder; the
+  `add-sri.mjs` post-build script replaces it on every run. This
+  keeps the bundle deterministic for the bundler (no plugin
+  surprises) and makes the placeholder visible in the source tree
+  for review.
+- **i18n keys for `changeType*` use the `Params` shape.** The body
+  copy takes `{ old, new }` as named parameters so the translator
+  can reorder subject / object in languages where the original
+  template reads unnaturally.
+
+### Bugs found and fixed mid-Step 7
+
+- **`clearCache` (and the worker's `clearRemoteCache`) called
+  `makeCacheKey(url, branch, 'pending' as Sha)`.** The cast went
+  through TypeScript, but `makeCacheKey` calls `brandSha` which
+  validates 40-hex and throws `RemoteFetchError("Invalid SHA:
+  pending")`. The clear path was 100% broken. Fixed by adding
+  `clearCacheForUrl(url, branch)` and routing the no-key branch of
+  `clearRemoteCache` through it. The keyless branch never needed a
+  real SHA — only the LFS DB name, which is derived from `(url,
+  branch)` alone (see `makeLfsDbName`).
+- **Test stub drift across 9 files.** Adding the new `clearRemoteCache`,
+  `isReadOnly`, `save`, and `editorOpen` fields to the `ModeStore` /
+  `ConfigStore` / `UiStore` interfaces broke every UI / a11y test
+  stub that hand-built a `StoreGraph`. The fix was mechanical (add
+  the new fields to each stub) but it is a smell: the stubs should
+  be regenerated from the interface, not maintained by hand.
+- **Test imports used `$lib/state/ui.svelte.ts` with the `.svelte.ts`
+  extension** — works at runtime (Vite resolves it) but `svelte-check`
+  refuses because the extension is for input TypeScript only.
+  Always import via `$lib/state` (the barrel) from tests.
+
+### Process lessons (read this before kicking off the next multi-agent run)
+
+The initial attempt at Step 7 used a `mavis team plan` with 4 parallel
+tracks (7A, 7C, 7D, 7E) and a final-verification gate. All 4 worker
+sessions hit the 15-minute hard cap and were killed. Concrete takeaways:
+
+1. **The 15-minute cap is the binding constraint, not task
+   complexity.** A track with 8 service test files + `pnpm check +
+   lint + test` legitimately takes 20-30 minutes for a fresh worker
+   (cold start, project exploration, one file at a time, repeated
+   `pnpm test --run` per file). Plan for it: either pre-load the
+   context into the worker prompt (paste the existing test patterns
+   inline), or split each track into 2-3 smaller tasks. Two
+   parallel 8-test-file tracks is the right shape.
+2. **Workers can do real work, then time out, then claim they
+   finished.** The 7C worker reported "all 4 source changes
+   LANDED" and only 3 of 4 actually landed (`configStore.save()`
+   was missing). The 7E worker said "code is mostly done" — true,
+   but the 2 build tests it wrote need an actual `pnpm build` run
+   to validate against the new header shape. Always re-derive the
+   claimed deliverables from the working tree, not the report.
+3. **Cancellation costs are zero; partial work survives.** Cancelling
+   the plan left every file the workers touched on disk (their
+   diffs were preserved). I picked up from there and finished in
+   ~30 minutes of owner time. The team plan is a force multiplier
+   for cold-start exploration and parallelizable, well-bounded
+   tasks; it is not a substitute for the owner doing the final
+   verification.
+4. **Use `--verify on` on every produce task.** A skipped verifier
+   on a worker that times out means the owner inherits the
+   verification. The plan already had `verify=on` everywhere, but
+   the verifier session needs time too — the 15-min cap applies to
+   the verifier the same way. For Step 8, pre-author the verifier
+   prompts against the expected diff shape (or pre-stage the
+   expected state in the source so the verifier can be a 2-min
+   grep-and-assert).
+
+### Future considerations (Step 8 and beyond)
+
+- **`UiStore` is currently a two-flag bag. Resist growing it.** When
+  a third boolean comes up (e.g. `commandPaletteOpen`, `toasterOpen`),
+  prefer lifting state into the specific component or splitting into
+  a new store. The bag-of-flags anti-pattern hides ownership and
+  makes test stubs drift. A rule of thumb: if a flag is read by
+  more than 2 components in different sub-trees, it belongs in
+  `UiStore`; otherwise it belongs next to the component that owns
+  the open/close verb.
+- **The `makeCacheKey` SHA validation is a footgun.** Any future
+  helper that needs a `CacheKey` with a non-real SHA (e.g. for
+  cache lookup before a fetch completes) should reach for
+  `clearCacheForUrl`-style direct helpers instead of building a
+  fake key. Consider adding a `makeCacheKeyForClear(url, branch)`
+  alias that documents the contract.
+- **Test stub generation.** The hand-maintained stubs in
+  `tests/ui/*.svelte.test.ts` and `tests/a11y/*.test.ts` are
+  fragile (Step 7's 9 files all needed manual patches when a new
+  store field was added). Consider extracting a
+  `buildStub(overrides?: Partial<StoreGraph>): StoreGraph`
+  factory in `tests/_stubs.ts` that the test files import and
+  spread. Future store additions become a one-line diff.
+- **`onRefreshSuccess` callback is `async` and unawaited externally.**
+  The mode store calls `await onRefreshSuccess()` and the layout's
+  callback does `Promise.all([config.load(), templates.load(),
+  issues.load()])`. This is correct for the current single-tab
+  model, but if a future change introduces a second consumer (e.g.
+  a service worker mirroring state), the fire-and-forget contract
+  needs to be revisited.
+- **The pako allow-list warning is stable but load-bearing.** If
+  the upstream `pako` maintainers change the `Function()` call site
+  in a future release, the `check-csp.mjs` allow-list must be
+  updated to match (the script greps by file path + offset, which
+  is fragile). The Step 8 fflate swap would make this entire
+  failure mode disappear — prefer the swap over a permanent
+  allow-list if the isomorphic-git compatibility issue can be
+  resolved.
+- **Build tests assume `pnpm build` was run.** The
+  `tests/build/*.test.ts` files read `build/_headers` /
+  `build/csp-nonce.txt` from disk; if a developer runs `pnpm test`
+  in a fresh checkout without `pnpm build` first, the tests
+  fail. Add a `pretest` script or a `pnpm test:build` aggregator
+  to make the dependency explicit. Currently `package.json` has
+  neither.
+- **The Step 6 + Step 7 audit carry-overs (6F/6H/6I/6L) are
+  done; the 6E/6K follow-ups remain.** Kanban keyboard parity
+  (Enter/Space to drop) and Gantt `aria-roledescription` are the
+  only a11y gaps left before a full WCAG 2.1 AA re-audit.
+
+### Step 8 carry-overs (deferred)
+
+- **pako → fflate** swap (Step 7E, dropped: requires isomorphic-git
+  compatibility shim work; deferred to Step 8 polish).
+- **Live `RUN_LIVE_TESTS=1` remote-git integration** (carry-over
+  from Step 4).
+- **Coverage on `local-fs.ts` + `handle-store.ts`** in the `client`
+  Vitest project (the `client` project doesn't enable coverage
+  instrumentation by default).
+- **Fuzz / property-based tests** (deferred to Step 8 polish).
+- **Kanban DnD Enter/Space keybinding** (6E's open question #4).
+- **Gantt `aria-roledescription` + bar-by-bar descriptions** (6K's
+  open follow-up).
+- **Mobile breakpoints** (NFR-5 explicitly excludes mobile in v1).

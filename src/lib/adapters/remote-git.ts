@@ -617,6 +617,44 @@ export async function clearAllCaches(): Promise<void> {
 	warn('clearAllCaches: no enumeration API available; use clearCache(key) per known cache');
 }
 
+/**
+ * Clear the cached clone for a given (url, branch) pair without
+ * round-tripping through the {@link CacheKey} string. The
+ * {@link clearCache} path requires a `CacheKey` whose SHA segment is
+ * a 40-hex SHA, but the only SHA the "clear" flow ever needs is the
+ * sentinel `'pending'` (the LFS DB name is derived from `(url,
+ * branch)` alone, see {@link makeLfsDbName}). Building a real
+ * `CacheKey` for the clear path would require knowing the original
+ * fetch SHA, which the caller (the mode store) does not have.
+ *
+ * This helper exists so the mode store's `clearRemoteCache` can
+ * avoid the round-trip and call directly with the session's
+ * `(url, branch)` pair.
+ */
+export async function clearCacheForUrl(url: RepoUrl, branch: Branch): Promise<void> {
+	// Re-brand via the public branders (defence-in-depth).
+	const u = isRepoUrl(url) ? url : brandRepoUrl(url);
+	const b = isBranch(branch) ? branch : brandBranch(branch);
+	const fsName = makeLfsDbName(u, b);
+	const fs = new LightningFS(fsName);
+	try {
+		await new Promise<void>((resolve, reject) => {
+			(
+				fs as unknown as {
+					rmdir(
+						path: string,
+						options: { recursive: boolean },
+						cb: (err: Error | null) => void
+					): void;
+				}
+			).rmdir('/', { recursive: true }, (err) => (err ? reject(err) : resolve()));
+		});
+	} catch (cause) {
+		throw new RemoteFetchError('Failed to clear cache', { cause });
+	}
+	debug(`Cleared cache for`, `${u}|${b}`);
+}
+
 // ─── Internal helpers ───────────────────────────────────────────────────────
 
 /** Read the branch tip SHA from the local repo. */

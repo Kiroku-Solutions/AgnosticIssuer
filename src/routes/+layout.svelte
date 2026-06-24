@@ -21,6 +21,7 @@
 		createStateContext,
 		createTemplatesStore,
 		createThemeStore,
+		createUiStore,
 		createViewStore,
 		setStores
 	} from '$lib/state';
@@ -57,7 +58,17 @@
 			// `LocalFsAdapter`'s constructor is private; use the static
 			// factory `LocalFsAdapter.fromHandle` (set up below) to keep
 			// the pick-vs-bind seam visible at the call site.
-			LocalFsAdapter.fromHandle(handle)
+			LocalFsAdapter.fromHandle(handle),
+		// After every successful remote fetch (openRemote and
+		// refreshRemote), refresh the data stores so the UI re-reads
+		// from the freshly cloned subtree. The mode store itself
+		// stays out of the business of driving other stores — the
+		// layout owns the orchestration. The callback fires in
+		// parallel; a slow reload does not block another. No PAT,
+		// no file content is logged here — the stores only read.
+		onRefreshSuccess: async () => {
+			await Promise.all([config.load(), templates.load(), issues.load()]);
+		}
 	});
 	// Adapter provider that resolves to the active adapter (local or
 	// remote). The return type is the union of `WritableDirectoryAdapter |
@@ -77,8 +88,9 @@
 	const filter = createFilterStore();
 	const view = createViewStore();
 	const theme = createThemeStore();
+	const ui = createUiStore();
 
-	setStores({ mode, config, templates, issues, editor, filter, view, theme });
+	setStores({ mode, config, templates, issues, editor, filter, view, theme, ui });
 
 	// The wizard route has its own standalone layout; the chrome that
 	// wraps every other page reads the current pathname and forwards a

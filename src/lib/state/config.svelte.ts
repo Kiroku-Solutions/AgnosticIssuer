@@ -24,7 +24,7 @@
  */
 
 import type { Config } from '../types/index.ts';
-import { loadConfig } from '../services/index.ts';
+import { loadConfig, validateConfigShape } from '../services/index.ts';
 import type {
 	ReadOnlyDirectoryAdapter,
 	WritableDirectoryAdapter
@@ -38,10 +38,29 @@ export interface ConfigStore {
 	readonly config: Config | null;
 	readonly status: ConfigStatus;
 	readonly error: Error | null;
+	/**
+	 * `true` when the active adapter is read-only (i.e. the user is in
+	 * remote mode). The Settings panel uses this to gate the
+	 * "Save config" affordance so the user does not attempt a write
+	 * against a read-only backend.
+	 */
+	readonly isReadOnly: boolean;
 	/** Load (or reload) the config. Supersedes any in-flight load. */
 	readonly load: () => Promise<void>;
 	/** Synonym for `load()`. */
 	readonly refresh: () => Promise<void>;
+	/**
+	 * Persist a new `Config` to `.nomad.md/config.json`. Validates the
+	 * shape first; on validation failure, sets `status: 'error'` and
+	 * stores the error in `error` (no write is attempted). On write
+	 * failure, re-throws and leaves `config` untouched (no partial
+	 * state). On success, the in-memory `config` slot is updated.
+	 *
+	 * In remote (read-only) mode this is a no-op and resolves
+	 * immediately — the Settings panel should disable the save button
+	 * via {@link isReadOnly}.
+	 */
+	readonly save: (cfg: Config) => Promise<void>;
 }
 
 /**
@@ -131,6 +150,70 @@ export function createConfigStore(
 		await load();
 	}
 
+	/**
+	 * Persist a candidate `Config` to `.nomad.md/config.json`. The
+	 * active adapter is re-evaluated on every call so the latest
+	 * `localAdapter` / `remoteAdapter` binding wins.
+	 *
+	 * Contract (sub-phase 7C):
+	 *  - Validates the shape with `validateConfigShape` before any
+	 *    write. Validation failures land in `status: 'error'` and
+	 *    `error`; the file is not touched.
+	 *  - Skips silently if the active adapter is read-only (remote
+	 *    mode). The Settings panel surfaces a disabled save button via
+	 *    `isReadOnly`; this branch is the belt-and-braces guard.
+	 *  - On write failure, re-throws and leaves the in-memory `config`
+	 *    untouched (no partial state). The adapter's atomic-write
+	 *    contract (LocalFsAdapter) guarantees no half-written file
+	 *    is left on disk.
+	 *  - On success, updates `config` to the saved value and flips
+	 *    `status: 'ready'`.
+	 */
+	async function save(cfg: Config): Promise<void> {
+		// Validate first — no adapter call, no FS touch, no state mutation
+		// on a malformed payload.
+		let validated: Config;
+		try {
+			validated = validateConfigShape(cfg);
+		} catch (cause) {
+			const err = cause instanceof Error ? cause : new Error(String(cause));
+			config = null;
+			status = 'error';
+			error = err;
+			return;
+		}
+
+		const adapter = adapterProvider();
+		if (!adapter) {
+			// No active adapter (e.g. still on the home screen) — refuse.
+			const err = new Error('Cannot save config: no active adapter');
+			status = 'error';
+			error = err;
+			return;
+		}
+		if (isReadOnlyAdapter(adapter)) {
+			// Remote mode is read-only. Mirror the documented no-op so
+			// future callers that bypass the disabled UI don't silently
+			// succeed. The store's `status` is left as-is — the caller
+			// already knows it's read-only, and a state flip would mask
+			// any error from a prior save.
+			return;
+		}
+
+		const text = JSON.stringify(validated, null, '\t') + '\n';
+		// LocalFsAdapter.writeTextFile is atomic (temp + rename); a
+		// failure here is a real IO error and must propagate.
+		// The cast narrows the union after the `isReadOnlyAdapter`
+		// type-guard above; we know at this point that the adapter is
+		// writable, but the union type isn't fully eliminated because
+		// of how the function signature interacts with the provider's
+		// return type.
+		await (adapter as WritableDirectoryAdapter).writeTextFile('.nomad.md/config.json', text);
+		config = validated;
+		status = 'ready';
+		error = null;
+	}
+
 	// Honour an externally-provided signal as well (e.g. test-driven abort).
 	if (ctx?.signal) {
 		ctx.signal.addEventListener('abort', () => abortInFlight(), { once: true });
@@ -146,7 +229,32 @@ export function createConfigStore(
 		get error() {
 			return error;
 		},
+		get isReadOnly() {
+			const adapter = adapterProvider();
+			return adapter ? isReadOnlyAdapter(adapter) : true;
+		},
 		load,
-		refresh
+		refresh,
+		save
 	};
+}
+
+/**
+ * Type-guard for the read-only branch of the `DirectoryAdapter`
+ * interface. A `WritableDirectoryAdapter` is one that has
+ * `writeTextFile`; everything else is treated as read-only.
+ *
+ * Returns a type predicate so the caller narrows to
+ * `ReadOnlyDirectoryAdapter` in the true branch (and to
+ * `WritableDirectoryAdapter` in the false branch via the negation).
+ *
+ * Centralised here (not in the adapter module) because the test stub
+ * for `MemoryFsAdapter` and the real `LocalFsAdapter` both satisfy
+ * the writable shape, while the `ReadonlyRemoteAdapter` returned by
+ * `remote-git.ts` does not.
+ */
+function isReadOnlyAdapter(
+	adapter: WritableDirectoryAdapter | ReadOnlyDirectoryAdapter
+): adapter is ReadOnlyDirectoryAdapter {
+	return typeof (adapter as Partial<WritableDirectoryAdapter>).writeTextFile !== 'function';
 }

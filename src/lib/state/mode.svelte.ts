@@ -33,13 +33,21 @@
  */
 
 import { handleStore } from '../adapters/index.ts';
-import { fetchSubtree } from '../adapters/remote-git.ts';
+import {
+	clearCache,
+	clearCacheForUrl,
+	fetchSubtree,
+	isCacheKey,
+	type CacheKey,
+	type RepoUrl,
+	type Branch
+} from '../adapters/remote-git.ts';
+import { RemoteFetchError } from '../adapters/errors.ts';
 import type { HandleRecord } from '../adapters/handle-store.ts';
 import type {
 	ReadOnlyDirectoryAdapter,
 	WritableDirectoryAdapter
 } from '../adapters/directory-adapter.ts';
-import type { RepoUrl, Branch } from '../adapters/remote-git.ts';
 import { isFsaAvailable } from '../adapters/feature-detect.ts';
 import { StateError } from './errors.ts';
 import type { StateContext } from './_context.ts';
@@ -119,6 +127,32 @@ export interface ModeStore {
 	 */
 	readonly refreshRemote: (pat: string) => Promise<void>;
 	readonly signOut: () => Promise<void>;
+	/**
+	 * Drop the cached clone for a given {@link CacheKey} (or, when
+	 * `key` is omitted, for the currently-bound remote session).
+	 *
+	 * Contract (sub-phase 7C):
+	 *  - If `key` is `undefined` AND the store has an active remote
+	 *    session (`_patScope` is set), the key is derived from
+	 *    `makeCacheKey(url, branch, 'pending' as Sha)` and forwarded to
+	 *    `clearCache`. The cached LightningFS clone is destroyed.
+	 *  - If `key` is `undefined` AND there is no active remote
+	 *    session, throws {@link RemotePatRequiredError} — the user has
+	 *    not opened a remote and there is no scope to derive a key from.
+	 *  - If `key` is supplied, it is validated via `isCacheKey`
+	 *    (defence-in-depth — the type already brands `CacheKey`, but
+	 *    callers may cast through `unknown`) and forwarded to
+	 *    `clearCache`. On an invalid key, `clearCache` throws
+	 *    `RemoteFetchError` and the error propagates.
+	 *  - On success, the existing `remoteAdapter` stays bound (NFR-7).
+	 *    The next `refreshRemote(pat)` rebuilds the cache from the
+	 *    remote; the user is not silently knocked offline.
+	 *  - Failure propagates; the cache key was either not cleared (most
+	 *    IO failures) or was cleared but the caller does not know (we
+	 *    do not offer transactional semantics here — `clearCache`
+	 *    does best-effort).
+	 */
+	readonly clearRemoteCache: (key?: CacheKey) => Promise<void>;
 }
 
 /**
@@ -403,6 +437,52 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		mode = 'home';
 	}
 
+	/**
+	 * Implementation of {@link ModeStore.clearRemoteCache}. See the
+	 * interface docstring for the full contract.
+	 *
+	 * Implementation notes:
+	 *  - The "no session, no key" branch throws
+	 *    {@link RemotePatRequiredError} rather than a generic Error so
+	 *    callers (the toolbar) can branch on the same type as
+	 *    `refreshRemote`.
+	 *  - The `_patScope` branch uses `'pending' as Sha` to build the
+	 *    key — the v0 cache uses the `(url, branch)` pair as the LFS
+	 *    DB name and the SHA is purely the per-fetch cache key (see
+	 *    `makeLfsDbName`). Forcing `'pending'` keeps a stable identity
+	 *    across refreshes.
+	 *  - On success, we leave the `remoteAdapter` rune bound. The
+	 *    adapter is still pointing at the (now-cleared) LightningFS
+	 *    volume, so the next read returns `AdapterNotFoundError` /
+	 *    empty listings. The user must re-refresh to repopulate; we
+	 *    do not silently swap to a fresh adapter (which would itself
+	 *    be a fresh empty volume — same outcome with extra
+	 *    complexity).
+	 */
+	async function clearRemoteCache(key?: CacheKey): Promise<void> {
+		if (key === undefined) {
+			if (!_patScope) {
+				throw new RemotePatRequiredError(
+					'clearRemoteCache() with no key requires an active remote session'
+				);
+			}
+			// The session's (url, branch) pair is enough to identify the
+			// cached clone — the SHA is irrelevant for the LFS DB name
+			// (`makeLfsDbName(url, branch)`). Use the dedicated helper
+			// to avoid the cache-key round-trip + the SHA validation
+			// that `clearCache` would otherwise force.
+			await clearCacheForUrl(_patScope.url, _patScope.branch);
+			return;
+		}
+		// Explicit key path — re-validate at the boundary even though
+		// the brand already encodes the type. A caller that cast
+		// through `as unknown as CacheKey` should be caught here.
+		if (!isCacheKey(key)) {
+			throw new RemoteFetchError('Cannot clear cache: invalid key');
+		}
+		await clearCache(key);
+	}
+
 	return {
 		get mode() {
 			return mode;
@@ -433,6 +513,7 @@ export function createModeStore(ctx: StateContext, deps: ModeStoreDeps = {}): Mo
 		switchFolder,
 		openRemote,
 		refreshRemote,
-		signOut
+		signOut,
+		clearRemoteCache
 	};
 }

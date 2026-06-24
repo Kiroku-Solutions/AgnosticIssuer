@@ -37,6 +37,8 @@
 
 	let trashCount = $state(0);
 	let emptyTrashOpen = $state(false);
+	let clearCacheBusy = $state(false);
+	let clearCacheStatus = $state<{ kind: 'success' | 'error'; message: string } | null>(null);
 
 	async function readTrashCount(): Promise<void> {
 		const adapter = stores.mode.localAdapter;
@@ -51,6 +53,13 @@
 			trashCount = 0;
 		}
 	}
+
+	$effect(() => {
+		// Mirror the panel's open prop into the UiStore so other
+		// surfaces (FilterUrlSync) can react.
+		if (open) stores.ui.openSettings();
+		else stores.ui.closeSettings();
+	});
 
 	$effect(() => {
 		if (!open) return;
@@ -73,6 +82,25 @@
 	function onEmptied(): void {
 		trashCount = 0;
 		void readTrashCount();
+	}
+
+	async function onClearCache(): Promise<void> {
+		clearCacheBusy = true;
+		clearCacheStatus = null;
+		try {
+			await stores.mode.clearRemoteCache();
+			clearCacheStatus = {
+				kind: 'success',
+				message: 'Cache cleared. The next refresh will re-fetch the subtree.'
+			};
+		} catch (e) {
+			clearCacheStatus = {
+				kind: 'error',
+				message: e instanceof Error ? e.message : String(e)
+			};
+		} finally {
+			clearCacheBusy = false;
+		}
 	}
 </script>
 
@@ -171,11 +199,17 @@
 						<Button
 							variant="ghost"
 							size="sm"
-							disabled={!canClearCache}
+							disabled={!canClearCache || clearCacheBusy}
+							onclick={onClearCache}
 							data-testid="settings-clear-cache"
 						>
-							<RefreshCw class="h-4 w-4" aria-hidden="true" />
-							<span>{t('settings.clearCache')}</span>
+							<RefreshCw
+								class="h-4 w-4 {clearCacheBusy ? 'animate-spin' : ''}"
+								aria-hidden="true"
+							/>
+							<span>
+								{clearCacheBusy ? t('settings.clearCacheBusy') : t('settings.clearCache')}
+							</span>
 						</Button>
 					</Tooltip>
 					<Tooltip
@@ -196,6 +230,17 @@
 						</Button>
 					</Tooltip>
 				</div>
+				{#if clearCacheStatus}
+					<div
+						role={clearCacheStatus.kind === 'error' ? 'alert' : 'status'}
+						class="alert {clearCacheStatus.kind === 'error'
+							? 'alert-error'
+							: 'alert-success'} text-sm"
+						data-testid="settings-clear-cache-status"
+					>
+						<span>{clearCacheStatus.message}</span>
+					</div>
+				{/if}
 			</section>
 		</div>
 	</div>

@@ -44,16 +44,20 @@ export function trashedIssuePath(
  * suffix) when the source path does not look like an issue file (no
  * `.nomad.md/issues/` prefix), so the helper is safe to call from any
  * soft-delete path.
+ *
+ * The optional `now` parameter is the wall-clock timestamp (ms since
+ * epoch) used as the trash filename prefix. Defaults to `Date.now()`
+ * in production. Tests pass a fixed value for deterministic output.
  */
 export async function moveIssueToTrash(
 	adapter: WritableDirectoryAdapter,
 	issue: Pick<Issue, 'id' | 'title'>,
-	sourcePath: string
+	sourcePath: string,
+	now: number = Date.now()
 ): Promise<string> {
 	const { parent } = splitPath(sourcePath);
 	if (parent === '.nomad.md/issues') {
-		const timestamp = Date.now();
-		const trashPath = trashedIssuePath(issue, timestamp);
+		const trashPath = trashedIssuePath(issue, now);
 		await adapter.moveFile(sourcePath, trashPath);
 		return trashPath;
 	}

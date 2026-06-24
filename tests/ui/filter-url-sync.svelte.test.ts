@@ -43,6 +43,7 @@ vi.mock('$lib/state', () => ({
 		editor: {},
 		view: {},
 		theme: {},
+		ui: { settingsOpen: false },
 		filter: filterHarness
 	}),
 	setStores: () => {}

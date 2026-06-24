@@ -12,6 +12,7 @@
 <script lang="ts">
 	import { getStores } from '$lib/state';
 	import { t } from '$lib/ui/strings';
+	import { Modal, Button } from '$lib/ui';
 	import type { Issue, Relation, TemplateField } from '$lib/types';
 
 	type Option = { id: string; name: string };
@@ -121,6 +122,50 @@
 		return (field.options ?? []).map((o) => ({ id: o, name: o }));
 	}
 
+	// ── Issue type change confirm (sub-phase 7D) ──────────────────────────
+	// When the user picks a different issue type than the current
+	// draft, we hold the change in a local `pendingType` and only
+	// commit it after the user confirms in the dialog. This avoids
+	// surprising template reloads and lost data.
+	let pendingType: string | null = $state(null);
+	let confirmOpen = $state(false);
+
+	const pendingTypeName = $derived.by(() => {
+		if (pendingType === null) return '';
+		return templates.templates.find((t) => t.id === pendingType)?.name ?? pendingType;
+	});
+	const currentTypeName = $derived.by(() => {
+		if (!editor.draft) return '';
+		const id = editor.draft.issue.issueType;
+		return templates.templates.find((t) => t.id === id)?.name ?? id;
+	});
+
+	function onTypeChangeAttempt(next: string): void {
+		if (!editor.draft) return;
+		if (next === editor.draft.issue.issueType) {
+			pendingType = null;
+			return;
+		}
+		pendingType = next;
+		confirmOpen = true;
+	}
+
+	function cancelTypeChange(): void {
+		pendingType = null;
+		confirmOpen = false;
+	}
+
+	function commitTypeChange(): void {
+		if (!editor.draft || pendingType === null) return;
+		const next = pendingType;
+		pendingType = null;
+		confirmOpen = false;
+		editor.patchField('issueType', next);
+		// Reload the editor from the issues store with the new template
+		// defaults applied. discard() re-clones from the source.
+		editor.discard();
+	}
+
 	const ringClass = 'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
 </script>
 
@@ -175,10 +220,19 @@
 						id={fid}
 						class="select select-bordered select-sm {ringClass} {err ? 'select-error' : ''}"
 						value={(value as string | undefined) ?? ''}
-						disabled={field.key === 'issueType'}
 						aria-invalid={err ? 'true' : undefined}
 						onchange={(e) => {
 							const v = (e.currentTarget as HTMLSelectElement).value;
+							if (field.key === 'issueType') {
+								onTypeChangeAttempt(v);
+								// Revert the select to the current value; the
+								// change is held in `pendingType` until the
+								// user confirms.
+								if (e.currentTarget instanceof HTMLSelectElement && issue) {
+									e.currentTarget.value = issue.issueType;
+								}
+								return;
+							}
 							const next = field.type === 'user' && v === '' ? null : v;
 							editor.patchField(field.key, next);
 						}}
@@ -232,4 +286,23 @@
 			</div>
 		{/each}
 	</div>
+
+	<Modal open={confirmOpen} onclose={cancelTypeChange} class="">
+		<div role="alertdialog" aria-modal="true" aria-labelledby="change-type-title">
+			<h3 id="change-type-title" class="text-lg font-semibold">
+				{t('formFields.changeTypeTitle')}
+			</h3>
+			<p class="alert alert-warning my-3 text-sm">
+				{t('formFields.changeTypeBody', { old: currentTypeName, new: pendingTypeName })}
+			</p>
+			<div class="modal-action">
+				<Button variant="ghost" onclick={cancelTypeChange} data-testid="change-type-cancel">
+					{t('formFields.changeTypeCancel')}
+				</Button>
+				<Button variant="primary" onclick={commitTypeChange} data-testid="change-type-confirm">
+					{t('formFields.changeTypeConfirm')}
+				</Button>
+			</div>
+		</div>
+	</Modal>
 {/if}

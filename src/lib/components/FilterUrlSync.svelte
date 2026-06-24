@@ -1,17 +1,17 @@
 <!--
-	FilterUrlSync.svelte — render-less URL ↔ filter store bridge (sub-phase 6I).
-	On mount: parse `window.location.search` → `filter.set` when non-empty.
-	On every filter change: debounce 100 ms → `history.replaceState`.
+	FilterUrlSync.svelte — render-less URL ↔ filter store bridge (sub-phase 6I
+	+ 7D). On mount: parse `window.location.search` → `filter.set` when non-empty.
+	On every filter change: debounce 100 ms → `history.replaceState`. The
+	write is skipped when `ui.settingsOpen === true` so the user can configure
+	the app without the URL drifting behind their back.
 	On `popstate`: re-parse the URL into the store.
-	The "skip when settings panel is open" guard from the 6H hand-off is
-	deferred (settingsOpen is local $state in TopBar.svelte; no body class).
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getStores } from '$lib/state';
 	import type { FilterState } from '$lib/state';
 
-	const { filter } = getStores();
+	const { filter, ui } = getStores();
 	const DEBOUNCE_MS = 100;
 
 	let timer: ReturnType<typeof setTimeout> | null = null;
@@ -40,6 +40,9 @@
 	});
 
 	$effect(() => {
+		// Read the settings flag up front so the effect depends on it
+		// (Svelte 5 re-runs the effect when the value changes).
+		const settingsOpen = ui.settingsOpen;
 		const currentJson = JSON.stringify(filter.filter as FilterState);
 		if (isFirstRun) {
 			isFirstRun = false;
@@ -48,6 +51,12 @@
 		}
 		if (currentJson === lastFilterJson) return;
 		lastFilterJson = currentJson;
+		if (settingsOpen) {
+			// The user is configuring the app; skip URL drift. The
+			// in-memory filter is the source of truth until the panel
+			// closes again.
+			return;
+		}
 		if (timer !== null) clearTimeout(timer);
 		timer = setTimeout(() => {
 			timer = null;
