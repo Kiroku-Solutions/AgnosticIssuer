@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
 	import { getStores } from '$lib/state';
+	import { t } from '$lib/ui/strings';
 	import Alert from '$lib/ui/Alert.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import IconButton from '$lib/ui/IconButton.svelte';
@@ -66,9 +67,9 @@
 	const isReadOnly = $derived(mode.mode === 'remote');
 
 	const tabList = $derived([
-		{ id: 'form' as TabId, label: 'Form' },
-		{ id: 'write' as TabId, label: 'Write' },
-		{ id: 'preview' as TabId, label: 'Preview' }
+		{ id: 'form' as TabId, label: t('editor.tabs.form') },
+		{ id: 'write' as TabId, label: t('editor.tabs.write') },
+		{ id: 'preview' as TabId, label: t('editor.tabs.preview') }
 	]);
 
 	const canSave = $derived(editor.isDirty && editor.errors.length === 0);
@@ -109,7 +110,7 @@
 		class="fixed inset-y-0 right-0 z-40 flex w-[40rem] max-w-full flex-col border-l border-base-300 bg-base-100 shadow-xl"
 		data-testid="editor-panel"
 	>
-		<header
+		<div
 			class="flex items-center gap-3 border-b border-base-300 px-4 py-3"
 			data-testid="editor-panel-header"
 		>
@@ -123,16 +124,15 @@
 			{:else}
 				<div class="flex-1 text-sm font-semibold">{active.issue.title}</div>
 			{/if}
-			<IconButton label="Close editor" onclick={close} data-testid="editor-panel-close">
+			<IconButton label={t('editor.closeAria')} onclick={close} data-testid="editor-panel-close">
 				<X class="h-4 w-4" aria-hidden="true" />
 			</IconButton>
-		</header>
+		</div>
 
 		{#if editor.integrityWarning}
 			<div class="px-2 pt-2" data-testid="editor-panel-integrity-warning">
 				<Alert variant="warning">
-					This file was modified outside nomad.md. Review the contents before saving — id,
-					relations, and section markers may have drifted.
+					{t('integrity.editorWarning')}
 				</Alert>
 			</div>
 		{/if}
@@ -149,7 +149,7 @@
 					<div
 						class="mb-3 flex flex-wrap gap-1 border-b border-base-300 pb-2"
 						role="tablist"
-						aria-label="Sections"
+						aria-label={t('editor.sectionsAria')}
 						data-testid="editor-section-nav"
 					>
 						{#each sectionNav as sec (sec.id)}
@@ -183,13 +183,13 @@
 							data-testid="editor-section-textarea"
 						/>
 					{:else}
-						<p class="text-sm opacity-60">No sections to edit.</p>
+						<p class="text-sm opacity-60">{t('editor.noSectionsEdit')}</p>
 					{/if}
 				{:else}
 					{#if activeSection}
 						<MarkdownPreview markdown={activeSection.markdown} />
 					{:else}
-						<p class="text-sm opacity-60">No sections to preview.</p>
+						<p class="text-sm opacity-60">{t('editor.noSectionsPreview')}</p>
 					{/if}
 				{/if}
 			{/if}
@@ -200,11 +200,11 @@
 			data-testid="editor-panel-footer"
 		>
 			{#if isReadOnly}
-				<Tooltip text="Read-only — open locally to save" position="top">
-					<Button variant="primary" size="sm" disabled>Save</Button>
+				<Tooltip text={t('editor.readOnlySaveTooltip')} position="top">
+					<Button variant="primary" size="sm" disabled>{t('common.save')}</Button>
 				</Tooltip>
-				<Tooltip text="Read-only — open locally to discard" position="top">
-					<Button variant="ghost" size="sm" disabled>Discard</Button>
+				<Tooltip text={t('editor.readOnlyDiscardTooltip')} position="top">
+					<Button variant="ghost" size="sm" disabled>{t('common.discard')}</Button>
 				</Tooltip>
 			{:else}
 				<Button
@@ -214,7 +214,7 @@
 					onclick={save}
 					data-testid="editor-panel-save"
 				>
-					Save
+					{t('common.save')}
 				</Button>
 				<Button
 					variant="ghost"
@@ -223,21 +223,20 @@
 					onclick={discard}
 					data-testid="editor-panel-discard"
 				>
-					Discard
+					{t('common.discard')}
 				</Button>
 			{/if}
 
 			{#if editor.errors.length > 0}
 				<span class="ml-auto text-xs text-error" data-testid="editor-panel-error-count">
-					{editor.errors.length}
-					validation {editor.errors.length === 1 ? 'error' : 'errors'}
+					{t('common.validationErrors', { n: editor.errors.length })}
 				</span>
 			{:else if editor.isDirty}
-				<span class="ml-auto text-xs opacity-60">Unsaved changes</span>
+				<span class="ml-auto text-xs opacity-60">{t('editor.unsaved')}</span>
 			{/if}
 
 			<Button variant="ghost" size="sm" onclick={close} data-testid="editor-panel-footer-close">
-				Close
+				{t('editor.footerClose')}
 			</Button>
 		</footer>
 	</aside>

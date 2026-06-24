@@ -11,6 +11,7 @@
 	import { page } from '$app/stores';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import type { ShellMode } from '$lib/components/TopBar.svelte';
+	import { t } from '$lib/ui/strings';
 	import {
 		createConfigStore,
 		createEditorStore,
@@ -115,7 +116,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>nomad.md</title>
+	<title>{t('app.name')}</title>
 </svelte:head>
 
 <AppShell mode={currentMode}>

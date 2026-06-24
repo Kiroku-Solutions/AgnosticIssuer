@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
 	import { getStores } from '$lib/state';
+	import { t } from '$lib/ui/strings';
 	import type { Issue, Relation, TemplateField } from '$lib/types';
 
 	type Option = { id: string; name: string };
@@ -134,7 +135,7 @@
 					<span class="label-text text-xs">
 						{field.name}
 						{#if field.obligatory}<span class="text-error" aria-hidden="true">&nbsp;*</span>
-							<span class="sr-only">required</span>{/if}
+							<span class="sr-only">{t('common.required')}</span>{/if}
 					</span>
 				</label>
 
@@ -166,7 +167,10 @@
 					/>
 				{:else if field.type === 'select' || field.type === 'user'}
 					{@const opts = field.type === 'user' ? userOptions() : selectOptionsFor(field)}
-					{@const placeholder = field.type === 'user' ? 'Unassigned' : 'Select…'}
+					{@const placeholder =
+						field.type === 'user'
+							? t('formFields.assigneePlaceholder')
+							: t('formFields.selectPlaceholder')}
 					<select
 						id={fid}
 						class="select select-bordered select-sm {ringClass} {err ? 'select-error' : ''}"
@@ -186,7 +190,7 @@
 					</select>
 					{#if field.key === 'issueType'}
 						<p class="text-xs opacity-60">
-							Issue type cannot be changed after creation — create a new issue instead.
+							{t('formFields.issueTypeDisabledNote')}
 						</p>
 					{/if}
 				{:else if field.type === 'multi-select' || field.type === 'relations'}

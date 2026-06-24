@@ -32,6 +32,7 @@
 <script lang="ts">
 	import { getStores } from '$lib/state';
 	import { Button, Tooltip } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import { TRASH_DIRECTORY } from '$lib/adapters';
 	import NewIssueModal from './NewIssueModal.svelte';
 	import EmptyTrashModal from './EmptyTrashModal.svelte';
@@ -98,6 +99,9 @@
 		trashCount = 0;
 		void readTrashCount();
 	}
+
+	const issueCount = $derived(stores.issues.issues.length);
+	const dirtyCount = $derived(stores.issues.dirty.size);
 </script>
 
 <div
@@ -106,14 +110,14 @@
 >
 	{#if !isReadOnly}
 		<Button variant="primary" size="sm" onclick={openNewIssue} data-testid="toolbar-new-issue">
-			+ New issue
+			{t('localToolbar.newIssue')}
 		</Button>
 	{/if}
 
 	{#if isReadOnly}
-		<Tooltip text="Read-only — sign out to edit locally" position="bottom">
+		<Tooltip text={t('localToolbar.refreshReadOnlyTooltip')} position="bottom">
 			<Button variant="ghost" size="sm" loading={refreshing} disabled data-testid="toolbar-refresh">
-				↻ Refresh
+				{t('localToolbar.refresh')}
 			</Button>
 		</Tooltip>
 	{:else}
@@ -124,7 +128,7 @@
 			onclick={() => void refresh()}
 			data-testid="toolbar-refresh"
 		>
-			↻ Refresh
+			{t('localToolbar.refresh')}
 		</Button>
 	{/if}
 
@@ -138,18 +142,16 @@
 		disabled={isReadOnly}
 		onclick={openEmptyTrash}
 		data-testid="toolbar-trash"
-		aria-label="Trash contains {trashCount} {trashCount === 1 ? 'file' : 'files'}. Click to empty."
+		aria-label={t('localToolbar.trashAria', { n: trashCount })}
 	>
-		🗑 Trash ({trashCount})
+		🗑 {t('localToolbar.trashButton', { n: trashCount })}
 		<span class="opacity-60">·</span>
-		<span>Empty</span>
+		<span>{t('localToolbar.trashEmptyLabel')}</span>
 	</button>
 
 	<span class="text-xs opacity-60" data-testid="toolbar-status">
-		{stores.issues.issues.length}
-		{stores.issues.issues.length === 1 ? 'issue' : 'issues'} ·
-		{stores.issues.dirty.size}
-		{stores.issues.dirty.size === 1 ? 'dirty' : 'dirty'}
+		{t('common.issueCount', { n: issueCount })} ·
+		{t('common.dirtyCount', { n: dirtyCount })}
 	</span>
 
 	{#if refreshError}

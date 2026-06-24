@@ -20,6 +20,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { getStores } from '$lib/state';
+	import { t } from '$lib/ui/strings';
 	import type { LoadedIssue } from '$lib/types';
 
 	const { issues, filter, editor } = getStores();
@@ -117,13 +118,12 @@
 </script>
 
 <div class="px-4 py-3" data-testid="list-view">
-	<header class="mb-2 flex items-center justify-between text-xs opacity-70">
+	<div class="mb-2 flex items-center justify-between text-xs opacity-70">
 		<span data-testid="list-view-count">
-			<strong class="font-semibold opacity-100">{filteredCount}</strong> of {total}
-			{total === 1 ? 'issue' : 'issues'}
+			{t('list.countPill', { filtered: filteredCount, total: total })}
 		</span>
-		<span>Sort: <strong class="font-semibold opacity-100">{sortKey}</strong> ({sortDir})</span>
-	</header>
+		<span>{t('list.sortLabel', { key: sortKey, dir: sortDir })}</span>
+	</div>
 
 	<div class="overflow-x-auto">
 		<table class="table table-zebra table-sm">
@@ -135,8 +135,8 @@
 							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 							onclick={() => toggleSort('id')}
 						>
-							id {#if sortKey === 'id'}<span aria-hidden="true"
-									>{sortDir === 'asc' ? '▲' : '▼'}</span
+							{t('list.headers.id')}
+							{#if sortKey === 'id'}<span aria-hidden="true">{sortDir === 'asc' ? '▲' : '▼'}</span
 								>{/if}
 						</button>
 					</th>
@@ -146,32 +146,35 @@
 							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 							onclick={() => toggleSort('title')}
 						>
-							title {#if sortKey === 'title'}<span aria-hidden="true"
+							{t('list.headers.title')}
+							{#if sortKey === 'title'}<span aria-hidden="true"
 									>{sortDir === 'asc' ? '▲' : '▼'}</span
 								>{/if}
 						</button>
 					</th>
-					<th>type</th>
+					<th>{t('list.headers.type')}</th>
 					<th aria-sort={ariaSortFor('status')}>
 						<button
 							type="button"
 							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 							onclick={() => toggleSort('status')}
 						>
-							status {#if sortKey === 'status'}<span aria-hidden="true"
+							{t('list.headers.status')}
+							{#if sortKey === 'status'}<span aria-hidden="true"
 									>{sortDir === 'asc' ? '▲' : '▼'}</span
 								>{/if}
 						</button>
 					</th>
-					<th>assignee</th>
-					<th>labels</th>
+					<th>{t('list.headers.assignee')}</th>
+					<th>{t('list.headers.labels')}</th>
 					<th aria-sort={ariaSortFor('updated_date')}>
 						<button
 							type="button"
 							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 							onclick={() => toggleSort('updated_date')}
 						>
-							updated {#if sortKey === 'updated_date'}<span aria-hidden="true"
+							{t('list.headers.updated')}
+							{#if sortKey === 'updated_date'}<span aria-hidden="true"
 									>{sortDir === 'asc' ? '▲' : '▼'}</span
 								>{/if}
 						</button>
@@ -185,7 +188,7 @@
 						tabindex="0"
 						role="button"
 						data-row-id={li.issue.id}
-						aria-label="Open issue {li.issue.id}: {li.issue.title}"
+						aria-label={t('list.rowAria', { id: li.issue.id, title: li.issue.title })}
 						onclick={() => open(li.issue.id)}
 						onkeydown={(e) => onRowKeydown(e, idx)}
 					>
@@ -211,9 +214,7 @@
 				{/each}
 				{#if rows.length === 0}
 					<tr>
-						<td colspan="7" class="py-8 text-center opacity-60"
-							>No issues match the current filter.</td
-						>
+						<td colspan="7" class="py-8 text-center opacity-60">{t('list.empty')}</td>
 					</tr>
 				{/if}
 			</tbody>

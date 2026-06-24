@@ -17,6 +17,7 @@
 	import FolderPlus from '@lucide/svelte/icons/folder-plus';
 	import LayoutList from '@lucide/svelte/icons/layout-list';
 	import PencilLine from '@lucide/svelte/icons/pencil-line';
+	import { t } from '$lib/ui/strings';
 </script>
 
 <section
@@ -28,31 +29,28 @@
 		id="how-it-works-title"
 		class="text-xs font-semibold uppercase tracking-wide text-base-content/70"
 	>
-		How it works
+		{t('home.howItWorks.title')}
 	</h2>
 	<ol class="grid grid-cols-1 gap-4 md:grid-cols-3" role="list">
 		<li class="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-100 p-4">
 			<FolderPlus class="h-6 w-6 text-primary" aria-hidden="true" />
-			<h3 class="text-sm font-semibold">Pick a folder</h3>
+			<h3 class="text-sm font-semibold">{t('home.howItWorks.pickFolder.title')}</h3>
 			<p class="text-xs opacity-70">
-				Open a folder on your machine that already has (or will hold) a
-				<code>.nomad.md/</code> directory.
+				{t('home.howItWorks.pickFolder.body')}
 			</p>
 		</li>
 		<li class="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-100 p-4">
 			<LayoutList class="h-6 w-6 text-primary" aria-hidden="true" />
-			<h3 class="text-sm font-semibold">Browse your issues</h3>
+			<h3 class="text-sm font-semibold">{t('home.howItWorks.browse.title')}</h3>
 			<p class="text-xs opacity-70">
-				See the list, kanban, or gantt view of every issue the folder holds. Filter, search, and
-				open one to read it.
+				{t('home.howItWorks.browse.body')}
 			</p>
 		</li>
 		<li class="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-100 p-4">
 			<PencilLine class="h-6 w-6 text-primary" aria-hidden="true" />
-			<h3 class="text-sm font-semibold">Edit and save</h3>
+			<h3 class="text-sm font-semibold">{t('home.howItWorks.edit.title')}</h3>
 			<p class="text-xs opacity-70">
-				Change a title, tweak a status, or write a new section. Saves go straight to disk in the
-				same folder you picked.
+				{t('home.howItWorks.edit.body')}
 			</p>
 		</li>
 	</ol>

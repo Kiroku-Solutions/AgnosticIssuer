@@ -26,6 +26,7 @@
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { t } from '$lib/ui/strings';
 
 	type Props = {
 		/** Whether the modal is visible. Two-way binding optional. */
@@ -97,14 +98,13 @@
 	onclose={() => onCancel()}
 >
 	<div class="modal-box max-w-sm">
-		<h2 class="text-base font-semibold">Refresh remote</h2>
+		<h2 class="text-base font-semibold">{t('refreshPatPrompt.title')}</h2>
 		<p class="mt-2 text-sm opacity-80">
-			The remote subtree will be re-fetched. Provide a Personal Access Token so the proxy can
-			authenticate against the Git provider. The token is held in memory only.
+			{t('refreshPatPrompt.body')}
 		</p>
 		<form onsubmit={onSubmit} class="mt-4 flex flex-col gap-3">
 			<label class="form-control">
-				<span class="label-text text-xs">Personal Access Token</span>
+				<span class="label-text text-xs">{t('refreshPatPrompt.label')}</span>
 				<input
 					name="pat"
 					type="password"
@@ -125,7 +125,7 @@
 					disabled={loading}
 					data-testid="refresh-pat-prompt-cancel"
 				>
-					Cancel
+					{t('common.cancel')}
 				</button>
 				<button
 					type="submit"
@@ -133,12 +133,12 @@
 					disabled={loading || pat.trim() === ''}
 					data-testid="refresh-pat-prompt-submit"
 				>
-					{loading ? 'Refreshing…' : 'Refresh'}
+					{loading ? t('refreshPatPrompt.refreshing') : t('common.refresh')}
 				</button>
 			</div>
 		</form>
 	</div>
 	<form method="dialog" class="modal-backdrop">
-		<button type="submit" aria-label="Close">close</button>
+		<button type="submit" aria-label={t('refreshPatPrompt.closeAria')}>{t('common.close')}</button>
 	</form>
 </dialog>

@@ -24,6 +24,7 @@
 -->
 <script lang="ts">
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import { t } from '$lib/ui/strings';
 	import { getStores } from '$lib/state';
 
 	const { issues, editor } = getStores();
@@ -53,24 +54,21 @@
 		class="flex items-center gap-3 border-b border-warning/40 bg-warning/10 px-4 py-2 text-sm"
 	>
 		<AlertTriangle class="h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
-		<span class="flex-1">
-			{count}
-			{count === 1 ? 'issue file' : 'issue files'} modified outside nomad.md — review before saving.
-		</span>
+		<span class="flex-1">{t('integrity.bannerBody', { n: count })}</span>
 		<button
 			type="button"
 			class="btn btn-sm btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 			onclick={review}
 		>
-			Review
+			{t('common.review')}
 		</button>
 		<button
 			type="button"
 			class="btn btn-sm btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-			aria-label="Dismiss integrity warning"
+			aria-label={t('integrity.dismissAria')}
 			onclick={dismiss}
 		>
-			Dismiss
+			{t('common.dismiss')}
 		</button>
 	</div>
 {/if}

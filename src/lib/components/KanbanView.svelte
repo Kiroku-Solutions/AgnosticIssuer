@@ -34,6 +34,7 @@
 	import { untrack } from 'svelte';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { getStores } from '$lib/state';
+	import { t } from '$lib/ui/strings';
 	import type { LoadedIssue } from '$lib/types';
 	import Tooltip from '$lib/ui/Tooltip.svelte';
 
@@ -221,7 +222,7 @@
 			data-column-id={col.id}
 		>
 			{#if isReadOnly}
-				<Tooltip text="Read-only — open this issue locally to change its status" position="bottom">
+				<Tooltip text={t('kanban.readOnlyTooltip')} position="bottom">
 					<div class="mb-3 flex items-center justify-between">
 						<h3
 							class="text-sm font-semibold uppercase tracking-wide"
@@ -271,30 +272,36 @@
 				{#each colCards as card (card.id)}
 					{@const li = findLoaded(card.id)}
 					{#if li}
-						<button
-							type="button"
-							class="card bg-base-100 w-full p-3 text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-							data-testid="kanban-card"
-							data-card-id={li.issue.id}
-							aria-label="Issue {li.issue.id}: {li.issue.title} in column {col.id}"
-							onclick={() => open(li.issue.id)}
-							onkeydown={(e) => onCardKeydown(e, li)}
-						>
-							<div class="mb-1 flex items-start justify-between">
-								<span class="font-mono text-xs opacity-60">
-									{li.issue.id.toString().padStart(4, '0')}
-								</span>
-								<span class="badge badge-ghost badge-xs">{li.issue.issueType}</span>
-							</div>
-							<div class="text-sm font-medium leading-tight">{li.issue.title}</div>
-							{#if li.issue.assignee}
-								<div class="mt-1 text-xs opacity-70">@{li.issue.assignee}</div>
-							{/if}
-						</button>
+						<li role="listitem">
+							<button
+								type="button"
+								class="card bg-base-100 w-full p-3 text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+								data-testid="kanban-card"
+								data-card-id={li.issue.id}
+								aria-label={t('kanban.cardAria', {
+									id: li.issue.id,
+									title: li.issue.title,
+									col: col.id
+								})}
+								onclick={() => open(li.issue.id)}
+								onkeydown={(e) => onCardKeydown(e, li)}
+							>
+								<div class="mb-1 flex items-start justify-between">
+									<span class="font-mono text-xs opacity-60">
+										{li.issue.id.toString().padStart(4, '0')}
+									</span>
+									<span class="badge badge-ghost badge-xs">{li.issue.issueType}</span>
+								</div>
+								<div class="text-sm font-medium leading-tight">{li.issue.title}</div>
+								{#if li.issue.assignee}
+									<div class="mt-1 text-xs opacity-70">@{li.issue.assignee}</div>
+								{/if}
+							</button>
+						</li>
 					{/if}
 				{/each}
 				{#if colCards.length === 0}
-					<div class="py-4 text-center text-xs italic opacity-50">No issues</div>
+					<div class="py-4 text-center text-xs italic opacity-50">{t('formFields.noIssues')}</div>
 				{/if}
 			</div>
 		</div>

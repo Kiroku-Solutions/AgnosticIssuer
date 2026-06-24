@@ -21,6 +21,7 @@
 -->
 <script lang="ts">
 	import { Modal } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import { emptyTrash } from '$lib/adapters';
 	import type { DirectoryAdapter } from '$lib/adapters';
 
@@ -59,24 +60,21 @@
 </script>
 
 <Modal bind:open onclose={close} class="max-w-md">
-	<header class="mb-2 flex items-start justify-between gap-3">
-		<h2 class="text-lg font-semibold">Empty trash?</h2>
+	<div class="mb-2 flex items-start justify-between gap-3">
+		<h2 class="text-lg font-semibold">{t('emptyTrashModal.title')}</h2>
 		<button
 			type="button"
 			class="btn btn-ghost btn-sm"
 			onclick={close}
-			aria-label="Close empty-trash dialog">×</button
+			aria-label={t('emptyTrashModal.closeAria')}>×</button
 		>
-	</header>
+	</div>
 
 	<p class="text-sm">
 		{#if count === 0}
-			The trash is already empty.
+			{t('emptyTrashModal.alreadyEmpty')}
 		{:else}
-			This will <strong class="text-error">permanently delete</strong>
-			{count}
-			{count === 1 ? 'file' : 'files'} from
-			<code>.nomad.md/.trash/</code>. This cannot be undone.
+			{t('emptyTrashModal.confirmBody', { n: count })}
 		{/if}
 	</p>
 
@@ -86,7 +84,7 @@
 
 	<footer class="mt-4 flex items-center justify-end gap-2">
 		<button type="button" class="btn btn-ghost btn-sm" onclick={close} disabled={busy}>
-			Cancel
+			{t('common.cancel')}
 		</button>
 		<button
 			type="button"
@@ -99,7 +97,7 @@
 			{#if busy}
 				<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
 			{/if}
-			Empty trash
+			{t('emptyTrashModal.confirm')}
 		</button>
 	</footer>
 </Modal>

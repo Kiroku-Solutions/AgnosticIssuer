@@ -32,6 +32,7 @@
 -->
 <script lang="ts">
 	import { Modal, Input } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import type { Template } from '$lib/types';
 	import { getStores } from '$lib/state';
 	import type { Component } from 'svelte';
@@ -109,8 +110,8 @@
 		}
 	});
 
-	function pick(t: Template): void {
-		selectedId = t.id;
+	function pick(tmpl: Template): void {
+		selectedId = tmpl.id;
 	}
 
 	async function create(): Promise<void> {
@@ -139,24 +140,29 @@
 </script>
 
 <Modal bind:open onclose={close} class="max-w-2xl">
-	<header class="mb-3 flex items-start justify-between gap-3">
-		<h2 class="text-lg font-semibold">New issue</h2>
+	<div class="mb-3 flex items-start justify-between gap-3">
+		<h2 class="text-lg font-semibold">{t('newIssueModal.title')}</h2>
 		<button
 			type="button"
 			class="btn btn-ghost btn-sm"
 			onclick={close}
-			aria-label="Close new-issue dialog">×</button
+			aria-label={t('newIssueModal.closeAria')}>×</button
 		>
-	</header>
+	</div>
 
-	<Input bind:value={search} placeholder="Search types…" type="search" class="mb-3" />
+	<Input
+		bind:value={search}
+		placeholder={t('newIssueModal.searchPlaceholder')}
+		type="search"
+		class="mb-3"
+	/>
 
 	{#if filtered.length === 0}
 		<div
 			class="flex flex-col items-center gap-2 rounded-md border border-dashed border-base-300 p-6 text-center text-sm opacity-70"
 		>
 			<AlertTriangle class="h-6 w-6" aria-hidden="true" />
-			<p>No types match "{search}".</p>
+			<p>{t('newIssueModal.noMatch', { q: search })}</p>
 		</div>
 	{:else}
 		<ul
@@ -164,9 +170,9 @@
 			role="list"
 			data-testid="new-issue-type-grid"
 		>
-			{#each filtered as t (t.id)}
-				{@const Icon = iconFor(t.icon)}
-				{@const isSelected = selectedId === t.id}
+			{#each filtered as tmpl (tmpl.id)}
+				{@const Icon = iconFor(tmpl.icon)}
+				{@const isSelected = selectedId === tmpl.id}
 				<li>
 					<button
 						type="button"
@@ -174,18 +180,16 @@
 							? 'border-primary bg-primary/10'
 							: 'border-base-300 hover:border-base-content/30 hover:bg-base-200'}"
 						aria-pressed={isSelected}
-						aria-label="Select {t.name}"
+						aria-label={t('newIssueModal.selectType', { name: tmpl.name })}
 						data-testid="new-issue-type-card"
-						data-type-id={t.id}
-						onclick={() => pick(t)}
+						data-type-id={tmpl.id}
+						onclick={() => pick(tmpl)}
 					>
 						<Icon class="h-5 w-5" aria-hidden="true" />
-						<div class="text-sm font-semibold">{t.name}</div>
+						<div class="text-sm font-semibold">{tmpl.name}</div>
 						<div class="text-xs opacity-70">
-							{t.fields.length}
-							{t.fields.length === 1 ? 'field' : 'fields'} ·
-							{t.sections.length}
-							{t.sections.length === 1 ? 'section' : 'sections'}
+							{t('newIssueModal.fieldCount', { n: tmpl.fields.length })} ·
+							{t('newIssueModal.sectionCount', { n: tmpl.sections.length })}
 						</div>
 					</button>
 				</li>
@@ -198,7 +202,7 @@
 	{/if}
 
 	<footer class="mt-4 flex items-center justify-end gap-2">
-		<button type="button" class="btn btn-ghost btn-sm" onclick={close}>Cancel</button>
+		<button type="button" class="btn btn-ghost btn-sm" onclick={close}>{t('common.cancel')}</button>
 		<button
 			type="button"
 			class="btn btn-primary btn-sm"
@@ -210,7 +214,7 @@
 			{#if creating}
 				<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
 			{/if}
-			Create
+			{t('newIssueModal.create')}
 		</button>
 	</footer>
 </Modal>

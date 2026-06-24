@@ -9,6 +9,7 @@
 <script lang="ts">
 	import { getStores } from '$lib/state';
 	import { Button, Card, IconButton, Input, Tooltip } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
 	import Monitor from '@lucide/svelte/icons/monitor';
@@ -25,9 +26,9 @@
 	const stores = getStores();
 
 	const themeOptions: ReadonlyArray<{ id: Theme; label: string; icon: typeof Sun }> = [
-		{ id: 'light', label: 'Light', icon: Sun },
-		{ id: 'dark', label: 'Dark', icon: Moon },
-		{ id: 'system', label: 'System', icon: Monitor }
+		{ id: 'light', label: t('settings.themeLight'), icon: Sun },
+		{ id: 'dark', label: t('settings.themeDark'), icon: Moon },
+		{ id: 'system', label: t('settings.themeSystem'), icon: Monitor }
 	];
 
 	const corsProxy = $derived(stores.config.config?.remote.cors_proxy ?? '');
@@ -79,7 +80,7 @@
 	<button
 		type="button"
 		class="fixed inset-0 z-40 cursor-default bg-black/40"
-		aria-label="Close settings"
+		aria-label={t('settings.backdropAria')}
 		onclick={onclose}
 		data-testid="settings-backdrop"
 	></button>
@@ -89,21 +90,23 @@
 		data-testid="settings-panel"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Settings"
+		aria-label={t('settings.title')}
 	>
-		<header
+		<div
 			class="flex items-center justify-between gap-3 border-b border-base-300 px-4 py-3"
 			data-testid="settings-header"
 		>
-			<h2 class="text-lg font-semibold">Settings</h2>
-			<IconButton label="Close settings" onclick={onclose} data-testid="settings-close">
+			<h2 class="text-lg font-semibold">{t('settings.title')}</h2>
+			<IconButton label={t('settings.closeAria')} onclick={onclose} data-testid="settings-close">
 				<X class="h-4 w-4" aria-hidden="true" />
 			</IconButton>
-		</header>
+		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 py-4">
 			<section class="flex flex-col gap-2" data-testid="settings-theme">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">Theme</h3>
+				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+					{t('settings.themeHeading')}
+				</h3>
 				<div class="flex gap-2">
 					{#each themeOptions as opt (opt.id)}
 						{@const Icon = opt.icon}
@@ -123,39 +126,46 @@
 				</div>
 				{#if stores.theme.preference === 'system'}
 					<p class="text-xs opacity-60">
-						Following the OS preference ({stores.theme.theme === 'dark' ? 'dark' : 'light'} right now).
+						{t('settings.themeSystemHint', {
+							now: stores.theme.theme === 'dark' ? 'dark' : 'light'
+						})}
 					</p>
 				{/if}
 			</section>
 
 			<section class="mt-6 flex flex-col gap-2" data-testid="settings-cors">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">CORS proxy</h3>
+				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+					{t('settings.corsHeading')}
+				</h3>
 				<Input
 					value={corsProxy}
 					readonly
-					placeholder="(not configured)"
+					placeholder={t('settings.corsPlaceholder')}
 					data-testid="settings-cors-input"
 				/>
 				<p class="text-xs opacity-60" data-testid="settings-cors-note">
-					Editing this value requires re-saving your <code>config.json</code>. Coming in a
-					follow-up.
+					{t('settings.corsNote')}
 				</p>
 			</section>
 
 			<section class="mt-6 flex flex-col gap-2" data-testid="settings-recent">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">Recent folders</h3>
+				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+					{t('settings.recentHeading')}
+				</h3>
 				<Card compact>
 					<RecentFoldersList />
 				</Card>
 			</section>
 
 			<section class="mt-6 flex flex-col gap-3" data-testid="settings-commands">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">Commands</h3>
+				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+					{t('settings.commandsHeading')}
+				</h3>
 				<div class="flex flex-wrap gap-2">
 					<Tooltip
 						text={canClearCache
-							? 'Clear cached remote clones (per-key) — wired in a follow-up'
-							: 'Sign in to a remote repository to enable this'}
+							? t('settings.clearCacheRemoteTooltip')
+							: t('settings.clearCacheSignInTooltip')}
 						position="top"
 					>
 						<Button
@@ -165,13 +175,13 @@
 							data-testid="settings-clear-cache"
 						>
 							<RefreshCw class="h-4 w-4" aria-hidden="true" />
-							<span>Clear remote cache</span>
+							<span>{t('settings.clearCache')}</span>
 						</Button>
 					</Tooltip>
 					<Tooltip
 						text={localAdapter
-							? 'Empty the local .nomad.md/.trash/ folder'
-							: 'Open a local folder to enable this'}
+							? t('settings.emptyTrashLocalTooltip')
+							: t('settings.emptyTrashSignInTooltip')}
 						position="top"
 					>
 						<Button
@@ -182,7 +192,7 @@
 							data-testid="settings-empty-trash"
 						>
 							<Trash class="h-4 w-4" aria-hidden="true" />
-							<span>Empty trash{trashCount > 0 ? ` (${trashCount})` : ''}</span>
+							<span>{t('settings.emptyTrash', { n: trashCount })}</span>
 						</Button>
 					</Tooltip>
 				</div>

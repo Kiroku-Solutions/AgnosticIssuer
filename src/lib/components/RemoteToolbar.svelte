@@ -46,6 +46,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Button } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import { formatRelative } from '$lib/ui/format';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import LogOut from '@lucide/svelte/icons/log-out';
@@ -60,6 +61,7 @@
 			? null
 			: formatRelative(stores.mode.lastFetchedAt, Date.now())
 	);
+	const issueCount = $derived(stores.issues.issues.length);
 
 	let refreshing = $state(false);
 	let refreshError = $state<string | null>(null);
@@ -76,7 +78,7 @@
 			// through to the alert copy; the user can re-prompt from there.
 			const name = (cause as { name?: string }).name;
 			if (name === 'RemotePatRequiredError') {
-				refreshError = 'Remote session expired — sign in again to refresh.';
+				refreshError = t('common.remoteSessionExpired');
 			} else {
 				refreshError = (cause as Error).message;
 			}
@@ -113,7 +115,7 @@
 		data-testid="remote-toolbar-refresh"
 	>
 		<RefreshCw class="mr-1 h-4 w-4" aria-hidden="true" />
-		Refresh
+		{t('common.refresh')}
 	</Button>
 
 	<span
@@ -127,21 +129,20 @@
 		<span
 			class="text-xs opacity-60"
 			data-testid="remote-toolbar-last-fetched"
-			aria-label="Last fetched {fetchedLabel}"
+			aria-label={t('remoteToolbar.lastFetchedAria', { label: fetchedLabel })}
 		>
-			Last fetched: {fetchedLabel}
+			{t('remoteToolbar.lastFetched', { label: fetchedLabel })}
 		</span>
 	{:else}
 		<span class="text-xs opacity-60" data-testid="remote-toolbar-last-fetched-pending">
-			Not yet fetched
+			{t('remoteToolbar.notYetFetched')}
 		</span>
 	{/if}
 
 	<div class="flex-1"></div>
 
 	<span class="text-xs opacity-60" data-testid="remote-toolbar-status">
-		{stores.issues.issues.length}
-		{stores.issues.issues.length === 1 ? 'issue' : 'issues'} (read-only)
+		{t('remoteToolbar.view', { n: issueCount })}
 	</span>
 
 	<Button
@@ -151,7 +152,7 @@
 		data-testid="remote-toolbar-signout"
 	>
 		<LogOut class="mr-1 h-4 w-4" aria-hidden="true" />
-		Sign out
+		{t('remoteToolbar.signOut')}
 	</Button>
 </div>
 
@@ -162,7 +163,7 @@
 			<button
 				type="button"
 				class="btn btn-sm btn-circle btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-				aria-label="Dismiss error"
+				aria-label={t('remoteToolbar.dismissErrorAria')}
 				onclick={() => (refreshError = null)}
 			>
 				✕

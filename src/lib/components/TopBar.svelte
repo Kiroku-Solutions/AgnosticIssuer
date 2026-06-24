@@ -28,6 +28,7 @@
 	import { resolve } from '$app/paths';
 	import Settings from '@lucide/svelte/icons/settings';
 	import { Badge, IconButton, Tooltip } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import ProxyWarningBanner from './ProxyWarningBanner.svelte';
 	import SettingsPanel from './SettingsPanel.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
@@ -44,20 +45,20 @@
 	const stores = getStores();
 
 	const folderName = $derived(mode === 'local' ? (stores.mode.activeHandle?.name ?? null) : null);
-	const repoLabel = $derived(mode === 'remote' ? 'Remote repository' : null);
+	const repoLabel = $derived(mode === 'remote' ? t('topbar.remoteRepository') : null);
 
 	const badge = $derived.by(() => {
 		switch (mode) {
 			case 'local':
-				return { label: 'Local', variant: 'success' as const };
+				return { label: t('modeBadge.local'), variant: 'success' as const };
 			case 'remote':
-				return { label: 'Remote (read-only)', variant: 'warning' as const };
+				return { label: t('modeBadge.remote'), variant: 'warning' as const };
 			case 'wizard':
 				// The 6B Badge primitive does not ship an `info` variant;
 				// the closest semantic match is `primary` (active flow).
-				return { label: 'Setup', variant: 'primary' as const };
+				return { label: t('modeBadge.setup'), variant: 'primary' as const };
 			default:
-				return { label: 'Home', variant: 'ghost' as const };
+				return { label: t('modeBadge.home'), variant: 'ghost' as const };
 		}
 	});
 
@@ -76,15 +77,16 @@
 
 <header
 	data-testid="topbar"
+	aria-label={t('topbar.ariaLabel')}
 	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-base-300 bg-base-200 px-4"
 >
 	<a
 		href={resolve('/')}
 		class="flex items-baseline gap-2 font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
-		aria-label="nomad.md home"
+		aria-label={t('app.homeAria')}
 	>
-		<span class="text-lg">nomad.md</span>
-		<span class="text-xs opacity-60">v0.0.1</span>
+		<span class="text-lg">{t('app.name')}</span>
+		<span class="text-xs opacity-60">{t('app.version')}</span>
 	</a>
 
 	<Badge variant={badge.variant} size="sm">{badge.label}</Badge>
@@ -103,8 +105,12 @@
 
 	<ThemeToggle />
 
-	<Tooltip text="Settings" position="bottom">
-		<IconButton label="Open settings" onclick={toggleSettings} data-testid="topbar-settings">
+	<Tooltip text={t('topbar.settingsTooltip')} position="bottom">
+		<IconButton
+			label={t('topbar.openSettings')}
+			onclick={toggleSettings}
+			data-testid="topbar-settings"
+		>
 			<Settings class="h-5 w-5" aria-hidden="true" />
 		</IconButton>
 	</Tooltip>

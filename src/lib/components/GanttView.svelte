@@ -18,6 +18,7 @@
 <script lang="ts">
 	import { getStores, brandIssueId, type IssueId } from '$lib/state';
 	import { EmptyState } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import { fallbackColor } from '$lib/ui/colors';
 	import type { LoadedIssue } from '$lib/types';
 
@@ -238,15 +239,12 @@
 
 <div class="space-y-6 p-4">
 	{#if isEmpty}
-		<EmptyState
-			title="No issues are scheduled yet"
-			body="Add start and end dates to issues in the Editor to see them on the Gantt."
-		/>
+		<EmptyState title={t('gantt.emptyTitle')} body={t('gantt.emptyBody')} />
 	{:else}
 		<div class="overflow-x-auto rounded border border-base-300 bg-base-100">
 			<svg
-				role="img"
-				aria-label="Gantt timeline"
+				aria-roledescription={t('gantt.roleDescription')}
+				aria-label={t('gantt.ariaLabel')}
 				width={svgWidth}
 				height={svgHeight}
 				xmlns="http://www.w3.org/2000/svg"
@@ -300,7 +298,7 @@
 						}}
 						role="button"
 						tabindex="0"
-						aria-label={`Issue ${bar.id}: ${bar.title}`}
+						aria-label={t('gantt.barAria', { id: bar.id, title: bar.title })}
 					>
 						<rect
 							x={bar.x}
@@ -313,7 +311,7 @@
 							opacity="0.85"
 						/>
 						<text x={bar.x + 6} y={bar.y + bar.h / 2 + 4} font-size="11" fill="#fff">
-							{bar.title.length > 30 ? bar.title.slice(0, 30) + '…' : bar.title}
+							{bar.title.length > 30 ? bar.title.slice(0, 30) + t('gantt.truncation') : bar.title}
 						</text>
 					</g>
 				{/each}
@@ -328,13 +326,18 @@
 	{/if}
 
 	<details class="rounded bg-base-200 p-3 text-sm">
-		<summary class="cursor-pointer font-semibold">Textual fallback (NFR-4 accessibility)</summary>
+		<summary class="cursor-pointer font-semibold">{t('gantt.fallbackSummary')}</summary>
 		<div class="mt-3 overflow-x-auto">
 			<table class="table table-zebra table-xs">
 				<thead>
 					<tr>
-						<th>id</th><th>title</th><th>type</th><th>status</th>
-						<th>group</th><th>start</th><th>end / duration</th>
+						<th>{t('gantt.fallbackHeaders.id')}</th>
+						<th>{t('gantt.fallbackHeaders.title')}</th>
+						<th>{t('gantt.fallbackHeaders.type')}</th>
+						<th>{t('gantt.fallbackHeaders.status')}</th>
+						<th>{t('gantt.fallbackHeaders.group')}</th>
+						<th>{t('gantt.fallbackHeaders.start')}</th>
+						<th>{t('gantt.fallbackHeaders.endOrDuration')}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -346,7 +349,10 @@
 							<td>{bar.status}</td>
 							<td>{bar.group}</td>
 							<td>{bar.startDate ?? '—'}</td>
-							<td>{bar.endDate ?? (bar.duration ? `${bar.duration} d` : '—')}</td>
+							<td
+								>{bar.endDate ??
+									(bar.duration ? t('gantt.duration', { n: bar.duration }) : '—')}</td
+							>
 						</tr>
 					{/each}
 					{#each undated as li (li.issue.id)}
@@ -358,15 +364,13 @@
 							<td>{li.issue.title}</td>
 							<td>{li.issue.issueType}</td>
 							<td>{li.issue.status}</td>
-							<td colspan="2" class="italic">Not scheduled</td>
+							<td colspan="2" class="italic">{t('gantt.fallbackNotScheduled')}</td>
 							<td>—</td>
 						</tr>
 					{/each}
 					{#if bars.length === 0 && undated.length === 0}
 						<tr>
-							<td colspan="7" class="py-6 text-center opacity-60"
-								>No issues match the current filter.</td
-							>
+							<td colspan="7" class="py-6 text-center opacity-60">{t('gantt.fallbackEmpty')}</td>
 						</tr>
 					{/if}
 				</tbody>

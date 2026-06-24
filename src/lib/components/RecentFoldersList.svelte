@@ -34,6 +34,7 @@
 	import Folder from '@lucide/svelte/icons/folder';
 	import X from '@lucide/svelte/icons/x';
 	import { IconButton } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import { formatRelative } from '$lib/ui/format';
 	import { handleStore } from '$lib/adapters';
 	import { getStores } from '$lib/state';
@@ -79,7 +80,7 @@
 {#if visible.length > 0}
 	<section data-testid="recent-folders" class="flex flex-col gap-2">
 		<h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/70">
-			Recent folders
+			{t('home.recentFolders.title')}
 		</h2>
 		<ul class="flex flex-col gap-1" role="list">
 			{#each visible as record (record.id)}
@@ -99,11 +100,14 @@
 					>
 						{record.name}
 					</button>
-					<span class="shrink-0 text-xs opacity-60" aria-label="Last opened {label}">
+					<span
+						class="shrink-0 text-xs opacity-60"
+						aria-label={t('home.recentFolders.lastOpenedAgo', { label })}
+					>
 						{label}
 					</span>
 					<IconButton
-						label="Forget {record.name}"
+						label={t('home.recentFolders.forgetLabel', { name: record.name })}
 						data-testid="recent-folder-forget"
 						onclick={() => void forget(record)}
 					>

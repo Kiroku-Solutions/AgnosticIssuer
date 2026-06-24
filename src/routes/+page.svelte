@@ -18,6 +18,7 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import Lock from '@lucide/svelte/icons/lock';
 	import { Alert, Button, Card, Input } from '$lib/ui';
+	import { t } from '$lib/ui/strings';
 	import { isFsaAvailable } from '$lib/adapters/feature-detect';
 	import { LocalFsAdapter } from '$lib/adapters';
 	import { getStores } from '$lib/state';
@@ -40,9 +41,7 @@
 	async function openLocalFolder(): Promise<void> {
 		openError = null;
 		if (!fsaSupported) {
-			openError =
-				'Your browser does not support the File System Access API. ' +
-				'Use Chrome, Edge, Brave, Arc, Opera, or Vivaldi for Local Edit Mode.';
+			openError = t('home.fsaUnavailable');
 			return;
 		}
 		localLoading = true;
@@ -80,26 +79,19 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-4xl flex-col gap-10 px-6 py-12">
-	<header class="flex flex-col gap-2 text-center">
-		<h1 class="text-3xl font-bold tracking-tight">nomad.md</h1>
-		<p class="text-sm opacity-70">Issues that travel with your repo</p>
-	</header>
+	<section aria-labelledby="home-hero-title" class="flex flex-col gap-2 text-center">
+		<h1 id="home-hero-title" class="text-3xl font-bold tracking-tight">{t('home.heroTitle')}</h1>
+		<p class="text-sm opacity-70">{t('home.heroSubtitle')}</p>
+	</section>
 
-	<section aria-label="Choose a mode" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+	<section aria-label={t('home.chooseModeAria')} class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<Card>
 			<div class="flex h-full flex-col gap-3">
 				<FolderOpen class="h-7 w-7 text-primary" aria-hidden="true" />
-				<h2 class="text-lg font-semibold">Open a local folder</h2>
-				<p class="text-sm opacity-80">
-					Pick a folder on your machine to edit issues stored under
-					<code>.nomad.md/</code>.
-				</p>
-				<p class="text-xs opacity-60">Requires a Chromium-based browser.</p>
+				<h2 class="text-lg font-semibold">{t('home.openLocalTitle')}</h2>
+				<p class="text-sm opacity-80">{t('home.openLocalBody')}</p>
 				{#if !fsaSupported}
-					<Alert variant="warning">
-						Your browser does not support the File System Access API. Use Chrome, Edge, Brave, Arc,
-						Opera, or Vivaldi for Local Edit Mode.
-					</Alert>
+					<Alert variant="warning">{t('home.fsaUnavailable')}</Alert>
 				{/if}
 				{#if openError}
 					<Alert variant="error">{openError}</Alert>
@@ -111,7 +103,7 @@
 						disabled={!fsaSupported}
 						loading={localLoading}
 					>
-						Open local folder
+						{t('home.openLocalButton')}
 					</Button>
 				</div>
 			</div>
@@ -126,27 +118,30 @@
 				}}
 			>
 				<Globe class="h-7 w-7 text-primary" aria-hidden="true" />
-				<h2 class="text-lg font-semibold">Browse a remote repository</h2>
-				<p class="text-sm opacity-80">Read-only access to issues hosted on any Git provider.</p>
+				<h2 class="text-lg font-semibold">{t('home.openRemoteTitle')}</h2>
+				<p class="text-sm opacity-80">{t('home.openRemoteBody')}</p>
 				<div class="flex flex-col gap-2">
 					<Input
 						bind:value={repoUrl}
 						type="url"
-						placeholder="https://github.com/owner/repo"
+						placeholder={t('home.remoteUrlPlaceholder')}
 						required
 					/>
-					<Input bind:value={repoBranch} type="text" placeholder="main" required />
+					<Input
+						bind:value={repoBranch}
+						type="text"
+						placeholder={t('home.remoteBranchPlaceholder')}
+						required
+					/>
 					<Input
 						bind:value={pat}
 						type="password"
-						placeholder="ghp_… (optional for public repos)"
+						placeholder={t('home.remotePatLabel')}
 						autocomplete="off"
 					/>
 					<p class="flex items-start gap-1 text-xs opacity-60">
 						<Lock class="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-						<span>
-							Stored in memory only for the duration of the session — never on disk, never in URLs.
-						</span>
+						<span>{t('home.remotePatHelp')}</span>
 					</p>
 				</div>
 				{#if remoteError}
@@ -159,7 +154,7 @@
 						disabled={!repoUrl.trim() || !repoBranch.trim()}
 						loading={remoteLoading}
 					>
-						Open remote
+						{t('home.openRemoteButton')}
 					</Button>
 				</div>
 			</form>

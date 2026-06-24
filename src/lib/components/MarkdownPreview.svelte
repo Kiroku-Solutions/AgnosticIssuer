@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
 	import { renderMarkdown } from '$lib/adapters/renderer';
+	import { t } from '$lib/ui/strings';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 
 	type Props = { markdown: string };
@@ -50,7 +51,7 @@
 				const out = await renderMarkdown(src, 'comment');
 				if (!cancelled) html = out;
 			} catch {
-				if (!cancelled) html = '<p class="text-error">Failed to render preview.</p>';
+				if (!cancelled) html = t('markdown.renderFailed');
 			} finally {
 				if (!cancelled) rendering = false;
 			}
