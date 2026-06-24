@@ -6,20 +6,38 @@
 	component is fully controlled (`bind:checked`).
 
 	Props:
-	  checked:  boolean
-	  label:    string
-	  disabled: boolean
-	  class:    string   — extra utility classes
+	  checked:    boolean
+	  label:      string
+	  disabled:   boolean
+	  ariaLabel:  string | null  — fallback a11y label when `label` is
+	                                empty (e.g. when the visual label lives
+	                                outside the checkbox as a sibling
+	                                block).
+	  class:      string   — extra utility classes
+
+	Any extra HTML attributes (`onchange`, `data-testid`, …) are spread
+	onto the underlying `<input>` so callers can wire state without
+	duplicating the markup.
 -->
 <script lang="ts">
+	import type { HTMLInputAttributes } from 'svelte/elements';
+
 	type Props = {
 		checked: boolean;
 		label: string;
 		disabled?: boolean;
+		ariaLabel?: string | null;
 		class?: string;
-	};
+	} & Omit<HTMLInputAttributes, 'checked' | 'label' | 'disabled' | 'class' | 'aria-label'>;
 
-	let { checked = $bindable(), label, disabled = false, class: extraClass = '' }: Props = $props();
+	let {
+		checked = $bindable(),
+		label,
+		disabled = false,
+		ariaLabel = null,
+		class: extraClass = '',
+		...rest
+	}: Props = $props();
 
 	const id = `cb-${Math.random().toString(36).slice(2, 8)}`;
 </script>
@@ -28,9 +46,13 @@
 	<input
 		{id}
 		type="checkbox"
+		aria-label={ariaLabel ?? undefined}
 		class="checkbox checkbox-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 		bind:checked
 		{disabled}
+		{...rest}
 	/>
-	<label for={id} class="label-text cursor-pointer select-none">{label}</label>
+	{#if label}
+		<label for={id} class="label-text cursor-pointer select-none">{label}</label>
+	{/if}
 </div>

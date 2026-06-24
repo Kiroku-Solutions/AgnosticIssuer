@@ -179,7 +179,10 @@ export default defineConfig({
 						// `modal.svelte.test.ts`) to a wildcard so future tests
 						// added under `tests/ui/` inherit the same exclusion
 						// without needing another config edit per test.
-						'tests/ui/*.svelte.test.ts'
+						'tests/ui/*.svelte.test.ts',
+						// 6K a11y tests import `vitest/browser` and run axe-core
+						// against a real DOM. They are Playwright-Chromium-only.
+						'tests/a11y/*'
 					]
 				}
 			},

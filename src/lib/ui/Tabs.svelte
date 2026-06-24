@@ -85,7 +85,6 @@
 			role="tab"
 			id="tab-{tab.id}"
 			aria-selected={isActive}
-			aria-controls="tabpanel-{tab.id}"
 			tabindex={isActive ? 0 : -1}
 			class="tab focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 {isActive
 				? 'tab-active'
