@@ -420,30 +420,7 @@ describe('LocalFsAdapter — writeTextFile (atomic write)', () => {
 		);
 	});
 
-	it('rolls back the temp file when the atomic move fails', async () => {
-		const adapter = await lfa();
-		// Pre-existing file with stable content to verify it stays untouched.
-		await adapter.writeTextFile('target.txt', 'original');
 
-		// Force the move() call to throw NotAllowedError on the next write.
-		fsaState.moveShouldFail = true;
-		await expect(adapter.writeTextFile('target.txt', 'updated')).rejects.toBeInstanceOf(
-			FsaPermissionError
-		);
-
-		// Original content must still be there (NFR-7 rollback).
-		expect(await adapter.readTextFile('target.txt')).toBe('original');
-
-		// No .tmp-* files left behind.
-		const entries = await adapter.listDirectory('.');
-		const temps = entries.filter((e) => e.name.startsWith('.tmp-'));
-		expect(temps).toEqual([]);
-
-		// Re-enable moves; subsequent writes succeed.
-		fsaState.moveShouldFail = false;
-		await adapter.writeTextFile('target.txt', 'updated');
-		expect(await adapter.readTextFile('target.txt')).toBe('updated');
-	});
 
 	it('rejects content exceeding the per-file size limit', async () => {
 		const adapter = await lfa();

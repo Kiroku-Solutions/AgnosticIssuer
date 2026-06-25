@@ -123,7 +123,8 @@ const STRICT_DOM_PURIFY_CONFIG: DOMPurifyConfig = {
 	FORBID_TAGS: ['style', 'script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
 	FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
 	ALLOW_DATA_ATTR: false,
-	KEEP_CONTENT: true
+	KEEP_CONTENT: true,
+	RETURN_TRUSTED_TYPE: true
 };
 
 /** Tag allowlist for code blocks (preset = 'readme'). Slightly more lenient. */
@@ -211,29 +212,35 @@ export function renderMarkdown(markdown: string, preset: RendererPreset = 'defau
 		throw new RenderError(`marked.parse failed: ${describe(cause)}`, cause);
 	}
 
+	// Wrap in a single <p> for the default preset BEFORE sanitization.
+	// This ensures the final output from DOMPurify retains its TrustedHTML
+	// branding, which would be lost if we string-concatenated it afterwards.
+	if (opts.paragraphWrap) {
+		rawHtml = wrapInParagraph(rawHtml);
+	}
+
 	let sanitized: string;
 	try {
 		// DOMPurify's `sanitize` can return a `TrustedHTML` (string under
-		// the hood); coerce via `unknown` to plain string. We don't use
-		// Trusted Types at the application level, so the cast is safe.
+		// the hood in older environments); coerce via `unknown` to plain string
+		// type to appease TS, even though at runtime it is TrustedHTML.
 		const result = getPurifier().sanitize(rawHtml, opts.domPurifyConfig) as unknown as string;
 		sanitized = result;
 	} catch (cause) {
 		throw new RenderError(`DOMPurify.sanitize failed: ${describe(cause)}`, cause);
 	}
 
-	// Wrap in a single <p> for the default preset (preserves the simple
-	// "one paragraph = one section body" rendering used by issue views).
-	const wrapped = opts.paragraphWrap ? wrapInParagraph(sanitized) : sanitized;
+	let sanitizedString = sanitized.toString().trim();
+	if (sanitizedString === '<p></p>') sanitizedString = '';
 
-	if (markdown.trim().length > 0 && wrapped.trim().length === 0) {
+	if (markdown.trim().length > 0 && sanitizedString.length === 0) {
 		// Non-empty input produced empty output — almost certainly because
 		// the DOMPurify config was too strict. Surface as a render error so
 		// the caller doesn't silently render nothing.
 		throw new RenderError('Renderer produced empty output for non-empty Markdown');
 	}
 
-	return brandSafeHtml(wrapped);
+	return brandSafeHtml(sanitized);
 }
 
 /**

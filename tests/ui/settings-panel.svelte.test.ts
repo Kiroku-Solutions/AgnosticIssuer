@@ -79,6 +79,7 @@ function buildStub(opts: {
 	corsProxy?: string;
 	recentHandles?: HandleRecord[];
 	hasLocalAdapter?: boolean;
+	settingsOpen?: boolean;
 }): StoreGraph {
 	const config: Config = {
 		statuses: [],
@@ -185,7 +186,9 @@ function buildStub(opts: {
 			toggle: () => {}
 		},
 		ui: {
-			settingsOpen: false,
+			get settingsOpen() {
+				return opts.settingsOpen ?? true;
+			},
 			openSettings: () => {},
 			closeSettings: () => {},
 			toggleSettings: () => {},
@@ -208,7 +211,7 @@ describe('SettingsPanel', () => {
 
 	function renderOpen(opts: Parameters<typeof buildStub>[0] = {}): void {
 		activeStub = buildStub(opts);
-		render(SettingsPanel, { open: true, onclose: () => undefined });
+		render(SettingsPanel);
 	}
 
 	it('renders the three-button theme picker', async () => {
@@ -283,8 +286,8 @@ describe('SettingsPanel', () => {
 	});
 
 	it('does not render the panel when open is false', async () => {
-		activeStub = buildStub({});
-		render(SettingsPanel, { open: false, onclose: () => undefined });
+		activeStub = buildStub({ settingsOpen: false });
+		render(SettingsPanel);
 
 		expect(page.getByTestId('settings-panel').elements()).toHaveLength(0);
 	});

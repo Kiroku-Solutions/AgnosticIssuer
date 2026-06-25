@@ -11,6 +11,8 @@
 	  class:    string    — extra utility classes
 -->
 <script lang="ts">
+	import Button from './Button.svelte';
+
 	type Action = { label: string; onselect: () => void };
 
 	type Props = {
@@ -25,7 +27,7 @@
 
 <div
 	role="status"
-	class="flex flex-col items-center justify-center gap-3 rounded-lg border border-base-300 bg-base-100 p-8 text-center {extraClass}"
+	class="flex flex-col items-center justify-center gap-3 rounded-xl border border-hairline bg-canvas p-12 text-center {extraClass}"
 >
 	<svg
 		aria-hidden="true"
@@ -34,7 +36,7 @@
 		fill="none"
 		stroke="currentColor"
 		stroke-width="1.5"
-		class="h-12 w-12 text-base-content/40"
+		class="h-12 w-12 text-muted"
 	>
 		<path
 			stroke-linecap="round"
@@ -42,17 +44,13 @@
 			d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"
 		/>
 	</svg>
-	<h2 class="text-lg font-semibold">{title}</h2>
+	<h2 class="text-xl font-display text-ink mt-2">{title}</h2>
 	{#if body}
-		<p class="max-w-md text-sm text-base-content/70">{body}</p>
+		<p class="max-w-md text-base text-muted">{body}</p>
 	{/if}
 	{#if action}
-		<button
-			type="button"
-			class="btn btn-primary mt-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-			onclick={action.onselect}
-		>
+		<Button class="mt-4" onclick={action.onselect}>
 			{action.label}
-		</button>
+		</Button>
 	{/if}
 </div>

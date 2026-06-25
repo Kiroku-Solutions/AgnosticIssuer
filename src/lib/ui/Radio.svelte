@@ -51,7 +51,7 @@
 	const id = $derived(`rd-${name}-${value}-${Math.random().toString(36).slice(2, 8)}`);
 </script>
 
-<div class="flex items-center gap-2 {extraClass}">
+<div class="flex items-center gap-3 {extraClass}">
 	<input
 		{id}
 		type="radio"
@@ -60,10 +60,10 @@
 		{checked}
 		{disabled}
 		aria-label={ariaLabel ?? undefined}
-		class="radio radio-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+		class="appearance-none w-5 h-5 border border-hairline rounded-full flex-shrink-0 bg-canvas transition-all duration-[var(--motion-fast)] ease-[var(--ease-out)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed checked:border-[6px] checked:border-primary checked:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 		{...rest}
 	/>
 	{#if label}
-		<label for={id} class="label-text cursor-pointer select-none">{label}</label>
+		<label for={id} class="font-sans text-sm text-ink cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed">{label}</label>
 	{/if}
 </div>

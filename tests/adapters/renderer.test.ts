@@ -116,7 +116,7 @@ describe('renderMarkdown — XSS sanitization', () => {
 	});
 
 	it('strips <object> and <embed>', () => {
-		const out = renderMarkdown('<object data="x"></object><embed src="y">');
+		const out = renderMarkdown('text <object data="x"></object><embed src="y"> text');
 		expect(out.toLowerCase()).not.toContain('<object');
 		expect(out.toLowerCase()).not.toContain('<embed');
 	});

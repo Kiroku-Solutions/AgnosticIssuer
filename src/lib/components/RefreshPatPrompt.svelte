@@ -97,14 +97,14 @@
 	onkeydown={onKeydown}
 	onclose={() => onCancel()}
 >
-	<div class="modal-box max-w-sm">
-		<h2 class="text-base font-semibold">{t('refreshPatPrompt.title')}</h2>
-		<p class="mt-2 text-sm opacity-80">
+	<div class="bg-surface-soft border border-hairline rounded-xl shadow-xl w-full max-w-sm p-6 relative">
+		<h2 class="text-lg font-bold text-ink tracking-tight">{t('refreshPatPrompt.title')}</h2>
+		<p class="mt-2 text-sm text-muted">
 			{t('refreshPatPrompt.body')}
 		</p>
-		<form onsubmit={onSubmit} class="mt-4 flex flex-col gap-3">
-			<label class="form-control">
-				<span class="label-text text-xs">{t('refreshPatPrompt.label')}</span>
+		<form onsubmit={onSubmit} class="mt-6 flex flex-col gap-4">
+			<label class="flex flex-col gap-1.5">
+				<span class="text-[11px] font-bold uppercase tracking-widest text-muted">{t('refreshPatPrompt.label')}</span>
 				<input
 					name="pat"
 					type="password"
@@ -114,13 +114,13 @@
 					disabled={loading}
 					required
 					data-testid="refresh-pat-prompt-input"
-					class="input input-bordered input-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+					class="w-full bg-canvas text-ink rounded-md border border-hairline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-cb-blue)] focus:border-transparent transition-shadow"
 				/>
 			</label>
-			<div class="flex justify-end gap-2">
+			<div class="flex justify-end gap-3 mt-2">
 				<button
 					type="button"
-					class="btn btn-ghost btn-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+					class="px-4 py-2 rounded-md text-sm font-semibold text-muted hover:bg-black/5 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-inset"
 					onclick={onCancel}
 					disabled={loading}
 					data-testid="refresh-pat-prompt-cancel"
@@ -129,10 +129,13 @@
 				</button>
 				<button
 					type="submit"
-					class="btn btn-primary btn-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+					class="px-4 py-2 bg-[var(--color-cb-blue)] text-white rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2"
 					disabled={loading || pat.trim() === ''}
 					data-testid="refresh-pat-prompt-submit"
 				>
+					{#if loading}
+						<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+					{/if}
 					{loading ? t('refreshPatPrompt.refreshing') : t('common.refresh')}
 				</button>
 			</div>

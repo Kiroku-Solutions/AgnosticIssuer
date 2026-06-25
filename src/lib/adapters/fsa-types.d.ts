@@ -46,15 +46,29 @@ interface FileSystemDirectoryHandle {
 	 * @param options  Defaults to `{ mode: 'read' }`.
 	 */
 	requestPermission(options?: { mode?: 'read' | 'readwrite' }): Promise<PermissionState>;
+}
+
+/**
+ * Extended `FileSystemHandle` interface covering the methods
+ * that are absent from the TypeScript DOM lib but present in the spec.
+ */
+interface FileSystemHandle {
+	/**
+	 * Atomically rename or move this entry.
+	 *
+	 * Spec: https://fs.spec.whatwg.org/#dom-filesystemhandle-move
+	 *
+	 * @param newName  The new name for the entry.
+	 */
+	move(newName: string): Promise<void>;
 
 	/**
-	 * Atomically rename a child entry (file or directory) within this
-	 * directory. The entry identified by `name` is renamed to `destination`.
+	 * Atomically rename or move this entry to a new directory.
 	 *
-	 * Spec: https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-move
+	 * Spec: https://fs.spec.whatwg.org/#dom-filesystemhandle-move
 	 *
-	 * @param source  The current name (or FileSystemFileHandle) of the entry to move.
-	 * @param destination  The new name for the entry.
+	 * @param newDirectory  The new parent directory for the entry.
+	 * @param newName  The new name for the entry.
 	 */
-	move(source: string | FileSystemFileHandle, destination: string): Promise<void>;
+	move(newDirectory: FileSystemDirectoryHandle, newName: string): Promise<void>;
 }

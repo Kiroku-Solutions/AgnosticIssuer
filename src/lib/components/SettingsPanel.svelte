@@ -21,9 +21,8 @@
 	import EmptyTrashModal from './EmptyTrashModal.svelte';
 	import RecentFoldersList from './RecentFoldersList.svelte';
 
-	type Props = { open: boolean; onclose: () => void };
-	let { open, onclose }: Props = $props();
 	const stores = getStores();
+	const open = $derived(stores.ui.settingsOpen);
 
 	const themeOptions: ReadonlyArray<{ id: Theme; label: string; icon: typeof Sun }> = [
 		{ id: 'light', label: t('settings.themeLight'), icon: Sun },
@@ -54,12 +53,7 @@
 		}
 	}
 
-	$effect(() => {
-		// Mirror the panel's open prop into the UiStore so other
-		// surfaces (FilterUrlSync) can react.
-		if (open) stores.ui.openSettings();
-		else stores.ui.closeSettings();
-	});
+
 
 	$effect(() => {
 		if (!open) return;
@@ -72,7 +66,7 @@
 		const onKey = (e: KeyboardEvent): void => {
 			if (e.key === 'Escape') {
 				e.preventDefault();
-				onclose();
+				stores.ui.closeSettings();
 			}
 		};
 		window.addEventListener('keydown', onKey);
@@ -107,32 +101,32 @@
 {#if open}
 	<button
 		type="button"
-		class="fixed inset-0 z-40 cursor-default bg-black/40"
+		class="fixed inset-0 z-40 cursor-default backdrop-blur-sm bg-ink/40 transition-opacity duration-[var(--motion-base)]"
 		aria-label={t('settings.backdropAria')}
-		onclick={onclose}
+		onclick={() => stores.ui.closeSettings()}
 		data-testid="settings-backdrop"
 	></button>
 
 	<div
-		class="fixed inset-y-0 right-0 z-50 flex w-[28rem] max-w-full flex-col border-l border-base-300 bg-base-100 shadow-2xl"
+		class="fixed inset-y-0 right-0 z-50 flex w-[28rem] max-w-full flex-col border-l border-hairline bg-canvas shadow-[0_0_40px_rgba(0,0,0,0.1)] transition-transform duration-[var(--motion-base)] ease-[var(--ease-out)]"
 		data-testid="settings-panel"
 		role="dialog"
 		aria-modal="true"
 		aria-label={t('settings.title')}
 	>
 		<div
-			class="flex items-center justify-between gap-3 border-b border-base-300 px-4 py-3"
+			class="flex items-center justify-between gap-3 border-b border-hairline px-6 py-4"
 			data-testid="settings-header"
 		>
-			<h2 class="text-lg font-semibold">{t('settings.title')}</h2>
-			<IconButton label={t('settings.closeAria')} onclick={onclose} data-testid="settings-close">
+			<h2 class="text-xl font-display font-semibold text-ink">{t('settings.title')}</h2>
+			<IconButton label={t('settings.closeAria')} onclick={() => stores.ui.closeSettings()} data-testid="settings-close">
 				<X class="h-4 w-4" aria-hidden="true" />
 			</IconButton>
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 py-4">
 			<section class="flex flex-col gap-2" data-testid="settings-theme">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
 					{t('settings.themeHeading')}
 				</h3>
 				<div class="flex gap-2">
@@ -162,7 +156,7 @@
 			</section>
 
 			<section class="mt-6 flex flex-col gap-2" data-testid="settings-cors">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
 					{t('settings.corsHeading')}
 				</h3>
 				<Input
@@ -177,7 +171,7 @@
 			</section>
 
 			<section class="mt-6 flex flex-col gap-2" data-testid="settings-recent">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
 					{t('settings.recentHeading')}
 				</h3>
 				<Card compact>
@@ -186,7 +180,7 @@
 			</section>
 
 			<section class="mt-6 flex flex-col gap-3" data-testid="settings-commands">
-				<h3 class="text-xs font-semibold uppercase tracking-wide opacity-70">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
 					{t('settings.commandsHeading')}
 				</h3>
 				<div class="flex flex-wrap gap-2">

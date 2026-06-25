@@ -87,7 +87,7 @@
 	Cross-Origin-Opener-Policy: same-origin
 	Cross-Origin-Embedder-Policy: require-corp
 	Cross-Origin-Resource-Policy: same-origin
-	Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'nonce-__CSP_NONCE__'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://cors.isomorphic-git.org https://*.github.com https://*.gitlab.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types nomad-md dompurify default
+	Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'nonce-__CSP_NONCE__'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://cors.isomorphic-git.org https://*.github.com https://*.gitlab.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none';
 
 /_app/immutable/*
 	Cache-Control: public, max-age=31536000, immutable

@@ -28,15 +28,13 @@
 	type SortKey = 'id' | 'title' | 'updated_date' | 'status';
 	type SortDir = 'asc' | 'desc';
 
-	let rows = $state<readonly LoadedIssue[]>([]);
 	let sortKey = $state<SortKey>('updated_date');
 	let sortDir = $state<SortDir>('desc');
 
-	$effect(() => {
-		const all = issues.issues;
-		const f = filter.filter;
-		rows = all
+	const rows = $derived(
+		issues.issues
 			.filter((li) => {
+				const f = filter.filter;
 				if (f.status && li.issue.status !== f.status) return false;
 				if (f.type && li.issue.issueType !== f.type) return false;
 				if (f.q) {
@@ -63,8 +61,8 @@
 					case 'updated_date':
 						return a.issue.updatedDate.localeCompare(b.issue.updatedDate) * dir;
 				}
-			});
-	});
+			})
+	);
 
 	const total = $derived(issues.issues.length);
 	const filteredCount = $derived(rows.length);
@@ -117,22 +115,22 @@
 	});
 </script>
 
-<div class="px-4 py-3" data-testid="list-view">
-	<div class="mb-2 flex items-center justify-between text-xs opacity-70">
+<div class="px-6 py-4" data-testid="list-view">
+	<div class="mb-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-muted">
 		<span data-testid="list-view-count">
 			{t('list.countPill', { filtered: filteredCount, total: total })}
 		</span>
 		<span>{t('list.sortLabel', { key: sortKey, dir: sortDir })}</span>
 	</div>
 
-	<div class="overflow-x-auto">
-		<table class="table table-zebra table-sm">
-			<thead>
+	<div class="overflow-x-auto border border-hairline rounded-xl bg-canvas shadow-sm">
+		<table class="w-full text-left text-sm whitespace-nowrap">
+			<thead class="bg-surface-soft border-b border-hairline text-[11px] font-bold uppercase tracking-widest text-muted">
 				<tr>
-					<th aria-sort={ariaSortFor('id')}>
+					<th aria-sort={ariaSortFor('id')} class="px-4 py-3 font-semibold">
 						<button
 							type="button"
-							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+							class="flex items-center gap-1 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 							onclick={() => toggleSort('id')}
 						>
 							{t('list.headers.id')}
@@ -143,7 +141,7 @@
 					<th aria-sort={ariaSortFor('title')}>
 						<button
 							type="button"
-							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+							class="flex items-center gap-1 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 							onclick={() => toggleSort('title')}
 						>
 							{t('list.headers.title')}
@@ -156,7 +154,7 @@
 					<th aria-sort={ariaSortFor('status')}>
 						<button
 							type="button"
-							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+							class="flex items-center gap-1 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 							onclick={() => toggleSort('status')}
 						>
 							{t('list.headers.status')}
@@ -170,7 +168,7 @@
 					<th aria-sort={ariaSortFor('updated_date')}>
 						<button
 							type="button"
-							class="btn btn-ghost btn-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+							class="flex items-center gap-1 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 							onclick={() => toggleSort('updated_date')}
 						>
 							{t('list.headers.updated')}
@@ -181,10 +179,10 @@
 					</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody class="divide-y divide-hairline">
 				{#each rows as li, idx (li.issue.id)}
 					<tr
-						class="hover cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+						class="hover:bg-surface-soft transition-colors cursor-pointer text-ink focus-visible:outline-none focus-visible:bg-surface-soft focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
 						tabindex="0"
 						role="button"
 						data-row-id={li.issue.id}
@@ -192,29 +190,29 @@
 						onclick={() => open(li.issue.id)}
 						onkeydown={(e) => onRowKeydown(e, idx)}
 					>
-						<td class="font-mono text-xs">{li.issue.id.toString().padStart(4, '0')}</td>
-						<td class="font-medium">{li.issue.title}</td>
-						<td><span class="badge badge-ghost badge-sm">{li.issue.issueType}</span></td>
-						<td>
+						<td class="font-mono text-xs text-muted px-4 py-3">{li.issue.id.toString().padStart(4, '0')}</td>
+						<td class="font-medium px-4 py-3 min-w-[20rem] truncate">{li.issue.title}</td>
+						<td class="px-4 py-3"><span class="px-2 py-0.5 bg-black/5 rounded text-[10px] font-bold uppercase tracking-widest text-muted">{li.issue.issueType}</span></td>
+						<td class="px-4 py-3">
 							<span
-								class="badge badge-sm"
-								style="background-color: var(--status-color, transparent)"
+								class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest"
+								style="background-color: var(--status-color, var(--color-cb-muted)); color: #fff"
 							>
 								{li.issue.status}
 							</span>
 						</td>
-						<td>{li.issue.assignee ?? '—'}</td>
-						<td>
+						<td class="px-4 py-3">{li.issue.assignee ?? '—'}</td>
+						<td class="px-4 py-3">
 							{#each li.issue.labels as l (l)}
-								<span class="badge badge-outline badge-xs mr-1">{l}</span>
+								<span class="px-1.5 py-0.5 border border-hairline rounded text-[10px] font-bold uppercase tracking-widest text-muted mr-1">{l}</span>
 							{/each}
 						</td>
-						<td class="text-xs opacity-70">{li.issue.updatedDate}</td>
+						<td class="text-xs text-muted px-4 py-3">{li.issue.updatedDate}</td>
 					</tr>
 				{/each}
 				{#if rows.length === 0}
 					<tr>
-						<td colspan="7" class="py-8 text-center opacity-60">{t('list.empty')}</td>
+						<td colspan="7" class="py-12 text-center text-muted font-medium italic">{t('list.empty')}</td>
 					</tr>
 				{/if}
 			</tbody>

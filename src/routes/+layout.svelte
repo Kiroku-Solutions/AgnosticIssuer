@@ -9,7 +9,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, onNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import type { ShellMode } from '$lib/components/TopBar.svelte';
@@ -129,6 +129,17 @@
 		} catch (cause) {
 			console.error('[nomad-md] bootstrap failed:', cause);
 		}
+	});
+
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
 	});
 </script>
 

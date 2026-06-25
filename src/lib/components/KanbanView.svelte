@@ -47,7 +47,7 @@
 -->
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { dndzone, type DndEvent } from 'svelte-dnd-action';
+	import { dndzone, SHADOW_ITEM_MARKER_PROPERTY_NAME, type DndEvent } from 'svelte-dnd-action';
 	import { getStores } from '$lib/state';
 	import { t } from '$lib/ui/strings';
 	import type { LoadedIssue } from '$lib/types';
@@ -67,39 +67,39 @@
 	// depth-exceeded loop when the effect re-derives the map.
 	// The template reads through a `getColumnCards(colId)`
 	// accessor; the action passes the array directly.
-	const cardsByStatus: Record<string, Card[]> = {};
+	let cardsByStatus = $state<Record<string, Card[]>>({});
 
 	// WAI-ARIA DnD keyboard state (Step 8). When non-null, the
 	// focused card is "lifted" and the next Space/Enter commits
 	// the move. The DnD action keeps the visual state in sync via
 	// `cardsByStatus`; this slot only owns the keyboard handshake.
 	let pickedUpId = $state<number | null>(null);
+	let dndActive = false;
 	let announcement = $state<string>('');
 
 	function rebuildCardsByStatus(): void {
-		for (const col of columns) cardsByStatus[col.id] = [];
+		const next: Record<string, Card[]> = {};
+		for (const col of columns) next[col.id] = [];
 		for (const li of rows) {
-			const bucket = cardsByStatus[li.issue.status];
+			const bucket = next[li.issue.status];
 			if (bucket) bucket.push({ id: li.issue.id, kind: 'card' });
-			else if (!cardsByStatus[li.issue.status]) cardsByStatus[li.issue.status] = [];
+			else if (!next[li.issue.status]) next[li.issue.status] = [{ id: li.issue.id, kind: 'card' }];
 		}
+		cardsByStatus = next;
 	}
 
 	$effect(() => {
-		// `untrack` the writes to `columns` and `rows` and the read of
-		// `rows` from `rebuildCardsByStatus` so the effect does not
-		// re-run when those slots are re-assigned. The effect's
-		// reactive surface is the upstream store reads
-		// (`config.config`, `issues.issues`, `filter.filter`).
+		// Read dependencies outside untrack so the effect re-runs when they change.
+		const cfg = (
+			config as unknown as {
+				config: { statuses?: ReadonlyArray<{ id: string; color?: string }> } | null;
+			}
+		).config;
+		const all = issues.issues;
+		const f = filter.filter;
+
 		untrack(() => {
-			const cfg = (
-				config as unknown as {
-					config: { statuses?: ReadonlyArray<{ id: string; color?: string }> } | null;
-				}
-			).config;
 			columns = cfg?.statuses ?? [];
-			const all = issues.issues;
-			const f = filter.filter;
 			rows = all.filter((li) => {
 				if (f.q) {
 					const needle = f.q.toLowerCase();
@@ -113,10 +113,9 @@
 				if (f.type && li.issue.issueType !== f.type) return false;
 				return true;
 			});
-			// Mutate the plain Record inside `untrack` so the reads of
-			// `columns` and `rows` from `rebuildCardsByStatus` are not
-			// tracked as effect dependencies.
-			rebuildCardsByStatus();
+			if (!dndActive) {
+				rebuildCardsByStatus();
+			}
 		});
 	});
 
@@ -136,39 +135,56 @@
 		// Mirror the dndzone's local array update so the visual state
 		// matches what the user is dragging. The library requires this
 		// during the `consider` phase; we persist on `finalize`.
+		dndActive = true;
 		cardsByStatus[colId] = [...e.detail.items];
 	}
 
 	function onFinalize(e: CustomEvent<DndEvent<Card>>, colId: string): void {
 		const next = e.detail.items;
-		cardsByStatus[colId] = [...next];
-		const previousIds = new Set((cardsByStatus[colId] ?? []).map((c) => c.id));
-		const newIds = new Set(next.map((c) => c.id));
-		const movedId = [...newIds].find((id) => !previousIds.has(id)) ?? null;
-		if (movedId === null) {
-			// Reorder within the same column — the library's visual
-			// reordering is enough; we don't persist because the row
-			// order isn't a first-class property of the `rows`
-			// derived (it's a filtered, sorted view).
+		cardsByStatus[colId] = next;
+
+		const movedId = Number(e.detail.info.id);
+
+		// If the item is not in this column's final array, this is the source column.
+		if (!next.some((c) => c.id === movedId)) {
 			return;
 		}
+
+		dndActive = false;
+
 		if (isReadOnly) {
-			// Read-only: rebuild the per-column arrays from `rows`
-			// so the next render is the un-mutated state.
-			rebuildCardsByStatus();
+			cardsByStatus[colId] = rows
+				.filter((r) => r.issue.status === colId)
+				.map((r) => ({ id: r.issue.id, kind: 'card' }));
 			return;
 		}
+
 		const li = findLoaded(movedId);
 		if (!li) return;
+
+		if (li.issue.status === colId) {
+			// Reordered in the same column. We don't persist order, so revert visually.
+			cardsByStatus[colId] = rows
+				.filter((r) => r.issue.status === colId)
+				.map((r) => ({ id: r.issue.id, kind: 'card' }));
+			return;
+		}
+
 		storesUpdateAndSave(movedId, colId);
 	}
 
 	function storesUpdateAndSave(id: number, newStatus: string): void {
 		const li = findLoaded(id);
 		if (!li) return;
-		if (li.issue.status === newStatus) return;
+		const oldStatus = li.issue.status;
+		if (oldStatus === newStatus) return;
 		issues.update(id, { status: newStatus });
-		void issues.save(id);
+		
+		issues.save(id).catch((err) => {
+			console.error('Save failed during DND:', err);
+			issues.update(id, { status: oldStatus });
+			rebuildCardsByStatus();
+		});
 	}
 
 	function focusCard(id: number): void {
@@ -312,11 +328,11 @@
 	{announcement}
 </div>
 
-<div class="flex gap-4 overflow-x-auto bg-base-100 p-4" data-testid="kanban-view">
+<div class="flex gap-6 overflow-x-auto bg-canvas p-6 min-h-[calc(100vh-var(--topbar-height)-4rem)]" data-testid="kanban-view">
 	{#each columns as col (col.id)}
 		{@const colCards = cardsByStatus[col.id] ?? []}
 		<div
-			class="bg-base-200 flex w-72 shrink-0 flex-col rounded-md p-3"
+			class="bg-surface-soft border border-hairline flex w-80 shrink-0 flex-col rounded-2xl p-4 shadow-sm"
 			data-testid="kanban-column"
 			data-column-id={col.id}
 		>
@@ -324,14 +340,14 @@
 				<Tooltip text={t('kanban.readOnlyTooltip')} position="bottom">
 					<div class="mb-3 flex items-center justify-between">
 						<h3
-							class="text-sm font-semibold uppercase tracking-wide"
+							class="text-[11px] font-bold uppercase tracking-widest text-muted"
 							data-testid="kanban-column-header"
 						>
 							{col.id}
 						</h3>
 						<span
-							class="badge badge-sm"
-							style="background-color: {col.color ?? 'transparent'}; color: #000"
+							class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest"
+							style="background-color: {col.color ?? 'var(--color-cb-muted)'}; color: #fff"
 						>
 							{colCards.length}
 						</span>
@@ -340,14 +356,14 @@
 			{:else}
 				<div class="mb-3 flex items-center justify-between">
 					<h3
-						class="text-sm font-semibold uppercase tracking-wide"
+						class="text-[11px] font-bold uppercase tracking-widest text-muted"
 						data-testid="kanban-column-header"
 					>
 						{col.id}
 					</h3>
 					<span
-						class="badge badge-sm"
-						style="background-color: {col.color ?? 'transparent'}; color: #000"
+						class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest"
+						style="background-color: {col.color ?? 'var(--color-cb-muted)'}; color: #fff"
 					>
 						{colCards.length}
 					</span>
@@ -359,7 +375,9 @@
 					items: colCards,
 					flipDurationMs: 200,
 					dragDisabled: isReadOnly,
-					dropFromOthersDisabled: isReadOnly
+					dropFromOthersDisabled: isReadOnly,
+					dropTargetStyle: {},
+					dropTargetClasses: ['ring-2', 'ring-[var(--color-cb-blue)]', 'ring-inset', 'bg-black/5', 'rounded-xl']
 				}}
 				onconsider={isReadOnly
 					? undefined
@@ -371,12 +389,12 @@
 				{#each colCards as card (card.id)}
 					{@const li = findLoaded(card.id)}
 					{@const isLifted = pickedUpId === li?.issue.id}
+					{@const isShadow = !!(card as any)[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
 					{#if li}
 						<li role="listitem">
 							<button
 								type="button"
-								class="card bg-base-100 w-full p-3 text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
-									{isLifted ? 'ring-primary scale-[1.02] shadow-md ring-2 ring-offset-2' : ''}"
+								class="flex flex-col w-full p-4 rounded-xl text-left transition-all duration-[var(--motion-base)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset {isShadow ? 'border-2 border-dashed border-[var(--color-cb-blue)] bg-[var(--color-cb-blue)]/5 opacity-70 shadow-none' : isLifted ? 'bg-canvas border border-[var(--color-cb-blue)] ring-primary scale-[1.02] shadow-md ring-2 ring-offset-2' : 'bg-canvas border border-hairline shadow-sm hover:shadow-[var(--shadow-soft)]'}"
 								data-testid="kanban-card"
 								data-card-id={li.issue.id}
 								data-lifted={isLifted ? 'true' : 'false'}
@@ -390,15 +408,18 @@
 								onclick={() => open(li.issue.id)}
 								onkeydown={(e) => onCardKeydown(e, li)}
 							>
-								<div class="mb-1 flex items-start justify-between">
-									<span class="font-mono text-xs opacity-60">
+								<div class="mb-2 flex items-start justify-between">
+									<span class="font-mono text-[11px] text-muted">
 										{li.issue.id.toString().padStart(4, '0')}
 									</span>
-									<span class="badge badge-ghost badge-xs">{li.issue.issueType}</span>
+									<span class="px-2 py-0.5 bg-black/5 rounded text-[10px] font-bold uppercase tracking-widest text-muted">{li.issue.issueType}</span>
 								</div>
-								<div class="text-sm font-medium leading-tight">{li.issue.title}</div>
+								<div class="text-sm font-medium leading-snug text-ink mb-3">{li.issue.title}</div>
 								{#if li.issue.assignee}
-									<div class="mt-1 text-xs opacity-70">@{li.issue.assignee}</div>
+									<div class="mt-auto text-xs text-muted flex items-center gap-1.5 font-medium">
+										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+										{li.issue.assignee}
+									</div>
 								{/if}
 								{#if isLifted}
 									<!--

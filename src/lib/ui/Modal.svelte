@@ -69,15 +69,12 @@
 
 <dialog
 	bind:this={dialogEl}
-	class="modal modal-bottom sm:modal-middle {extraClass}"
+	class="fixed inset-0 m-auto bg-canvas/90 backdrop-blur-xl text-ink rounded-2xl border border-hairline p-8 shadow-2xl w-[calc(100%-2rem)] max-w-lg max-h-[85vh] overflow-y-auto backdrop:bg-black/30 backdrop:backdrop-blur-sm transition-all focus-visible:outline-none {extraClass}"
 	onclose={onNativeClose}
 	onclick={onBackdropClick}
 	aria-modal="true"
 >
-	<div class="modal-box focus-visible:outline-none" tabindex="-1">
+	<div class="focus-visible:outline-none" tabindex="-1">
 		{#if children}{@render children()}{/if}
 	</div>
-	<form method="dialog" class="modal-backdrop">
-		<button type="submit" aria-label="Close modal">close</button>
-	</form>
 </dialog>

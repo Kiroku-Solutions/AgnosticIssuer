@@ -119,10 +119,29 @@
 		creating = true;
 		createError = null;
 		try {
+			const template = allTemplates.find((t) => t.id === selectedId);
+			const customFields: Record<string, unknown> = {};
+			const sections = template
+				? template.sections.map((s) => ({ name: s.name, markdown: s.default ?? '' }))
+				: [];
+
+			if (template) {
+				for (const field of template.fields) {
+					// Don't set a default for obligatory fields unless they have one?
+					// Wait, we don't have default values in the TemplateField type!
+					// Wait, if it's a multi-select or relations, default is []
+					if (field.type === 'multi-select' || field.type === 'relations') {
+						customFields[field.key] = [];
+					}
+				}
+			}
+
 			const newId = await stores.issues.create({
 				title: 'Untitled',
 				issueType: selectedId,
-				author: 'local-user'
+				author: 'local-user',
+				customFields,
+				sections
 			});
 			open = false;
 			stores.editor.open(newId);
@@ -140,14 +159,16 @@
 </script>
 
 <Modal bind:open onclose={close} class="max-w-2xl">
-	<div class="mb-3 flex items-start justify-between gap-3">
-		<h2 class="text-lg font-semibold">{t('newIssueModal.title')}</h2>
+	<div class="mb-5 flex items-start justify-between gap-3">
+		<h2 class="text-xl font-bold tracking-tight text-ink">{t('newIssueModal.title')}</h2>
 		<button
 			type="button"
-			class="btn btn-ghost btn-sm"
+			class="p-1.5 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2"
 			onclick={close}
-			aria-label={t('newIssueModal.closeAria')}>×</button
+			aria-label={t('newIssueModal.closeAria')}
 		>
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+		</button>
 	</div>
 
 	<Input
@@ -159,7 +180,7 @@
 
 	{#if filtered.length === 0}
 		<div
-			class="flex flex-col items-center gap-2 rounded-md border border-dashed border-base-300 p-6 text-center text-sm opacity-70"
+			class="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-hairline p-8 text-center text-sm text-muted bg-surface-soft"
 		>
 			<AlertTriangle class="h-6 w-6" aria-hidden="true" />
 			<p>{t('newIssueModal.noMatch', { q: search })}</p>
@@ -176,9 +197,9 @@
 				<li>
 					<button
 						type="button"
-						class="flex w-full flex-col items-start gap-2 rounded-md border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 {isSelected
-							? 'border-primary bg-primary/10'
-							: 'border-base-300 hover:border-base-content/30 hover:bg-base-200'}"
+						class="flex w-full flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all duration-[var(--motion-base)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset {isSelected
+							? 'border-[var(--color-cb-blue)] bg-[var(--color-cb-blue)]/5 ring-1 ring-[var(--color-cb-blue)]'
+							: 'border-hairline hover:border-muted hover:bg-surface-soft'}"
 						aria-pressed={isSelected}
 						aria-label={t('newIssueModal.selectType', { name: tmpl.name })}
 						data-testid="new-issue-type-card"
@@ -201,18 +222,20 @@
 		<p class="text-error mt-3 text-xs" role="alert">{createError}</p>
 	{/if}
 
-	<footer class="mt-4 flex items-center justify-end gap-2">
-		<button type="button" class="btn btn-ghost btn-sm" onclick={close}>{t('common.cancel')}</button>
+	<footer class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-hairline">
+		<button type="button" class="px-4 py-2 rounded-md text-sm font-semibold text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-inset" onclick={close}>
+			{t('common.cancel')}
+		</button>
 		<button
 			type="button"
-			class="btn btn-primary btn-sm"
+			class="px-4 py-2 bg-[var(--color-cb-blue)] text-white rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2 flex items-center gap-2"
 			disabled={!selectedId || creating}
 			aria-busy={creating || undefined}
 			onclick={() => void create()}
 			data-testid="new-issue-create"
 		>
 			{#if creating}
-				<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+				<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
 			{/if}
 			{t('newIssueModal.create')}
 		</button>

@@ -64,29 +64,23 @@
 
 	const indicatorText = $derived(folderName ?? repoLabel ?? null);
 
-	let settingsOpen = $state(false);
-
 	function toggleSettings(): void {
-		settingsOpen = !settingsOpen;
-	}
-
-	function closeSettings(): void {
-		settingsOpen = false;
+		stores.ui.toggleSettings();
 	}
 </script>
 
 <header
 	data-testid="topbar"
 	aria-label={t('topbar.ariaLabel')}
-	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-base-300 bg-base-200 px-4"
+	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-hairline bg-canvas/80 backdrop-blur-md px-6 transition-colors duration-[var(--motion-slow)]"
 >
 	<a
 		href={resolve('/')}
-		class="flex items-baseline gap-2 font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
+		class="flex items-baseline gap-2 font-display font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
 		aria-label={t('app.homeAria')}
 	>
-		<span class="text-lg">{t('app.name')}</span>
-		<span class="text-xs opacity-60">{t('app.version')}</span>
+		<span class="text-xl text-ink">{t('app.name')}</span>
+		<span class="text-xs text-muted font-sans font-medium">{t('app.version')}</span>
 	</a>
 
 	<Badge variant={badge.variant} size="sm">{badge.label}</Badge>
@@ -120,4 +114,5 @@
 	<ProxyWarningBanner />
 {/if}
 
-<SettingsPanel open={settingsOpen} onclose={closeSettings} />
+<!-- 6H Settings Panel -->
+<SettingsPanel />

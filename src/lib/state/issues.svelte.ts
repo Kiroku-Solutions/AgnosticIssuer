@@ -151,6 +151,8 @@ export interface CreateIssueInput {
 	readonly title: string;
 	readonly issueType: string;
 	readonly author: string;
+	readonly customFields?: Readonly<Record<string, unknown>>;
+	readonly sections?: ReadonlyArray<{ readonly name: string; readonly markdown: string }>;
 }
 
 export interface IssuePatch {
@@ -388,7 +390,9 @@ export function createIssuesStore(
 				title: input.title,
 				issueType: input.issueType,
 				author: input.author,
-				status: defaultStatus()
+				status: defaultStatus(),
+				customFields: input.customFields,
+				sections: input.sections
 			},
 			issues.map((li) => li.issue)
 		);

@@ -104,9 +104,9 @@
 	const dirtyCount = $derived(stores.issues.dirty.size);
 </script>
 
-<div
+<nav
+	class="sticky top-[var(--topbar-height)] z-10 flex flex-wrap items-center gap-3 border-b border-hairline bg-surface-soft/80 backdrop-blur-xl px-6 py-3 transition-colors duration-[var(--motion-slow)]"
 	data-testid="local-toolbar"
-	class="sticky top-[var(--topbar-height)] z-10 flex flex-wrap items-center gap-2 border-b border-base-300 bg-base-200 px-4 py-2"
 >
 	{#if !isReadOnly}
 		<Button variant="primary" size="sm" onclick={openNewIssue} data-testid="toolbar-new-issue">
@@ -132,32 +132,33 @@
 		</Button>
 	{/if}
 
-	<span class="badge badge-ghost badge-sm uppercase tracking-wide" data-testid="toolbar-view-label">
+	<span class="px-2 py-1 bg-black/5 rounded-md text-[11px] font-bold uppercase tracking-widest text-muted" data-testid="toolbar-view-label">
 		{viewLabel}
 	</span>
 
 	<button
 		type="button"
-		class="btn btn-ghost btn-sm ml-auto"
+		class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-muted hover:bg-black/5 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 		disabled={isReadOnly}
 		onclick={openEmptyTrash}
 		data-testid="toolbar-trash"
 		aria-label={t('localToolbar.trashAria', { n: trashCount })}
 	>
-		🗑 {t('localToolbar.trashButton', { n: trashCount })}
-		<span class="opacity-60">·</span>
+		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+		<span>{t('localToolbar.trashButton', { n: trashCount })}</span>
+		<span class="opacity-40">·</span>
 		<span>{t('localToolbar.trashEmptyLabel')}</span>
 	</button>
 
-	<span class="text-xs opacity-60" data-testid="toolbar-status">
+	<span class="text-[11px] font-bold uppercase tracking-widest text-muted" data-testid="toolbar-status">
 		{t('common.issueCount', { n: issueCount })} ·
 		{t('common.dirtyCount', { n: dirtyCount })}
 	</span>
 
 	{#if refreshError}
-		<span class="text-error text-xs" role="alert">{refreshError}</span>
+		<span class="text-[var(--color-cb-down)] text-xs font-medium" role="alert">{refreshError}</span>
 	{/if}
-</div>
+</nav>
 
 <NewIssueModal bind:open={newIssueOpen} onclose={() => (newIssueOpen = false)} />
 

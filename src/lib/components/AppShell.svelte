@@ -42,7 +42,7 @@
 	const hasIntegrityWarnings = $derived(stores.issues.integrityWarnings.length > 0);
 </script>
 
-<div class="flex min-h-screen flex-col bg-base-100 text-base-content">
+<div class="flex min-h-screen flex-col bg-canvas text-ink font-sans selection:bg-primary/20 selection:text-ink">
 	<TopBar {mode} />
 
 	{#if showLeftRail}

@@ -53,9 +53,9 @@ function assertTemplate(value: unknown, filename: string): Template {
 		// ERS §3.1 FR-2: select / multi-select fields MUST have an `options`
 		// array. The previous loader silently accepted a `select` field with
 		// no options, which made the editor crash on render. Closing that gap.
-		if ((f['type'] === 'select' || f['type'] === 'multi-select') && !Array.isArray(f['options'])) {
+		if ((f['type'] === 'select' || f['type'] === 'multi-select') && !Array.isArray(f['options']) && !isString(f['options_source'])) {
 			throw new Error(
-				`${filename}: fields[${i}] (type "${f['type']}") must include a non-empty "options" array`
+				`${filename}: fields[${i}] (type "${f['type']}") must include a non-empty "options" array or an "options_source"`
 			);
 		}
 	}

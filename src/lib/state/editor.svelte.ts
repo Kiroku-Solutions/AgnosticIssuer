@@ -56,7 +56,7 @@
 
 import type { Issue, IssueSection, LoadedIssue, FrontmatterValue } from '../types/index.ts';
 import { FIELD_TO_YAML } from '../types/index.ts';
-import type { ValidationError } from '../services/validator.ts';
+import { validateIssue, type ValidationError } from '../services/validator.ts';
 import type { ConfigStore } from './config.svelte.ts';
 import type { TemplatesStore } from './templates.svelte.ts';
 import type { IssuesStore } from './issues.svelte.ts';
@@ -134,6 +134,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 	let activeId = $state<number | null>(null);
 	let draft = $state.raw<LoadedIssue | null>(null);
 	let isDirty = $state<boolean>(false);
+	let revision = $state<number>(0);
 
 	function open(id: number): void {
 		const source = issues.byId.get(id);
@@ -146,12 +147,14 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 		activeId = id;
 		draft = cloneLoaded(source);
 		isDirty = false;
+		revision++;
 	}
 
 	function close(): void {
 		activeId = null;
 		draft = null;
 		isDirty = false;
+		revision++;
 	}
 
 	function patchField(key: string, value: unknown): void {
@@ -172,6 +175,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 			}
 		}
 		isDirty = true;
+		revision++;
 	}
 
 	function patchSection(name: string, markdown: string): void {
@@ -184,6 +188,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 			sections.push({ name, markdown });
 		}
 		isDirty = true;
+		revision++;
 	}
 
 	async function save(): Promise<void> {
@@ -202,6 +207,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 		const refreshed = issues.byId.get(activeId);
 		if (refreshed) draft = cloneLoaded(refreshed);
 		isDirty = false;
+		revision++;
 	}
 
 	function discard(): void {
@@ -216,6 +222,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 			draft = null;
 		}
 		isDirty = false;
+		revision++;
 	}
 
 	return {
@@ -229,11 +236,20 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 			return isDirty;
 		},
 		get integrityWarning() {
+			void revision;
 			return draft?.issue.integrityWarning ?? false;
 		},
 		get errors() {
-			if (activeId === null) return [];
-			return issues.validate(activeId);
+			void revision;
+			if (activeId === null || draft === null) return [];
+			const cfg = deps.config.config;
+			if (!cfg) return [];
+			const result = validateIssue(draft.issue, {
+				templates: deps.templates.templates,
+				config: cfg,
+				allIssues: deps.issues.issues.map((li) => li.issue)
+			});
+			return result.errors;
 		},
 		open,
 		close,

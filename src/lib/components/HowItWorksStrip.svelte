@@ -27,29 +27,35 @@
 >
 	<h2
 		id="how-it-works-title"
-		class="text-xs font-semibold uppercase tracking-wide text-base-content/70"
+		class="text-[11px] font-bold uppercase tracking-widest text-muted text-center"
 	>
 		{t('home.howItWorks.title')}
 	</h2>
-	<ol class="grid grid-cols-1 gap-4 md:grid-cols-3" role="list">
-		<li class="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-100 p-4">
-			<FolderPlus class="h-6 w-6 text-primary" aria-hidden="true" />
-			<h3 class="text-sm font-semibold">{t('home.howItWorks.pickFolder.title')}</h3>
-			<p class="text-xs opacity-70">
+	<ol class="grid grid-cols-1 gap-6 md:grid-cols-3" role="list">
+		<li class="flex flex-col gap-3 rounded-xl border border-hairline bg-canvas p-6 shadow-sm hover:shadow-[var(--shadow-soft)] transition-shadow duration-[var(--motion-base)]">
+			<div class="p-2 bg-[var(--color-cb-blue)]/10 text-primary w-fit rounded-lg">
+				<FolderPlus class="h-5 w-5" aria-hidden="true" />
+			</div>
+			<h3 class="text-base font-semibold text-ink">{t('home.howItWorks.pickFolder.title')}</h3>
+			<p class="text-sm text-muted">
 				{t('home.howItWorks.pickFolder.body')}
 			</p>
 		</li>
-		<li class="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-100 p-4">
-			<LayoutList class="h-6 w-6 text-primary" aria-hidden="true" />
-			<h3 class="text-sm font-semibold">{t('home.howItWorks.browse.title')}</h3>
-			<p class="text-xs opacity-70">
+		<li class="flex flex-col gap-3 rounded-xl border border-hairline bg-canvas p-6 shadow-sm hover:shadow-[var(--shadow-soft)] transition-shadow duration-[var(--motion-base)]">
+			<div class="p-2 bg-[var(--color-cb-blue)]/10 text-primary w-fit rounded-lg">
+				<LayoutList class="h-5 w-5" aria-hidden="true" />
+			</div>
+			<h3 class="text-base font-semibold text-ink">{t('home.howItWorks.browse.title')}</h3>
+			<p class="text-sm text-muted">
 				{t('home.howItWorks.browse.body')}
 			</p>
 		</li>
-		<li class="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-100 p-4">
-			<PencilLine class="h-6 w-6 text-primary" aria-hidden="true" />
-			<h3 class="text-sm font-semibold">{t('home.howItWorks.edit.title')}</h3>
-			<p class="text-xs opacity-70">
+		<li class="flex flex-col gap-3 rounded-xl border border-hairline bg-canvas p-6 shadow-sm hover:shadow-[var(--shadow-soft)] transition-shadow duration-[var(--motion-base)]">
+			<div class="p-2 bg-[var(--color-cb-blue)]/10 text-primary w-fit rounded-lg">
+				<PencilLine class="h-5 w-5" aria-hidden="true" />
+			</div>
+			<h3 class="text-base font-semibold text-ink">{t('home.howItWorks.edit.title')}</h3>
+			<p class="text-sm text-muted">
 				{t('home.howItWorks.edit.body')}
 			</p>
 		</li>

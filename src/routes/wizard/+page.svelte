@@ -93,10 +93,10 @@
 	}
 </script>
 
-<div class="flex min-h-screen flex-col bg-base-100 text-base-content">
+<div class="flex min-h-screen flex-col bg-canvas text-ink">
 	<div
 		aria-label={t('modeBadge.firstRunSetup')}
-		class="sticky top-0 z-30 flex h-[var(--topbar-height)] items-center gap-3 border-b border-base-300 bg-base-200 px-6"
+		class="sticky top-0 z-30 flex h-[var(--topbar-height)] items-center gap-4 border-b border-hairline bg-surface-soft px-8 transition-colors duration-[var(--motion-slow)]"
 	>
 		<a
 			href={resolve('/')}

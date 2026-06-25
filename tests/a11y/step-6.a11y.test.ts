@@ -174,6 +174,7 @@ function buildStub(opts: {
 	recentHandles?: HandleRecord[];
 	issues?: LoadedIssue[];
 	activeEditorId?: number | null;
+	settingsOpen?: boolean;
 }): StoreGraph {
 	const loaded = opts.issues ?? [];
 	const integrityWarnings = Array.from({ length: opts.integrityCount ?? 0 }, (_, i) => ({
@@ -289,7 +290,9 @@ function buildStub(opts: {
 			toggle: () => {}
 		},
 		ui: {
-			settingsOpen: false,
+			get settingsOpen() {
+				return opts.settingsOpen ?? false;
+			},
 			openSettings: () => {},
 			closeSettings: () => {},
 			toggleSettings: () => {},
@@ -531,10 +534,11 @@ describe('Step 6 — accessibility audit (NFR-4)', () => {
 	it('settings panel — no serious or critical axe violations', async () => {
 		activeStub = buildStub({
 			mode: 'local',
-			recentHandles: [makeHandle('recent-1', 'acme-projects')]
+			recentHandles: [makeHandle('recent-1', 'acme-projects')],
+			settingsOpen: true
 		});
 		render(AppShell, { mode: 'home' });
-		render(SettingsPanel, { open: true, onclose: () => undefined });
+		render(SettingsPanel);
 
 		const scan = await scanSurface();
 		logSummary('settings', scan);
@@ -645,7 +649,7 @@ describe('Step 6 — accessibility audit (NFR-4)', () => {
 				adoptIntoMain();
 			} else if (c.route === 'settings') {
 				render(AppShell, { mode: 'home' });
-				render(SettingsPanel, { open: true, onclose: () => undefined });
+				render(SettingsPanel);
 			} else if (c.route === 'home') {
 				render(AppShell, { mode: 'home' });
 				render(Home);

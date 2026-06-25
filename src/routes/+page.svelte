@@ -83,18 +83,20 @@
 	}
 </script>
 
-<div class="mx-auto flex w-full max-w-4xl flex-col gap-10 px-6 py-12">
-	<section aria-labelledby="home-hero-title" class="flex flex-col gap-2 text-center">
-		<h1 id="home-hero-title" class="text-3xl font-bold tracking-tight">{t('home.heroTitle')}</h1>
-		<p class="text-sm opacity-70">{t('home.heroSubtitle')}</p>
+<div class="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-20">
+	<section aria-labelledby="home-hero-title" class="flex flex-col gap-4 text-center items-center justify-center mb-6">
+		<h1 id="home-hero-title" class="text-5xl font-display font-bold tracking-tight text-ink">{t('home.heroTitle')}</h1>
+		<p class="text-lg text-muted max-w-2xl">{t('home.heroSubtitle')}</p>
 	</section>
 
-	<section aria-label={t('home.chooseModeAria')} class="grid grid-cols-1 gap-4 md:grid-cols-2">
-		<Card>
+	<section aria-label={t('home.chooseModeAria')} class="grid grid-cols-1 gap-6 md:grid-cols-2">
+		<Card class="hover:shadow-[var(--shadow-soft)] transition-shadow duration-[var(--motion-base)] ease-[var(--ease-out)]">
 			<div class="flex h-full flex-col gap-3">
-				<FolderOpen class="h-7 w-7 text-primary" aria-hidden="true" />
-				<h2 class="text-lg font-semibold">{t('home.openLocalTitle')}</h2>
-				<p class="text-sm opacity-80">{t('home.openLocalBody')}</p>
+				<div class="p-3 bg-[var(--color-cb-blue)]/10 text-primary w-fit rounded-lg mb-2">
+					<FolderOpen class="h-6 w-6" aria-hidden="true" />
+				</div>
+				<h2 class="text-xl font-display font-semibold text-ink">{t('home.openLocalTitle')}</h2>
+				<p class="text-sm text-muted">{t('home.openLocalBody')}</p>
 				{#if !fsaSupported}
 					<Alert variant="warning">{t('home.fsaUnavailable')}</Alert>
 				{/if}
@@ -114,7 +116,7 @@
 			</div>
 		</Card>
 
-		<Card>
+		<Card class="hover:shadow-[var(--shadow-soft)] transition-shadow duration-[var(--motion-base)] ease-[var(--ease-out)]">
 			<form
 				class="flex h-full flex-col gap-3"
 				onsubmit={(e) => {
@@ -122,9 +124,11 @@
 					openRemoteRepo();
 				}}
 			>
-				<Globe class="h-7 w-7 text-primary" aria-hidden="true" />
-				<h2 class="text-lg font-semibold">{t('home.openRemoteTitle')}</h2>
-				<p class="text-sm opacity-80">{t('home.openRemoteBody')}</p>
+				<div class="p-3 bg-[var(--color-cb-blue)]/10 text-primary w-fit rounded-lg mb-2">
+					<Globe class="h-6 w-6" aria-hidden="true" />
+				</div>
+				<h2 class="text-xl font-display font-semibold text-ink">{t('home.openRemoteTitle')}</h2>
+				<p class="text-sm text-muted">{t('home.openRemoteBody')}</p>
 				<div class="flex flex-col gap-2">
 					<Input
 						bind:value={repoUrl}

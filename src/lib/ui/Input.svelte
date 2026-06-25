@@ -38,7 +38,7 @@
 	const errorId = $derived(error ? `input-error-${Math.random().toString(36).slice(2, 8)}` : '');
 </script>
 
-<div class="flex flex-col gap-1">
+<div class="flex flex-col gap-1 w-full">
 	<input
 		{type}
 		{placeholder}
@@ -46,12 +46,12 @@
 		bind:value
 		aria-invalid={error ? 'true' : undefined}
 		aria-describedby={error ? errorId : undefined}
-		class="input input-bordered focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 {error
-			? 'input-error'
+		class="w-full bg-canvas text-ink rounded-md border border-hairline px-4 h-12 transition-shadow duration-[var(--motion-fast)] ease-[var(--ease-out)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary focus:border-transparent placeholder-muted disabled:opacity-50 disabled:cursor-not-allowed {error
+			? 'ring-2 ring-inset ring-[var(--color-cb-down)] border-transparent'
 			: ''} {extraClass}"
 		{...rest}
 	/>
 	{#if error}
-		<p id={errorId} class="text-error text-xs" role="alert">{error}</p>
+		<p id={errorId} class="text-[var(--color-cb-down)] text-sm mt-1" role="alert">{error}</p>
 	{/if}
 </div>

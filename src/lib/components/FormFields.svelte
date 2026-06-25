@@ -176,10 +176,10 @@
 			{@const err = errorFor(field.key)}
 			{@const value = currentValue(field)}
 			<div class="flex flex-col gap-1" data-field-key={field.key} data-field-type={field.type}>
-				<label for={fid} class="label py-0">
-					<span class="label-text text-xs">
+				<label for={fid} class="flex items-center pb-1">
+					<span class="text-[11px] font-bold uppercase tracking-widest text-muted">
 						{field.name}
-						{#if field.obligatory}<span class="text-error" aria-hidden="true">&nbsp;*</span>
+						{#if field.obligatory}<span class="text-[var(--color-cb-down)]" aria-hidden="true">&nbsp;*</span>
 							<span class="sr-only">{t('common.required')}</span>{/if}
 					</span>
 				</label>
@@ -188,7 +188,7 @@
 					<input
 						id={fid}
 						type={field.type}
-						class="input input-bordered input-sm {ringClass} {err ? 'input-error' : ''}"
+						class="w-full bg-canvas text-ink rounded-md border {err ? 'border-[var(--color-cb-down)] ring-1 ring-[var(--color-cb-down)]' : 'border-hairline focus:border-transparent'} px-3 py-2 text-sm focus:outline-none {ringClass} transition-shadow"
 						value={(value as string | undefined) ?? ''}
 						aria-invalid={err ? 'true' : undefined}
 						oninput={(e) =>
@@ -198,7 +198,7 @@
 					<input
 						id={fid}
 						type="number"
-						class="input input-bordered input-sm {ringClass} {err ? 'input-error' : ''}"
+						class="w-full bg-canvas text-ink rounded-md border {err ? 'border-[var(--color-cb-down)] ring-1 ring-[var(--color-cb-down)]' : 'border-hairline focus:border-transparent'} px-3 py-2 text-sm focus:outline-none {ringClass} transition-shadow"
 						value={value === null || value === undefined ? '' : String(value)}
 						aria-invalid={err ? 'true' : undefined}
 						oninput={(e) => {
@@ -216,32 +216,34 @@
 						field.type === 'user'
 							? t('formFields.assigneePlaceholder')
 							: t('formFields.selectPlaceholder')}
-					<select
-						id={fid}
-						class="select select-bordered select-sm {ringClass} {err ? 'select-error' : ''}"
-						value={(value as string | undefined) ?? ''}
-						aria-invalid={err ? 'true' : undefined}
-						onchange={(e) => {
-							const v = (e.currentTarget as HTMLSelectElement).value;
-							if (field.key === 'issueType') {
-								onTypeChangeAttempt(v);
-								// Revert the select to the current value; the
-								// change is held in `pendingType` until the
-								// user confirms.
-								if (e.currentTarget instanceof HTMLSelectElement && issue) {
-									e.currentTarget.value = issue.issueType;
+					<div class="relative w-full">
+						<select
+							id={fid}
+							class="w-full appearance-none bg-canvas text-ink rounded-md border {err ? 'border-[var(--color-cb-down)] ring-1 ring-[var(--color-cb-down)]' : 'border-hairline focus:border-transparent'} pl-3 pr-10 py-2 text-sm focus:outline-none {ringClass} transition-shadow"
+							value={(value as string | undefined) ?? ''}
+							aria-invalid={err ? 'true' : undefined}
+							onchange={(e) => {
+								const v = (e.currentTarget as HTMLSelectElement).value;
+								if (field.key === 'issueType') {
+									onTypeChangeAttempt(v);
+									if (e.currentTarget instanceof HTMLSelectElement && issue) {
+										e.currentTarget.value = issue.issueType;
+									}
+									return;
 								}
-								return;
-							}
-							const next = field.type === 'user' && v === '' ? null : v;
-							editor.patchField(field.key, next);
-						}}
-					>
-						<option value="">{placeholder}</option>
-						{#each opts as opt (opt.id)}
-							<option value={opt.id}>{opt.name}</option>
-						{/each}
-					</select>
+								const next = field.type === 'user' && v === '' ? null : v;
+								editor.patchField(field.key, next);
+							}}
+						>
+							<option value="">{placeholder}</option>
+							{#each opts as opt (opt.id)}
+								<option value={opt.id}>{opt.name}</option>
+							{/each}
+						</select>
+						<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted">
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+						</div>
+					</div>
 					{#if field.key === 'issueType'}
 						<p class="text-xs opacity-60">
 							{t('formFields.issueTypeDisabledNote')}
@@ -265,9 +267,9 @@
 							{@const on = selected.includes(opt.id)}
 							<button
 								type="button"
-								class="badge badge-sm cursor-pointer {ringClass} {on
-									? 'badge-primary'
-									: 'badge-outline'}"
+								class="px-2 py-1 rounded-full text-[11px] font-bold tracking-widest border transition-colors {ringClass} {on
+									? 'bg-ink text-canvas border-ink'
+									: 'bg-transparent text-muted border-hairline hover:border-muted'}"
 								aria-pressed={on}
 								onclick={() =>
 									field.type === 'relations'
@@ -281,7 +283,7 @@
 				{/if}
 
 				{#if err}
-					<p class="text-error text-xs" role="alert">{err}</p>
+					<p class="text-[var(--color-cb-down)] text-xs font-medium" role="alert">{err}</p>
 				{/if}
 			</div>
 		{/each}
@@ -292,10 +294,10 @@
 			<h3 id="change-type-title" class="text-lg font-semibold">
 				{t('formFields.changeTypeTitle')}
 			</h3>
-			<p class="alert alert-warning my-3 text-sm">
+			<p class="px-4 py-3 bg-[var(--color-cb-yellow)]/10 text-ink border border-[var(--color-cb-yellow)] rounded-md text-sm my-4 font-medium">
 				{t('formFields.changeTypeBody', { old: currentTypeName, new: pendingTypeName })}
 			</p>
-			<div class="modal-action">
+			<div class="mt-6 flex items-center justify-end gap-3">
 				<Button variant="ghost" onclick={cancelTypeChange} data-testid="change-type-cancel">
 					{t('formFields.changeTypeCancel')}
 				</Button>

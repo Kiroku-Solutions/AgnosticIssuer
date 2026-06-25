@@ -65,7 +65,7 @@
 		data-testid="leftrail"
 		data-collapsed="true"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width-collapsed)] flex-col items-center gap-3 border-r border-base-300 bg-base-200 py-3 md:flex"
+		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width-collapsed)] flex-col items-center gap-3 border-r border-hairline bg-surface-soft py-4 md:flex transition-all duration-[var(--motion-base)]"
 	>
 		<IconButton label={t('leftrail.expandNav')} onclick={() => (collapsed = false)}>
 			<PanelLeftOpen class="h-5 w-5" aria-hidden="true" />
@@ -84,10 +84,10 @@
 		data-testid="leftrail"
 		data-collapsed="false"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width)] shrink-0 flex-col gap-3 border-r border-base-300 bg-base-200 p-3 md:flex"
+		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-hairline bg-surface-soft p-4 md:flex transition-all duration-[var(--motion-base)]"
 	>
 		<div class="flex items-center gap-2">
-			<h2 class="flex-1 text-xs font-semibold uppercase tracking-wide opacity-70">
+			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted">
 				{t('leftrail.viewsHeading')}
 			</h2>
 			<IconButton label={t('leftrail.collapseNav')} onclick={() => (collapsed = true)}>
@@ -100,18 +100,18 @@
 		{#if warningCount > 0 && firstWarningId !== null}
 			<button
 				type="button"
-				class="badge badge-warning w-full cursor-pointer justify-start gap-2 py-3 text-left focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+				class="flex items-center w-full cursor-pointer justify-start gap-2 py-2 px-3 rounded-md bg-[var(--color-cb-yellow)]/10 text-ink border border-[var(--color-cb-yellow)] text-sm font-semibold transition-colors hover:bg-[var(--color-cb-yellow)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
 				onclick={reviewFirstWarning}
 				aria-label={t('leftrail.integrityReview', { n: warningCount })}
 			>
-				<AlertTriangle class="h-4 w-4 shrink-0" aria-hidden="true" />
+				<AlertTriangle class="h-4 w-4 shrink-0 text-[var(--color-cb-yellow)]" aria-hidden="true" />
 				<span>
 					{t('leftrail.integrityBadge', { n: warningCount })}
 				</span>
 			</button>
 		{/if}
 
-		<h2 class="mt-2 text-xs font-semibold uppercase tracking-wide opacity-70">
+		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted">
 			{t('leftrail.filtersHeading')}
 		</h2>
 		<FilterBar />
