@@ -28,6 +28,7 @@
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import Settings from '@lucide/svelte/icons/settings';
+	import MenuIcon from '@lucide/svelte/icons/menu';
 	import { Badge, IconButton, Tooltip, Button } from '$lib/ui';
 	import { t } from '$lib/ui/strings';
 	import ProxyWarningBanner from './ProxyWarningBanner.svelte';
@@ -79,8 +80,19 @@
 <header
 	data-testid="topbar"
 	aria-label={t('topbar.ariaLabel')}
-	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-border bg-background/80 backdrop-blur-md px-6 transition-colors duration-[var(--motion-slow)]"
+	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-border bg-background/80 backdrop-blur-md px-4 md:px-6 transition-colors duration-[var(--motion-slow)]"
 >
+	{#if mode === 'local' || mode === 'remote'}
+		<div class="md:hidden flex-shrink-0 -ml-2 mr-1">
+			<IconButton
+				label={t('topbar.toggleMobileNav')}
+				onclick={() => stores.ui.toggleMobileNav()}
+			>
+				<MenuIcon class="h-6 w-6" aria-hidden="true" />
+			</IconButton>
+		</div>
+	{/if}
+
 	<a
 		href={resolve('/')}
 		class="flex items-center gap-3 font-display font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"

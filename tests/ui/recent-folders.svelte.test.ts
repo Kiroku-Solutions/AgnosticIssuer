@@ -126,6 +126,7 @@ function buildStub(opts: { recentHandles: HandleRecord[] }): StoreGraph {
 			error: null,
 			load: () => Promise.resolve(),
 			create: () => Promise.resolve(1 as never),
+			importIssue: () => Promise.resolve(1 as never),
 			update: () => {},
 			save: () => Promise.resolve(),
 			discard: () => {},

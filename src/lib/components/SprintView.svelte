@@ -85,7 +85,7 @@
 		});
 		const count = related.length;
 		const points = related.reduce(
-			(acc, story) => acc + (Number(story.customFields.story_points) || 0),
+			(acc, story) => acc + (Number(story.estimate) || 0),
 			0
 		);
 		const completed = related.filter((s) => s.status === 'done' || s.status === 'closed').length;
@@ -279,11 +279,11 @@
 											>
 										</div>
 										<div class="flex items-center gap-3">
-											{#if story.customFields.story_points}
+											{#if story.estimate}
 												<span
 													class="text-xs font-bold px-2.5 py-0.5 rounded bg-muted text-foreground"
 												>
-													{story.customFields.story_points}
+													{story.estimate}
 													{t('sprint.pointsUnit')}
 												</span>
 											{/if}
@@ -344,11 +344,11 @@
 													<span class="text-sm text-foreground truncate">{story.title}</span>
 												</div>
 												<div class="flex items-center gap-3">
-													{#if story.customFields.story_points}
+													{#if story.estimate}
 														<span
 															class="text-xs font-bold px-2.5 py-0.5 rounded bg-muted text-foreground"
 														>
-															{story.customFields.story_points}
+															{story.estimate}
 															{t('sprint.pointsUnit')}
 														</span>
 													{/if}
@@ -392,11 +392,11 @@
 													<span class="text-sm text-foreground truncate">{story.title}</span>
 												</div>
 												<div class="flex items-center gap-3">
-													{#if story.customFields.story_points}
+													{#if story.estimate}
 														<span
 															class="text-xs font-bold px-2.5 py-0.5 rounded bg-muted text-foreground"
 														>
-															{story.customFields.story_points}
+															{story.estimate}
 															{t('sprint.pointsUnit')}
 														</span>
 													{/if}

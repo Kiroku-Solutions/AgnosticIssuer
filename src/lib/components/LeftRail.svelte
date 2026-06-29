@@ -47,18 +47,34 @@
 		warningCount > 0 ? (stores.issues.integrityWarnings[0]?.issue.id ?? null) : null
 	);
 
+	const mobileOpen = $derived(stores.ui.mobileNavOpen);
+	function closeMobileNav() {
+		stores.ui.closeMobileNav();
+	}
+
 	function onViewChange(id: string): void {
 		if (id === 'list' || id === 'kanban' || id === 'gantt') {
 			stores.view.setView(id);
+			closeMobileNav();
 		}
 	}
 
 	function reviewFirstWarning(): void {
 		if (firstWarningId !== null) {
 			stores.editor.open(firstWarningId);
+			closeMobileNav();
 		}
 	}
 </script>
+
+{#if mobileOpen}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
+		onclick={closeMobileNav}
+	></div>
+{/if}
 
 {#if collapsed}
 	<aside
@@ -84,9 +100,18 @@
 		data-testid="leftrail"
 		data-collapsed="false"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-border bg-surface p-4 md:flex transition-all duration-[var(--motion-base)]"
+		class="fixed top-0 bottom-0 left-0 z-50 h-screen w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-border bg-surface p-4 transition-transform duration-[var(--motion-base)] md:sticky md:top-[var(--topbar-height)] md:z-20 md:h-[calc(100vh-var(--topbar-height))] md:flex md:translate-x-0 {mobileOpen ? 'flex translate-x-0 shadow-2xl' : 'hidden -translate-x-full md:flex md:shadow-none'}"
 	>
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-2 md:hidden">
+			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+				{t('leftrail.viewsHeading')}
+			</h2>
+			<IconButton label={t('common.close')} onclick={closeMobileNav}>
+				<PanelLeftClose class="h-4 w-4" aria-hidden="true" />
+			</IconButton>
+		</div>
+
+		<div class="hidden md:flex items-center gap-2">
 			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 				{t('leftrail.viewsHeading')}
 			</h2>
@@ -107,7 +132,7 @@
 					.view.view === 'backlog'
 					? 'bg-primary text-primary-foreground'
 					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-				onclick={() => stores.view.setView('backlog')}
+				onclick={() => { stores.view.setView('backlog'); closeMobileNav(); }}
 			>
 				<span>{t('leftrail.view.backlog')}</span>
 			</button>
@@ -117,7 +142,7 @@
 					.view.view === 'sprint'
 					? 'bg-primary text-primary-foreground'
 					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-				onclick={() => stores.view.setView('sprint')}
+				onclick={() => { stores.view.setView('sprint'); closeMobileNav(); }}
 			>
 				<span>{t('leftrail.view.sprint')}</span>
 			</button>

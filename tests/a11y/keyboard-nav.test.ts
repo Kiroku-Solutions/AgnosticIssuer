@@ -188,6 +188,7 @@ function buildStub(opts: {
 			error: null,
 			load: () => Promise.resolve(),
 			create: () => Promise.resolve(1 as never),
+			importIssue: () => Promise.resolve(1 as never),
 			// Mutate the loaded array in place so the test can observe
 			// the status update via `byId.get(1).issue.status`.
 			update: (id: number, patch: object) => {

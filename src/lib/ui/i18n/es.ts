@@ -52,6 +52,7 @@ export const es: Translations = {
 		remoteRepository: 'Repositorio remoto',
 		settingsTooltip: 'Ajustes',
 		openSettings: 'Abrir ajustes',
+		toggleMobileNav: 'Alternar menú móvil',
 		ariaLabel: 'Navegación principal'
 	},
 
@@ -129,7 +130,9 @@ export const es: Translations = {
 
 	localToolbar: {
 		newIssue: '+ Nuevo problema',
-		refresh: '↻ Actualizar',
+		importIssue: 'Importar .md',
+		importIssueFailed: (params: Params) => `Error al importar: ${params.msg}`,
+		refresh: '↻ Refrescar',
 		refreshReadOnlyTooltip: 'Solo lectura — cierra sesión para editar localmente',
 		trashButton: (params: Params) => `Papelera (${params.n})`,
 		trashEmptyLabel: 'Vacía',
@@ -202,7 +205,16 @@ export const es: Translations = {
 			`Cambiar de "${params.old}" a "${params.new}" recargará el editor con la nueva plantilla. Los cambios no guardados se perderán.`,
 		changeTypeConfirm: 'Cambiar tipo',
 		changeTypeCancel: 'Cancelar',
-		changeTypeAria: (params: Params) => `Confirmar cambio de ${params.old} a ${params.new}`
+		changeTypeAria: (params: Params) => `Confirmar cambio de ${params.old} a ${params.new}`,
+		relationTypes: {
+			parent: 'Padre',
+			child: 'Hijo',
+			blocks: 'Bloquea a',
+			depends_on: 'Depende de',
+			relates_to: 'Relacionado con'
+		},
+		addRelation: 'Añadir relación',
+		removeRelationAria: 'Eliminar relación'
 	},
 
 	markdown: {

@@ -46,6 +46,7 @@
 	let emptyTrashOpen = $state(false);
 
 	let refreshing = $state(false);
+	let importing = $state(false);
 	let refreshError = $state<string | null>(null);
 
 	// Trash count is read from the local adapter; the toolbar holds
@@ -91,6 +92,40 @@
 	function openNewIssue(): void {
 		newIssueOpen = true;
 	}
+
+	async function handleImport(): Promise<void> {
+		try {
+			importing = true;
+			refreshError = null;
+			if (!('showOpenFilePicker' in window)) {
+				refreshError = 'File System Access API is not supported in this browser.';
+				return;
+			}
+			const [fileHandle] = await (window as any).showOpenFilePicker({
+				types: [
+					{
+						description: 'Markdown Files',
+						accept: {
+							'text/markdown': ['.md']
+						}
+					}
+				],
+				excludeAcceptAllOption: true,
+				multiple: false
+			});
+			const file = await fileHandle.getFile();
+			const content = await file.text();
+			
+			const newId = await stores.issues.importIssue(content);
+			stores.editor.open(newId);
+		} catch (e) {
+			if (e instanceof DOMException && e.name === 'AbortError') return;
+			refreshError = t('localToolbar.importIssueFailed', { msg: (e as Error).message });
+		} finally {
+			importing = false;
+		}
+	}
+
 	function openEmptyTrash(): void {
 		emptyTrashOpen = true;
 	}
@@ -111,6 +146,9 @@
 	{#if !isReadOnly}
 		<Button variant="primary" size="sm" onclick={openNewIssue} data-testid="toolbar-new-issue">
 			{t('localToolbar.newIssue')}
+		</Button>
+		<Button variant="secondary" size="sm" loading={importing} onclick={handleImport} data-testid="toolbar-import-issue">
+			{t('localToolbar.importIssue')}
 		</Button>
 	{/if}
 

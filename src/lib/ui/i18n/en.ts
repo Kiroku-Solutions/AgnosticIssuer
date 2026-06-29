@@ -51,6 +51,7 @@ export const en = {
 		remoteRepository: 'Remote repository',
 		settingsTooltip: 'Settings',
 		openSettings: 'Open settings',
+		toggleMobileNav: 'Toggle mobile menu',
 		ariaLabel: 'Primary navigation'
 	},
 
@@ -129,6 +130,8 @@ export const en = {
 
 	localToolbar: {
 		newIssue: '+ New issue',
+		importIssue: 'Import .md',
+		importIssueFailed: (params: Params) => `Failed to import: ${params.msg}`,
 		refresh: '↻ Refresh',
 		refreshReadOnlyTooltip: 'Read-only — sign out to edit locally',
 		trashButton: (params: Params) => `Trash (${params.n})`,
@@ -202,7 +205,16 @@ export const en = {
 			`Switching from "${params.old}" to "${params.new}" will reload the editor with the new template. Unsaved changes will be lost.`,
 		changeTypeConfirm: 'Change type',
 		changeTypeCancel: 'Cancel',
-		changeTypeAria: (params: Params) => `Confirm change from ${params.old} to ${params.new}`
+		changeTypeAria: (params: Params) => `Confirm change from ${params.old} to ${params.new}`,
+		relationTypes: {
+			parent: 'Parent',
+			child: 'Child',
+			blocks: 'Blocks',
+			depends_on: 'Depends On',
+			relates_to: 'Relates To'
+		},
+		addRelation: 'Add relation',
+		removeRelationAria: 'Remove relation'
 	},
 
 	markdown: {

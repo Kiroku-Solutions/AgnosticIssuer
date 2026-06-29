@@ -13,7 +13,7 @@
 	import { getStores } from '$lib/state';
 	import { t } from '$lib/ui/strings';
 	import { Modal, Button } from '$lib/ui';
-	import type { Issue, Relation, TemplateField } from '$lib/types';
+	import { RELATION_TYPES, type Issue, type Relation, type TemplateField } from '$lib/types';
 
 	type Option = { id: string; name: string };
 
@@ -119,13 +119,29 @@
 		editor.patchField(systemKeyFor(field.key), list);
 	}
 
-	function toggleRelation(id: number): void {
+	function changeRelationType(id: number, newType: string): void {
 		if (!issue) return;
-		const existing = issue.relations.find((r) => r.id === id);
-		const next = existing
-			? issue.relations.filter((r) => r.id !== id)
-			: [...issue.relations, { type: 'relates_to', id }];
+		const next = issue.relations.map((r) => r.id === id ? { ...r, type: newType as any } : r);
 		editor.patchField('relations', next);
+	}
+
+	function removeRelation(id: number): void {
+		if (!issue) return;
+		const next = issue.relations.filter((r) => r.id !== id);
+		editor.patchField('relations', next);
+	}
+
+	let newRelationId = $state<string>('');
+	let newRelationType = $state<string>('relates_to');
+
+	function addRelation(): void {
+		if (!issue || !newRelationId) return;
+		const id = Number(newRelationId);
+		if (issue.relations.some((r) => r.id === id)) return;
+		const next = [...issue.relations, { type: newRelationType as any, id }];
+		editor.patchField('relations', next);
+		newRelationId = '';
+		newRelationType = 'relates_to';
 	}
 
 	function selectOptionsFor(field: TemplateField): Option[] {
@@ -361,13 +377,10 @@
 							{t('formFields.issueTypeDisabledNote')}
 						</p>
 					{/if}
-				{:else if field.type === 'multi-select' || field.type === 'relations'}
-					{@const opts = field.type === 'relations' ? relationOptions() : multiSelectOptions(field)}
+				{:else if field.type === 'multi-select'}
+					{@const opts = multiSelectOptions(field)}
 					{@const selected = (() => {
 						void editor.errors;
-						if (field.type === 'relations' && issue) {
-							return issue.relations.map((r) => String(r.id));
-						}
 						return Array.isArray(value) ? (value as string[]) : [];
 					})()}
 					<div
@@ -384,14 +397,86 @@
 									? 'bg-foreground text-background border-foreground'
 									: 'bg-transparent text-muted-foreground border-border hover:border-muted'}"
 								aria-pressed={on}
-								onclick={() =>
-									field.type === 'relations'
-										? toggleRelation(Number(opt.id))
-										: toggleMulti(field, opt.id)}
+								onclick={() => toggleMulti(field, opt.id)}
 							>
-								{field.type === 'relations' ? relationTitle(Number(opt.id)) : opt.name}
+								{opt.name}
 							</button>
 						{/each}
+					</div>
+				{:else if field.type === 'relations'}
+					{@const currentRelations = (() => {
+						void editor.errors;
+						return issue?.relations ?? [];
+					})()}
+					<div id={fid} class="flex flex-col gap-3 border rounded-md border-border p-3 {err ? 'border-error ring-1 ring-error' : ''}">
+						{#each currentRelations as rel (rel.id)}
+							<div class="flex items-center gap-2">
+								<div class="relative w-1/3 min-w-[120px]">
+									<select
+										class="w-full appearance-none bg-surface text-foreground rounded border border-border pl-2 pr-6 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
+										value={rel.type}
+										onchange={(e) => changeRelationType(rel.id, e.currentTarget.value)}
+									>
+										{#each RELATION_TYPES as rType}
+											<option value={rType}>{t(`formFields.relationTypes.${rType}`)}</option>
+										{/each}
+									</select>
+									<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-muted-foreground">
+										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+									</div>
+								</div>
+								<span class="text-sm font-medium text-foreground truncate flex-1" title={relationTitle(rel.id)}>
+									{relationTitle(rel.id)}
+								</span>
+								<button
+									type="button"
+									class="text-muted-foreground hover:text-error transition-colors p-1"
+									aria-label={t('formFields.removeRelationAria')}
+									onclick={() => removeRelation(rel.id)}
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+								</button>
+							</div>
+						{/each}
+
+						<div class="flex items-center gap-2 mt-1 border-t border-border pt-3">
+							<div class="relative w-1/3 min-w-[120px]">
+								<select
+									class="w-full appearance-none bg-background text-foreground rounded border border-border pl-2 pr-6 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
+									bind:value={newRelationType}
+								>
+									{#each RELATION_TYPES as rType}
+										<option value={rType}>{t(`formFields.relationTypes.${rType}`)}</option>
+									{/each}
+								</select>
+								<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-muted-foreground">
+									<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+								</div>
+							</div>
+							<div class="relative flex-1">
+								<select
+									class="w-full appearance-none bg-background text-foreground rounded border border-border pl-2 pr-6 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
+									bind:value={newRelationId}
+								>
+									<option value="">{t('formFields.selectPlaceholder')}</option>
+									{#each relationOptions() as opt}
+										<option value={opt.id}>{opt.name}</option>
+									{/each}
+								</select>
+								<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-muted-foreground">
+									<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+								</div>
+							</div>
+							<button
+								type="button"
+								class="px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-xs font-bold shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+								title={t('formFields.addRelation')}
+								disabled={!newRelationId}
+								onclick={addRelation}
+							>
+								+
+							</button>
+						</div>
 					</div>
 				{/if}
 

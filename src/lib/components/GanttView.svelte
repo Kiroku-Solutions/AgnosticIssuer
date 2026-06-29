@@ -53,18 +53,47 @@
 
 	const pxPerDay = 2;
 
+	const globalGroupBy = $derived(filter.filter.groupBy ?? 'none');
+
+	const groupsMatchList = $derived.by(() => {
+		if (globalGroupBy === 'sprint') {
+			const sprintIssues = Array.from(issues.byId.values()).filter((li) => li.issue.issueType === 'sprint');
+			const definedGroups = sprintIssues.map((s) => ({
+				id: `sprint-${s.issue.id}`,
+				title: `Sprint ${s.issue.customFields?.sprint_number ?? s.issue.id} · ${s.issue.title}`,
+				match: (issue: import('$lib/types').Issue) =>
+					issue.relations.some((r) => r.id === s.issue.id) ||
+					s.issue.relations.some((r) => r.id === issue.id)
+			}));
+			return [...definedGroups, { id: 'unassigned', title: 'Sin Asignar', match: () => true }];
+		}
+		if (globalGroupBy === 'epic') {
+			const epicIssues = Array.from(issues.byId.values()).filter((li) => li.issue.issueType === 'epic');
+			const definedGroups = epicIssues.map((e) => ({
+				id: `epic-${e.issue.id}`,
+				title: e.issue.title,
+				match: (issue: import('$lib/types').Issue) =>
+					issue.relations.some((r) => r.id === e.issue.id) ||
+					e.issue.relations.some((r) => r.id === issue.id)
+			}));
+			return [...definedGroups, { id: 'unassigned', title: 'Sin Asignar', match: () => true }];
+		}
+		return null;
+	});
+
 	const derivedGanttData = $derived(
 		(() => {
 			const all = Array.from(issues.byId.values());
 			const f = filter.filter;
-			const groupBy =
+			const fallbackGroupBy =
 				(
 					config as unknown as {
 						config: { gantt?: { group_by?: string } } | null;
 					}
-				).config?.gantt?.group_by ?? 'issue_type';
+				).config?.gantt?.group_by ?? 'issueType';
 
 			const filtered = all.filter((li) => {
+				if (f.status && li.issue.status !== f.status) return false;
 				if (f.type && li.issue.issueType !== f.type) return false;
 				if (f.q) {
 					const n = f.q.toLowerCase();
@@ -102,10 +131,27 @@
 			// eslint-disable-next-line svelte/prefer-svelte-reactivity
 			const groups = new Map<string, LoadedIssue[]>();
 			for (const li of dated) {
-				const k = String((li.issue as unknown as Record<string, unknown>)[groupBy] ?? 'unknown');
+				let k = 'unknown';
+				if (groupsMatchList) {
+					const g = groupsMatchList.find((g) => g.id !== 'unassigned' && g.match(li.issue)) || groupsMatchList[groupsMatchList.length - 1];
+					if (g) k = g.title;
+				} else {
+					k = String((li.issue as unknown as Record<string, unknown>)[fallbackGroupBy] ?? 'unknown');
+				}
 				(groups.get(k) ?? groups.set(k, []).get(k)!).push(li);
 			}
+			
 			const out: Row[] = [];
+			if (groupsMatchList) {
+				for (const g of groupsMatchList) {
+					const items = groups.get(g.title);
+					if (items) {
+						items.sort((a, b) => a.issue.id - b.issue.id);
+						items.forEach((issue, i) => out.push({ group: g.title, issue, rowInGroup: i }));
+						groups.delete(g.title);
+					}
+				}
+			}
 			for (const [group, items] of groups) {
 				items.sort((a, b) => a.issue.id - b.issue.id);
 				items.forEach((issue, i) => out.push({ group, issue, rowInGroup: i }));

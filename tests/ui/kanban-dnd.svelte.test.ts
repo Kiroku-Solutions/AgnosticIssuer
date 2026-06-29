@@ -168,6 +168,7 @@ function buildStub(issues: readonly Issue[], mode: 'local' | 'remote'): StoreGra
 			error: null,
 			load: () => Promise.resolve(),
 			create: () => Promise.resolve(1 as never),
+			importIssue: () => Promise.resolve(1 as never),
 			update: (id: number, patch: Record<string, unknown>) => {
 				updateCalls.push({ id, patch });
 				const li = byId.get(id);

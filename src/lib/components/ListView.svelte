@@ -30,7 +30,7 @@
 	let sortKey = $state<SortKey>('updated_date');
 	let sortDir = $state<SortDir>('desc');
 
-	const rows = $derived(
+	const sortedRows = $derived(
 		Array.from(issues.byId.values())
 			.filter((li) => {
 				const f = filter.filter;
@@ -62,6 +62,61 @@
 				}
 			})
 	);
+
+	const groupBy = $derived(filter.filter.groupBy ?? 'none');
+
+	const groups = $derived.by(() => {
+		if (groupBy === 'sprint') {
+			const sprintIssues = Array.from(issues.byId.values()).filter((li) => li.issue.issueType === 'sprint');
+			const definedGroups = sprintIssues.map((s) => ({
+				id: `sprint-${s.issue.id}`,
+				title: `Sprint ${s.issue.customFields?.sprint_number ?? s.issue.id} · ${s.issue.title}`,
+				match: (issue: import('$lib/types').Issue) =>
+					issue.relations.some((r) => r.id === s.issue.id) ||
+					s.issue.relations.some((r) => r.id === issue.id)
+			}));
+			return [...definedGroups, { id: 'unassigned', title: 'Sin Asignar', match: () => true }];
+		}
+		if (groupBy === 'epic') {
+			const epicIssues = Array.from(issues.byId.values()).filter((li) => li.issue.issueType === 'epic');
+			const definedGroups = epicIssues.map((e) => ({
+				id: `epic-${e.issue.id}`,
+				title: e.issue.title,
+				match: (issue: import('$lib/types').Issue) =>
+					issue.relations.some((r) => r.id === e.issue.id) ||
+					e.issue.relations.some((r) => r.id === issue.id)
+			}));
+			return [...definedGroups, { id: 'unassigned', title: 'Sin Asignar', match: () => true }];
+		}
+		return [{ id: 'all', title: 'Todos los Problemas', match: () => true }];
+	});
+
+	const groupedRows = $derived.by(() => {
+		const result: Record<string, typeof sortedRows> = {};
+		for (const g of groups) {
+			result[g.id] = [];
+		}
+		
+		for (const li of sortedRows) {
+			const group = groupBy !== 'none'
+				? groups.find((g) => g.id !== 'unassigned' && g.match(li.issue)) || groups[groups.length - 1]
+				: groups[0];
+			
+			if (group) {
+				result[group.id].push(li);
+			}
+		}
+		return result;
+	});
+
+	const rows = $derived.by(() => {
+		const result: typeof sortedRows = [];
+		for (const g of groups) {
+			const gRows = groupedRows[g.id] ?? [];
+			result.push(...gRows);
+		}
+		return result;
+	});
 
 	const total = $derived(issues.issues.length);
 	const filteredCount = $derived(rows.length);
@@ -182,55 +237,68 @@
 					</th>
 				</tr>
 			</thead>
-			<tbody class="divide-y divide-hairline">
-				{#each rows as li, idx (li.issue.id)}
-					<tr
-						class="hover:bg-surface transition-colors cursor-pointer text-foreground focus-visible:outline-none focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-						tabindex="0"
-						role="button"
-						data-row-id={li.issue.id}
-						aria-label={t('list.rowAria', { id: li.issue.id, title: li.issue.title })}
-						onclick={() => open(li.issue.id)}
-						onkeydown={(e) => onRowKeydown(e, idx)}
-					>
-						<td class="font-mono text-xs text-muted-foreground px-4 py-3"
-							>{li.issue.id.toString().padStart(4, '0')}</td
-						>
-						<td class="font-medium px-4 py-3 min-w-[20rem] truncate">{li.issue.title}</td>
-						<td class="px-4 py-3"
-							><span
-								class="px-2 py-0.5 bg-foreground/5 rounded text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-								>{li.issue.issueType}</span
-							></td
-						>
-						<td class="px-4 py-3">
-							<span
-								class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest"
-								style="background-color: var(--status-color, var(--color-cb-muted)); color: #fff"
-							>
-								{li.issue.status}
-							</span>
-						</td>
-						<td class="px-4 py-3">{li.issue.assignee ?? '—'}</td>
-						<td class="px-4 py-3">
-							{#each li.issue.labels as l (l)}
-								<span
-									class="px-1.5 py-0.5 border border-border rounded text-[10px] font-bold uppercase tracking-widest text-muted-foreground mr-1"
-									>{l}</span
-								>
-							{/each}
-						</td>
-						<td class="text-xs text-muted-foreground px-4 py-3">{li.issue.updatedDate}</td>
-					</tr>
-				{/each}
-				{#if rows.length === 0}
-					<tr>
-						<td colspan="7" class="py-12 text-center text-muted-foreground font-medium italic"
-							>{t('list.empty')}</td
-						>
-					</tr>
+			{#each groups as group (group.id)}
+				{@const groupRows = groupedRows[group.id] ?? []}
+				{#if groupBy !== 'none' && (groupRows.length > 0 || group.id !== 'unassigned')}
+					<tbody class="bg-surface-dark border-b border-border">
+						<tr>
+							<td colspan="7" class="px-4 py-2 font-bold text-sm text-foreground">
+								{group.title}
+								<span class="ml-2 text-xs text-muted-foreground font-normal opacity-70">({groupRows.length})</span>
+							</td>
+						</tr>
+					</tbody>
 				{/if}
-			</tbody>
+				<tbody class="divide-y divide-hairline">
+					{#each groupRows as li (li.issue.id)}
+						<tr
+							class="hover:bg-surface transition-colors cursor-pointer text-foreground focus-visible:outline-none focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+							tabindex="0"
+							role="button"
+							data-row-id={li.issue.id}
+							aria-label={t('list.rowAria', { id: li.issue.id, title: li.issue.title })}
+							onclick={() => open(li.issue.id)}
+							onkeydown={(e) => onRowKeydown(e, rows.findIndex(r => r.issue.id === li.issue.id))}
+						>
+							<td class="font-mono text-xs text-muted-foreground px-4 py-3"
+								>{li.issue.id.toString().padStart(4, '0')}</td
+							>
+							<td class="font-medium px-4 py-3 min-w-[20rem] truncate">{li.issue.title}</td>
+							<td class="px-4 py-3"
+								><span
+									class="px-2 py-0.5 bg-foreground/5 rounded text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+									>{li.issue.issueType}</span
+								></td
+							>
+							<td class="px-4 py-3">
+								<span
+									class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest"
+									style="background-color: var(--status-color, var(--color-cb-muted)); color: #fff"
+								>
+									{li.issue.status}
+								</span>
+							</td>
+							<td class="px-4 py-3">{li.issue.assignee ?? '—'}</td>
+							<td class="px-4 py-3">
+								{#each li.issue.labels as l (l)}
+									<span
+										class="px-1.5 py-0.5 border border-border rounded text-[10px] font-bold uppercase tracking-widest text-muted-foreground mr-1"
+										>{l}</span
+									>
+								{/each}
+							</td>
+							<td class="text-xs text-muted-foreground px-4 py-3">{li.issue.updatedDate}</td>
+						</tr>
+					{/each}
+					{#if groupRows.length === 0 && (groupBy === 'none' || group.id !== 'unassigned')}
+						<tr>
+							<td colspan="7" class="py-12 text-center text-muted-foreground font-medium italic"
+								>{t('list.empty')}</td
+							>
+						</tr>
+					{/if}
+				</tbody>
+			{/each}
 		</table>
 	</div>
 </div>

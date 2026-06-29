@@ -57,6 +57,7 @@ import {
 	moveIssueToTrash,
 	saveIssue,
 	validateIssue,
+	parseIssueFile,
 	type ValidationContext,
 	type ValidationError
 } from '../services/index.ts';
@@ -191,6 +192,8 @@ export interface IssuesStore {
 	readonly load: () => Promise<void>;
 	/** Create a new issue. Writes the initial file to disk and returns the new id. */
 	readonly create: (input: CreateIssueInput) => Promise<IssueId>;
+	/** Import an external .md file as a new issue */
+	readonly importIssue: (markdownContent: string) => Promise<IssueId>;
 	/** Patch an issue in memory. Marks it dirty. Does not touch disk. */
 	readonly update: (id: number, patch: IssuePatch) => void;
 	/** Validate, serialize, and write the issue to disk. Serialised per-id. */
@@ -402,6 +405,29 @@ export function createIssuesStore(
 		// brands ids, so consumers never see a raw number that bypassed
 		// the brand.
 		return brandIssueId(loaded.issue.id);
+	}
+
+	async function importIssue(markdownContent: string): Promise<IssueId> {
+		const adapter = adapterProvider();
+		if (!adapter) throw new Error('Cannot import issue: no adapter bound');
+		
+		const loaded = await parseIssueFile(markdownContent, '.quill.md/issues/import.md');
+		const loadedIssue = loaded.issue;
+		
+		const created = await createIssue(
+			requireWritable(adapter),
+			{
+				title: loadedIssue.title || 'Imported Issue',
+				issueType: loadedIssue.issueType || 'bug',
+				author: loadedIssue.author || 'imported',
+				status: loadedIssue.status || defaultStatus(),
+				customFields: loadedIssue.customFields,
+				sections: loadedIssue.sections
+			},
+			issues.map((li) => li.issue)
+		);
+		issues = [...issues, created];
+		return brandIssueId(created.issue.id);
 	}
 
 	/**
@@ -653,6 +679,7 @@ export function createIssuesStore(
 		},
 		load,
 		create,
+		importIssue,
 		update,
 		save,
 		discard,

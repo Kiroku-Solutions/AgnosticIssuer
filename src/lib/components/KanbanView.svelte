@@ -48,23 +48,58 @@
 	// Only two scalars — no arrays, no Maps, no objects to spread.
 	// Updates during drag are O(1) and touch minimal reactive surface.
 	let draggedId = $state<number | null>(null);
-	let dropTargetColId = $state<string | null>(null);
+	let dropTargetId = $state<string | null>(null);
 	let justDroppedId = $state<number | null>(null);
 	let dragPos = $state<{ x: number; y: number } | null>(null);
 
 	// ── Derived data ───────────────────────────────────────────────
-	// `cardsByStatus` is a pure derivation from `rows` + `columns`.
-	// It rebuilds only when the source data changes (load, filter,
-	// status update), never during drag.
-	const cardsByStatus = $derived.by(() => {
-		const map: Record<string, LoadedIssue[]> = {};
-		for (const col of columns) map[col.id] = [];
-		for (const li of rows) {
-			const bucket = map[li.issue.status];
-			if (bucket) bucket.push(li);
-			else map[li.issue.status] = [li];
+	const groupBy = $derived(filter.filter.groupBy ?? 'none');
+
+	const groups = $derived.by(() => {
+		if (groupBy === 'sprint') {
+			const sprintIssues = Array.from(issues.byId.values()).filter((li) => li.issue.issueType === 'sprint');
+			const definedGroups = sprintIssues.map((s) => ({
+				id: `sprint-${s.issue.id}`,
+				title: `Sprint ${s.issue.customFields?.sprint_number ?? s.issue.id} · ${s.issue.title}`,
+				match: (issue: import('$lib/types').Issue) =>
+					issue.relations.some((r) => r.id === s.issue.id) ||
+					s.issue.relations.some((r) => r.id === issue.id)
+			}));
+			return [...definedGroups, { id: 'unassigned', title: 'Sin Asignar', match: () => true }];
 		}
-		return map;
+		if (groupBy === 'epic') {
+			const epicIssues = Array.from(issues.byId.values()).filter((li) => li.issue.issueType === 'epic');
+			const definedGroups = epicIssues.map((e) => ({
+				id: `epic-${e.issue.id}`,
+				title: e.issue.title,
+				match: (issue: import('$lib/types').Issue) =>
+					issue.relations.some((r) => r.id === e.issue.id) ||
+					e.issue.relations.some((r) => r.id === issue.id)
+			}));
+			return [...definedGroups, { id: 'unassigned', title: 'Sin Asignar', match: () => true }];
+		}
+		return [{ id: 'all', title: 'Todos los Problemas', match: () => true }];
+	});
+
+	const groupedCards = $derived.by(() => {
+		const result: Record<string, Record<string, LoadedIssue[]>> = {};
+		for (const g of groups) {
+			result[g.id] = {};
+			for (const col of columns) result[g.id][col.id] = [];
+		}
+		
+		for (const li of rows) {
+			const group = groupBy !== 'none'
+				? groups.find((g) => g.id !== 'unassigned' && g.match(li.issue)) || groups[groups.length - 1]
+				: groups[0];
+			
+			if (group) {
+				const bucket = result[group.id][li.issue.status];
+				if (bucket) bucket.push(li);
+				else result[group.id][li.issue.status] = [li];
+			}
+		}
+		return result;
 	});
 
 	// Stable Map for O(1) card lookup — only rebuilds when `rows` changes.
@@ -168,28 +203,29 @@
 		dragPos = { x: e.clientX, y: e.clientY };
 	}
 
-	function onDragOver(e: DragEvent, colId: string): void {
+	function onDragOver(e: DragEvent, groupId: string, colId: string): void {
 		if (isReadOnly || draggedId === null) return;
 		e.preventDefault();
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-		if (dropTargetColId !== colId) {
-			dropTargetColId = colId;
+		const target = `${groupId}:${colId}`;
+		if (dropTargetId !== target) {
+			dropTargetId = target;
 		}
 	}
 
-	function onDragLeave(e: DragEvent, colId: string): void {
+	function onDragLeave(e: DragEvent, groupId: string, colId: string): void {
 		// Only clear if we're leaving the column itself, not a child.
 		const related = e.relatedTarget as Node | null;
 		const currentTarget = e.currentTarget as HTMLElement;
 		if (related && currentTarget.contains(related)) return;
-		if (dropTargetColId === colId) {
-			dropTargetColId = null;
+		if (dropTargetId === `${groupId}:${colId}`) {
+			dropTargetId = null;
 		}
 	}
 
-	function onDrop(e: DragEvent, colId: string): void {
+	function onDrop(e: DragEvent, groupId: string, colId: string): void {
 		e.preventDefault();
-		dropTargetColId = null;
+		dropTargetId = null;
 
 		if (isReadOnly || draggedId === null) {
 			draggedId = null;
@@ -209,7 +245,7 @@
 
 	function onDragEnd(): void {
 		draggedId = null;
-		dropTargetColId = null;
+		dropTargetId = null;
 		dragPos = null;
 	}
 
@@ -299,7 +335,14 @@
 	function onCardKeydown(e: KeyboardEvent, li: LoadedIssue): void {
 		const colIdx = findColumnForStatus(li.issue.status);
 		if (colIdx < 0) return;
-		const colCards = cardsByStatus[li.issue.status] ?? [];
+
+		let targetGroup = groups[0];
+		if (groupBy !== 'none') {
+			targetGroup = groups.find((g) => g.id !== 'unassigned' && g.match(li.issue)) || groups[groups.length - 1];
+		}
+		if (!targetGroup) return;
+
+		const colCards = groupedCards[targetGroup.id]?.[li.issue.status] ?? [];
 		const withinIdx = colCards.findIndex((c) => c.issue.id === li.issue.id);
 
 		// Escape cancels an active pickup. Outside of pickup mode
@@ -359,7 +402,7 @@
 		e.preventDefault();
 		const targetCol = columns[targetColIdx];
 		if (!targetCol) return;
-		const bucket = cardsByStatus[targetCol.id] ?? [];
+		const bucket = groupedCards[targetGroup.id]?.[targetCol.id] ?? [];
 		const targetCard =
 			targetWithin >= 0 ? (bucket[targetWithin] ?? bucket[bucket.length - 1]) : bucket[0];
 
@@ -399,13 +442,30 @@
 	{announcement}
 </div>
 
-<div
-	class="flex gap-6 overflow-x-auto bg-background p-6 min-h-[calc(100vh-var(--topbar-height)-4rem)]"
-	data-testid="kanban-view"
->
+<div class="flex flex-col gap-8 min-h-[calc(100vh-var(--topbar-height)-4rem)] p-6 overflow-y-auto bg-background" data-testid="kanban-view">
+	{#each groups as group (group.id)}
+		{#if groupBy === 'none' || groupBy === undefined}
+			<div class="flex gap-6 overflow-x-auto pb-4">
+				{@render columnSet(group)}
+			</div>
+		{:else}
+			<details class="group/sprint bg-surface rounded-xl border border-border overflow-hidden" open>
+				<summary class="flex items-center gap-2 px-6 py-4 cursor-pointer hover:bg-surface-dark transition-colors font-bold text-foreground border-b border-border outline-none focus-visible:bg-surface-dark select-none list-none [&::-webkit-details-marker]:hidden">
+					<svg class="w-5 h-5 transition-transform group-open/sprint:rotate-90 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+					{group.title}
+				</summary>
+				<div class="flex gap-6 overflow-x-auto p-6 bg-background">
+					{@render columnSet(group)}
+				</div>
+			</details>
+		{/if}
+	{/each}
+</div>
+
+{#snippet columnSet(group)}
 	{#each columns as col (col.id)}
-		{@const colCards = cardsByStatus[col.id] ?? []}
-		{@const isDropTarget = dropTargetColId === col.id && draggedId !== null}
+		{@const colCards = groupedCards[group.id]?.[col.id] ?? []}
+		{@const isDropTarget = dropTargetId === `${group.id}:${col.id}` && draggedId !== null}
 		<div
 			role="group"
 			aria-label={col.id}
@@ -413,9 +473,9 @@
 				{isDropTarget ? 'border-primary bg-primary/5 ring-2 ring-primary ring-inset' : 'border-border'}"
 			data-testid="kanban-column"
 			data-column-id={col.id}
-			ondragover={(e) => onDragOver(e, col.id)}
-			ondragleave={(e) => onDragLeave(e, col.id)}
-			ondrop={(e) => onDrop(e, col.id)}
+			ondragover={(e) => onDragOver(e, group.id, col.id)}
+			ondragleave={(e) => onDragLeave(e, group.id, col.id)}
+			ondrop={(e) => onDrop(e, group.id, col.id)}
 		>
 			{#if isReadOnly}
 				<Tooltip text={t('kanban.readOnlyTooltip')} position="bottom">
@@ -523,11 +583,6 @@
 								</div>
 							{/if}
 							{#if isLifted}
-								<!--
-									Hidden descriptor attached via aria-describedby
-									above. Always mounted so the ID resolution is
-									stable; the visual content is `sr-only`.
-								-->
 								<span id="kanban-activate-hint" class="sr-only">
 									{t('kanban.activateHint')}
 								</span>
@@ -541,7 +596,7 @@
 			</div>
 		</div>
 	{/each}
-</div>
+{/snippet}
 
 {#if draggedId !== null && dragPos !== null}
 	{@const li = findLoaded(draggedId)}
