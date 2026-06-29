@@ -13,7 +13,7 @@
  *   Appendix D). The full repository history is never fetched.
  *
  * - **Subtree materialisation.** After the fetch, the adapter walks the
- *   cloned tree and exposes only the `.nomad.md/` subtree to callers via
+ *   cloned tree and exposes only the `.quill.md/` subtree to callers via
  *   its `readTextFile` / `listDirectory` methods; `splitPath` rejects any
  *   `..` segment that tries to escape the subtree. This is a *client-side*
  *   subtree gating, not a server-side partial clone — the entire branch tip
@@ -75,8 +75,8 @@ export type Branch = string & { readonly [BRANCH_BRAND]: true };
 /** A 40-char hex SHA. Validated by {@link brandSha}. */
 export type Sha = string & { readonly [SHA_BRAND]: true };
 
-/** A relative POSIX path under the cloned `.nomad.md/` root. */
-export type SubtreePath = `.nomad.md/${string}`;
+/** A relative POSIX path under the cloned `.quill.md/` root. */
+export type SubtreePath = `.quill.md/${string}`;
 
 const REPO_URL_RE = /^(https?:\/\/[\w.-]+(\/[\w./\-~]+)*|git@[\w.-]+:[\w./\-~]+)$/;
 const BRANCH_RE = /^[\w./-]{1,255}$/;
@@ -417,7 +417,7 @@ export interface FetchResult {
 	readonly url: RepoUrl;
 	readonly branch: Branch;
 	readonly sha: Sha;
-	/** The adapter rooted at the cloned `.nomad.md/` subtree. */
+	/** The adapter rooted at the cloned `.quill.md/` subtree. */
 	readonly adapter: ReadonlyRemoteAdapter;
 	/** Cache key under which the clone is stored. */
 	readonly cacheKey: CacheKey;
@@ -446,12 +446,12 @@ export const DEFAULT_CORS_PROXY = 'https://cors.isomorphic-git.org';
 export const DEFAULT_DEPTH = 1;
 
 /** The subtree we always clone. Hard-coded; do not expose as an option. */
-export const SUBTREE = '.nomad.md' as const;
+export const SUBTREE = '.quill.md' as const;
 
 // ─── Adapter implementation ─────────────────────────────────────────────────
 
 /**
- * Fetch the `.nomad.md/` subtree of a remote Git repository and
+ * Fetch the `.quill.md/` subtree of a remote Git repository and
  * return a {@link ReadonlyRemoteAdapter} rooted at the subtree.
  *
  * The returned adapter is a *snapshot*: it does not pick up subsequent

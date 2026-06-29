@@ -6,7 +6,7 @@
 	toolbar hides the trigger when `modeStore.mode === 'remote'`).
 
 	Behaviour:
-	  - Shows the count of files in `.nomad.md/.trash/`. The count is
+	  - Shows the count of files in `.quill.md/.trash/`. The count is
 	    passed in as a prop (the toolbar reads it via the active local
 	    adapter's `listDirectory` and re-reads after every `remove`).
 	  - The confirm button calls `emptyTrash(adapter)` from
@@ -64,11 +64,18 @@
 		<h2 class="text-lg font-semibold">{t('emptyTrashModal.title')}</h2>
 		<button
 			type="button"
-			class="p-1 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+			class="p-1 rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 			onclick={close}
 			aria-label={t('emptyTrashModal.closeAria')}
 		>
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M6 18L18 6M6 6l12 12"
+				></path></svg
+			>
 		</button>
 	</div>
 
@@ -81,23 +88,39 @@
 	</p>
 
 	{#if error}
-		<p class="text-[var(--color-cb-down)] mt-3 text-xs font-medium" role="alert">{error}</p>
+		<p class="text-error mt-3 text-xs font-medium" role="alert">{error}</p>
 	{/if}
 
 	<footer class="mt-4 flex items-center justify-end gap-2">
-		<button type="button" class="px-3 py-1.5 rounded-md text-sm font-medium text-muted hover:bg-black/5 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset" onclick={close} disabled={busy}>
+		<button
+			type="button"
+			class="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+			onclick={close}
+			disabled={busy}
+		>
 			{t('common.cancel')}
 		</button>
 		<button
 			type="button"
-			class="px-3 py-1.5 bg-[var(--color-cb-down)] text-white rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-down)] focus-visible:ring-offset-2 flex items-center gap-2"
+			class="px-3 py-1.5 bg-error text-white rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2 flex items-center gap-2"
 			disabled={count === 0 || busy || !adapter}
 			aria-busy={busy || undefined}
 			onclick={() => void confirm()}
 			data-testid="empty-trash-confirm"
 		>
 			{#if busy}
-				<svg class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+				<svg
+					class="animate-spin h-3.5 w-3.5 text-current"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle><path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					></path></svg
+				>
 			{/if}
 			{t('emptyTrashModal.confirm')}
 		</button>

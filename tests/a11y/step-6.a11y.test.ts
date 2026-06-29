@@ -61,9 +61,9 @@ vi.mock('$lib/state', () => ({
 }));
 
 vi.mock('$lib/adapters', () => ({
-	TRASH_DIRECTORY: '.nomad.md/.trash',
+	TRASH_DIRECTORY: '.quill.md/.trash',
 	emptyTrash: () => Promise.resolve(0),
-	moveToTrash: () => Promise.resolve('.nomad.md/.trash/test'),
+	moveToTrash: () => Promise.resolve('.quill.md/.trash/test'),
 	handleStore: { removeRecent: () => Promise.resolve() },
 	LocalFsAdapter: {
 		fromHandle: () => ({}) as never,
@@ -89,10 +89,12 @@ vi.mock('$app/navigation', () => ({
 // ─── Test fixtures ─────────────────────────────────────────────────────────
 
 const CONFIG: Config = {
+	product_goal: '',
+	definition_of_done: [],
 	statuses: [
-		{ id: 'open', name: 'Open', color: '#16a34a' },
-		{ id: 'in_progress', name: 'In Progress', color: '#0ea5e9' },
-		{ id: 'done', name: 'Done', color: '#64748b' }
+		{ id: 'open', name: 'Open', color: '#16a34a', category: 'todo' },
+		{ id: 'in_progress', name: 'In Progress', color: '#0ea5e9', category: 'doing' },
+		{ id: 'done', name: 'Done', color: '#64748b', category: 'done' }
 	],
 	default_status: 'open',
 	labels: [{ id: 'bug', name: 'Bug', color: '#dc2626' }],
@@ -106,20 +108,22 @@ function makeIssue(id: number, status: string, title: string, type = 'task'): Is
 	return {
 		id,
 		title,
-		author: 'tester',
-		creationDate: '2026-01-01',
-		updatedDate: '2026-01-15',
+		author: 'jane',
+		creationDate: '2026-06-25',
+		updatedDate: '2026-06-25',
 		issueType: type,
+		sprintId: null,
+		estimate: null,
 		status,
 		assignee: null,
 		labels: [],
 		relations: [],
-		startDate: '2026-02-01',
-		endDate: '2026-02-10',
-		duration: 9,
+		startDate: '2026-06-25',
+		endDate: '2026-06-26',
+		duration: 1,
 		integrityHash: null,
 		customFields: {},
-		sections: [],
+		sections: [{ name: 'Description', markdown: `Body for ${title}` }],
 		integrityWarning: false
 	};
 }
@@ -127,7 +131,7 @@ function makeIssue(id: number, status: string, title: string, type = 'task'): Is
 function makeLoaded(id: number, status: string, title: string): LoadedIssue {
 	return {
 		issue: makeIssue(id, status, title),
-		sourcePath: `.nomad.md/issues/${String(id).padStart(4, '0')}-${title.toLowerCase()}.md`
+		sourcePath: `.quill.md/issues/${String(id).padStart(4, '0')}-${title.toLowerCase()}.md`
 	};
 }
 
@@ -251,6 +255,7 @@ function buildStub(opts: {
 			error: null,
 			load: () => Promise.resolve(),
 			create: () => Promise.resolve(1 as never),
+			importIssue: () => Promise.resolve(1 as never),
 			update: () => {},
 			save: () => Promise.resolve(),
 			discard: () => {},

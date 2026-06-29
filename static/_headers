@@ -1,4 +1,4 @@
-# Transport-layer security headers for nomad.md
+# Transport-layer security headers for quill.md
 # ─────────────────────────────────────────────────────────────
 # This file is consumed by Netlify, Cloudflare Pages, and any
 # static host that supports the `_headers` format. GitHub Pages
@@ -55,7 +55,7 @@
 #  - `require-trusted-types-for 'script'` — opt the app into
 #    Trusted Types; the renderer + DOMPurify policy is the
 #    documented sink.
-#  - `trusted-types nomad-md dompurify default` — the policy
+#  - `trusted-types quill-md dompurify default` — the policy
 #    name. Required for the `require-trusted-types-for`
 #    directive to be useful (otherwise every DOM sink is denied
 #    with no way to construct a TrustedHTML value).

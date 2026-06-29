@@ -4,20 +4,15 @@
 
 	const { theme } = getStores();
 
-	function apply(t: 'light' | 'dark'): void {
-		document.documentElement.classList.toggle('dark', t === 'dark');
-	}
-
 	function toggle(): void {
 		const next = theme.theme === 'dark' ? 'light' : 'dark';
 		theme.setTheme(next);
-		apply(next);
 	}
 </script>
 
 <button
 	type="button"
-	class="p-2 rounded-md text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2"
+	class="p-2 rounded-md text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 	onclick={toggle}
 	aria-label={theme.theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
 >

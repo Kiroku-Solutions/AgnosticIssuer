@@ -24,7 +24,7 @@ import type { WritableDirectoryAdapter } from '../adapters/directory-adapter.ts'
 import type { Issue, LoadedIssue } from '../types/index.ts';
 import { buildIssueFilename, nextIssueId, parseIssueFile, serializeIssue } from './index.ts';
 
-export const ISSUES_DIR = '.nomad.md/issues';
+export const ISSUES_DIR = '.quill.md/issues';
 
 /** Inputs to construct a brand-new issue with sensible defaults. */
 export interface CreateIssueInput {
@@ -64,6 +64,8 @@ export function buildDefaultIssue(
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		// `FrontmatterValue` is a recursive union; custom fields from a UI
 		// may arrive as `unknown` (the patch path is widened). The

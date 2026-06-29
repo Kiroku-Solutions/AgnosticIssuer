@@ -2,7 +2,7 @@ import type { ReadOnlyDirectoryAdapter } from '../adapters/directory-adapter.ts'
 import type { FieldType, Template } from '../types/index.ts';
 import { FIELD_TYPES } from '../types/index.ts';
 
-const TEMPLATES_DIR = '.nomad.md/templates';
+const TEMPLATES_DIR = '.quill.md/templates';
 
 const VALID_FIELD_TYPES: ReadonlySet<FieldType> = new Set<FieldType>(FIELD_TYPES);
 
@@ -53,7 +53,11 @@ function assertTemplate(value: unknown, filename: string): Template {
 		// ERS §3.1 FR-2: select / multi-select fields MUST have an `options`
 		// array. The previous loader silently accepted a `select` field with
 		// no options, which made the editor crash on render. Closing that gap.
-		if ((f['type'] === 'select' || f['type'] === 'multi-select') && !Array.isArray(f['options']) && !isString(f['options_source'])) {
+		if (
+			(f['type'] === 'select' || f['type'] === 'multi-select') &&
+			!Array.isArray(f['options']) &&
+			!isString(f['options_source'])
+		) {
 			throw new Error(
 				`${filename}: fields[${i}] (type "${f['type']}") must include a non-empty "options" array or an "options_source"`
 			);
@@ -86,7 +90,7 @@ function assertTemplate(value: unknown, filename: string): Template {
 }
 
 /**
- * Load every `*.json` file under `.nomad.md/templates/`.
+ * Load every `*.json` file under `.quill.md/templates/`.
  *
  * Malformed templates abort the load with an actionable error (the editor
  * cannot function without a schema).
@@ -98,7 +102,7 @@ export async function loadTemplates(adapter: ReadOnlyDirectoryAdapter): Promise<
 	} catch (cause) {
 		throw new Error(
 			`Could not list ${TEMPLATES_DIR}: ${(cause as Error).message}. ` +
-				'Make sure the selected folder contains a nomad.md setup.',
+				'Make sure the selected folder contains a quill.md setup.',
 			{ cause }
 		);
 	}

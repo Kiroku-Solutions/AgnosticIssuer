@@ -50,6 +50,9 @@
 	import Tag from '@lucide/svelte/icons/tag';
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import Zap from '@lucide/svelte/icons/zap';
+	import Milestone from '@lucide/svelte/icons/milestone';
+	import Flame from '@lucide/svelte/icons/flame';
+	import BookOpen from '@lucide/svelte/icons/book-open';
 
 	type Props = {
 		open: boolean;
@@ -72,6 +75,9 @@
 		bug: Bug,
 		'check-square': CheckSquare,
 		'file-text': FileText,
+		flame: Flame,
+		'book-open': BookOpen,
+		milestone: Milestone,
 		flag: Flag,
 		'git-branch': GitBranch,
 		'git-pull-request': GitPullRequest,
@@ -160,14 +166,21 @@
 
 <Modal bind:open onclose={close} class="max-w-2xl">
 	<div class="mb-5 flex items-start justify-between gap-3">
-		<h2 class="text-xl font-bold tracking-tight text-ink">{t('newIssueModal.title')}</h2>
+		<h2 class="text-xl font-bold tracking-tight text-foreground">{t('newIssueModal.title')}</h2>
 		<button
 			type="button"
-			class="p-1.5 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2"
+			class="p-1.5 rounded-full text-muted-foreground hover:bg-surface hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 			onclick={close}
 			aria-label={t('newIssueModal.closeAria')}
 		>
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M6 18L18 6M6 6l12 12"
+				></path></svg
+			>
 		</button>
 	</div>
 
@@ -180,14 +193,14 @@
 
 	{#if filtered.length === 0}
 		<div
-			class="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-hairline p-8 text-center text-sm text-muted bg-surface-soft"
+			class="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border p-8 text-center text-sm text-muted-foreground bg-surface"
 		>
 			<AlertTriangle class="h-6 w-6" aria-hidden="true" />
 			<p>{t('newIssueModal.noMatch', { q: search })}</p>
 		</div>
 	{:else}
 		<ul
-			class="grid max-h-96 grid-cols-1 gap-2 overflow-y-auto pr-1 md:grid-cols-3"
+			class="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1"
 			role="list"
 			data-testid="new-issue-type-grid"
 		>
@@ -197,20 +210,46 @@
 				<li>
 					<button
 						type="button"
-						class="flex w-full flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all duration-[var(--motion-base)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset {isSelected
-							? 'border-[var(--color-cb-blue)] bg-[var(--color-cb-blue)]/5 ring-1 ring-[var(--color-cb-blue)]'
-							: 'border-hairline hover:border-muted hover:bg-surface-soft'}"
+						class="group flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-3 text-left transition-colors duration-[var(--motion-base)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset {isSelected
+							? 'border-primary bg-primary/5 ring-1 ring-primary'
+							: 'border-border hover:border-muted hover:bg-surface'}"
 						aria-pressed={isSelected}
 						aria-label={t('newIssueModal.selectType', { name: tmpl.name })}
 						data-testid="new-issue-type-card"
 						data-type-id={tmpl.id}
 						onclick={() => pick(tmpl)}
 					>
-						<Icon class="h-5 w-5" aria-hidden="true" />
-						<div class="text-sm font-semibold">{tmpl.name}</div>
-						<div class="text-xs opacity-70">
-							{t('newIssueModal.fieldCount', { n: tmpl.fields.length })} ·
-							{t('newIssueModal.sectionCount', { n: tmpl.sections.length })}
+						<div class="flex items-center gap-4">
+							<div
+								class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md {isSelected
+									? 'bg-primary text-primary-foreground'
+									: 'bg-muted text-muted-foreground group-hover:text-foreground transition-colors'}"
+							>
+								<Icon class="h-5 w-5" aria-hidden="true" />
+							</div>
+							<div class="flex flex-col">
+								<span class="text-sm font-bold text-foreground">{tmpl.name}</span>
+								<span class="text-xs opacity-70 text-muted-foreground">
+									{t('newIssueModal.fieldCount', { n: tmpl.fields.length })} ·
+									{t('newIssueModal.sectionCount', { n: tmpl.sections.length })}
+								</span>
+							</div>
+						</div>
+						<div
+							class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors {isSelected
+								? 'border-primary bg-primary text-primary-foreground'
+								: 'border-border bg-transparent'}"
+						>
+							{#if isSelected}
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+									><path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="3"
+										d="M5 13l4 4L19 7"
+									></path></svg
+								>
+							{/if}
 						</div>
 					</button>
 				</li>
@@ -222,20 +261,35 @@
 		<p class="text-error mt-3 text-xs" role="alert">{createError}</p>
 	{/if}
 
-	<footer class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-hairline">
-		<button type="button" class="px-4 py-2 rounded-md text-sm font-semibold text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-inset" onclick={close}>
+	<footer class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-border">
+		<button
+			type="button"
+			class="px-4 py-2 rounded-md text-sm font-semibold text-muted-foreground hover:bg-surface hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+			onclick={close}
+		>
 			{t('common.cancel')}
 		</button>
 		<button
 			type="button"
-			class="px-4 py-2 bg-[var(--color-cb-blue)] text-white rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2 flex items-center gap-2"
+			class="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center gap-2"
 			disabled={!selectedId || creating}
 			aria-busy={creating || undefined}
 			onclick={() => void create()}
 			data-testid="new-issue-create"
 		>
 			{#if creating}
-				<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+				<svg
+					class="animate-spin h-4 w-4 text-current"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle><path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					></path></svg
+				>
 			{/if}
 			{t('newIssueModal.create')}
 		</button>

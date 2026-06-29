@@ -11,7 +11,7 @@
  * (config → templates → issues → editor), which is where the
  * cross-store composition actually matters.
  *
- * Fixture: a `.nomad.md/` directory seeded with a valid `config.json`,
+ * Fixture: a `.quill.md/` directory seeded with a valid `config.json`,
  * two `templates/*.json` files, and one issue file. Mirrors the
  * ERS Appendix B.6 example at a small scale.
  */
@@ -32,8 +32,8 @@ import type { Issue } from '$lib/types';
 
 const VALID_CONFIG = JSON.stringify({
 	statuses: [
-		{ id: 'open', name: 'Open', color: '#0f0' },
-		{ id: 'closed', name: 'Closed', color: '#888' }
+		{ id: 'open', name: 'Open', color: '#0f0', category: 'todo' },
+		{ id: 'closed', name: 'Closed', color: '#888', category: 'done' }
 	],
 	default_status: 'open',
 	labels: [{ id: 'security', name: 'Security', color: '#f00' }],
@@ -78,6 +78,8 @@ function seedIssue(overrides: Partial<Issue>): Issue {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [{ name: 'Description', markdown: 'Initial.' }],
@@ -121,12 +123,12 @@ describe('state layer integration — full CRUD journey', () => {
 		fs = new MemoryFsAdapter();
 		handles = makeFakeHandleStore();
 
-		// Seed the virtual `.nomad.md/` directory with a valid config,
+		// Seed the virtual `.quill.md/` directory with a valid config,
 		// two templates, and one well-formed issue (so reload-after-save
 		// has something to compare against).
-		await fs.writeTextFile('.nomad.md/config.json', VALID_CONFIG);
-		await fs.writeTextFile('.nomad.md/templates/bug.json', VALID_BUG);
-		await fs.writeTextFile('.nomad.md/templates/task.json', VALID_TASK);
+		await fs.writeTextFile('.quill.md/config.json', VALID_CONFIG);
+		await fs.writeTextFile('.quill.md/templates/bug.json', VALID_BUG);
+		await fs.writeTextFile('.quill.md/templates/task.json', VALID_TASK);
 
 		const seedText = await serializeIssue(
 			seedIssue({
@@ -136,7 +138,7 @@ describe('state layer integration — full CRUD journey', () => {
 				sections: [{ name: 'Description', markdown: 'Original body.' }]
 			})
 		);
-		await fs.writeTextFile('.nomad.md/issues/0001-original-seed.md', seedText);
+		await fs.writeTextFile('.quill.md/issues/0001-original-seed.md', seedText);
 	});
 
 	it('walks: bootstrap → load → create → edit → save → reload → integrity clean', async () => {
@@ -173,7 +175,7 @@ describe('state layer integration — full CRUD journey', () => {
 		});
 		expect(newId).toBe(2); // next id after the seeded 1
 		expect(issues.issues).toHaveLength(2);
-		expect(fs.snapshot().files['.nomad.md/issues/0002-newly-created.md']).toBeDefined();
+		expect(fs.snapshot().files['.quill.md/issues/0002-newly-created.md']).toBeDefined();
 
 		// ── Open in the editor, patch, save ─────────────────────────────
 		const editor = createEditorStore({ issues, config, templates });
@@ -255,11 +257,11 @@ describe('state layer integration — full CRUD journey', () => {
 		expect(issues.byId.has(newId)).toBe(false);
 
 		const snap = fs.snapshot();
-		expect(snap.files['.nomad.md/issues/0002-doomed.md']).toBeUndefined();
-		const trashFiles = Object.keys(snap.files).filter((p) => p.startsWith('.nomad.md/.trash/'));
+		expect(snap.files['.quill.md/issues/0002-doomed.md']).toBeUndefined();
+		const trashFiles = Object.keys(snap.files).filter((p) => p.startsWith('.quill.md/.trash/'));
 		expect(trashFiles).toHaveLength(1);
 		// ERS §6.5: `<timestamp>-<id>-<slug>.md` — id=2, slug=doomed.
-		expect(trashFiles[0]).toMatch(/\.nomad\.md\/\.trash\/\d+-2-doomed\.md$/);
+		expect(trashFiles[0]).toMatch(/\.quill\.md\/\.trash\/\d+-2-doomed\.md$/);
 	});
 
 	it('save round-trip via editor.save() preserves integrity hash (FR-15)', async () => {

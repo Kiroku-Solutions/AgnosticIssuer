@@ -30,8 +30,8 @@ import type { Issue, LoadedIssue } from '$lib/types';
 
 const VALID_CONFIG = JSON.stringify({
 	statuses: [
-		{ id: 'open', name: 'Open', color: '#fff' },
-		{ id: 'closed', name: 'Closed', color: '#000' }
+		{ id: 'open', name: 'Open', color: '#fff', category: 'todo' },
+		{ id: 'closed', name: 'Closed', color: '#000', category: 'done' }
 	],
 	default_status: 'open',
 	labels: [],
@@ -76,6 +76,8 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [{ name: 'Description', markdown: 'Initial description.' }],
@@ -87,7 +89,7 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
 async function seedIssueFile(fs: MemoryFsAdapter, issue: Issue): Promise<void> {
 	const text = await serializeIssue(issue);
 	const padded = String(issue.id).padStart(4, '0');
-	await fs.writeTextFile(`.nomad.md/issues/${padded}-issue.md`, text);
+	await fs.writeTextFile(`.quill.md/issues/${padded}-issue.md`, text);
 }
 
 interface Stores {
@@ -100,9 +102,9 @@ interface Stores {
 
 async function makeStores(seed: (fs: MemoryFsAdapter) => Promise<void>): Promise<Stores> {
 	const fs = new MemoryFsAdapter();
-	await fs.writeTextFile('.nomad.md/config.json', VALID_CONFIG);
-	await fs.writeTextFile('.nomad.md/templates/bug.json', VALID_BUG);
-	await fs.writeTextFile('.nomad.md/templates/task.json', VALID_TASK);
+	await fs.writeTextFile('.quill.md/config.json', VALID_CONFIG);
+	await fs.writeTextFile('.quill.md/templates/bug.json', VALID_BUG);
+	await fs.writeTextFile('.quill.md/templates/task.json', VALID_TASK);
 	await seed(fs);
 
 	const config = createConfigStore(() => fs);
@@ -253,7 +255,7 @@ describe('createEditorStore — save', () => {
 		expect(stores.editor.isDirty).toBe(false);
 		expect(stores.issues.dirty.has(1)).toBe(false);
 		// On disk: the new title.
-		const onDisk = stores.fs.snapshot().files['.nomad.md/issues/0001-issue.md'];
+		const onDisk = stores.fs.snapshot().files['.quill.md/issues/0001-issue.md'];
 		expect(onDisk).toContain('title: B');
 		// After save the draft is re-cloned from the (re-parsed) issues
 		// store, so it should reflect the new state too.
@@ -345,7 +347,7 @@ describe('createEditorStore — integrityWarning', () => {
 			const realHash = await computeIntegrityHash(canonical);
 			const text = await serializeIssue(issue);
 			const tampered = text.replace(realHash, 'sha256:' + '0'.repeat(64));
-			await fs.writeTextFile('.nomad.md/issues/0001-issue.md', tampered);
+			await fs.writeTextFile('.quill.md/issues/0001-issue.md', tampered);
 		});
 		stores.editor.open(1);
 		expect(stores.editor.draft?.issue.integrityWarning).toBe(true);

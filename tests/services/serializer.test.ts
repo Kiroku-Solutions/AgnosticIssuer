@@ -25,11 +25,13 @@ import type { Issue } from '$lib/types';
 function makeIssue(overrides: Partial<Issue> = {}): Issue {
 	return {
 		id: 42,
-		title: 'Fix login redirect',
+		title: 'Default title',
 		author: 'jane',
-		creationDate: '2026-10-20',
-		updatedDate: '2026-10-21',
-		issueType: 'bug',
+		creationDate: '2026-06-25',
+		updatedDate: '2026-06-25',
+		issueType: 'task',
+		sprintId: null,
+		estimate: null,
 		status: 'in_progress',
 		assignee: 'jane',
 		labels: ['security', 'frontend'],

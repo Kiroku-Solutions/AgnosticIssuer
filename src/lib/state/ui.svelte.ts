@@ -38,6 +38,10 @@ export interface UiStore {
 	readonly openEditor: () => void;
 	readonly closeEditor: () => void;
 	readonly toggleEditor: () => void;
+	readonly mobileNavOpen: boolean;
+	readonly openMobileNav: () => void;
+	readonly closeMobileNav: () => void;
+	readonly toggleMobileNav: () => void;
 }
 
 /**
@@ -46,6 +50,7 @@ export interface UiStore {
 export function createUiStore(): UiStore {
 	let settingsOpen = $state<boolean>(false);
 	let editorOpen = $state<boolean>(false);
+	let mobileNavOpen = $state<boolean>(false);
 
 	function openSettings(): void {
 		settingsOpen = true;
@@ -71,6 +76,18 @@ export function createUiStore(): UiStore {
 		editorOpen = !editorOpen;
 	}
 
+	function openMobileNav(): void {
+		mobileNavOpen = true;
+	}
+
+	function closeMobileNav(): void {
+		mobileNavOpen = false;
+	}
+
+	function toggleMobileNav(): void {
+		mobileNavOpen = !mobileNavOpen;
+	}
+
 	return {
 		get settingsOpen() {
 			return settingsOpen;
@@ -78,11 +95,17 @@ export function createUiStore(): UiStore {
 		get editorOpen() {
 			return editorOpen;
 		},
+		get mobileNavOpen() {
+			return mobileNavOpen;
+		},
 		openSettings,
 		closeSettings,
 		toggleSettings,
 		openEditor,
 		closeEditor,
-		toggleEditor
+		toggleEditor,
+		openMobileNav,
+		closeMobileNav,
+		toggleMobileNav
 	};
 }

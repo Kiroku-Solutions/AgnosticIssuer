@@ -1,6 +1,6 @@
 /**
  * Issue soft-delete (trash) service — the state layer's only entry point
- * for moving an issue file to `.nomad.md/.trash/`.
+ * for moving an issue file to `.quill.md/.trash/`.
  *
  * Lives in the service layer so the state layer never imports
  * `adapters/trash.ts` directly (closing the same layer leak that
@@ -8,7 +8,7 @@
  * save paths).
  *
  * Filename format matches ERS §6.5:
- * `.nomad.md/.trash/<timestamp>-<id>-<slug>.md`
+ * `.quill.md/.trash/<timestamp>-<id>-<slug>.md`
  *
  * The original implementation (`adapters/trash.ts`) uses `<timestamp>-<uuid8>-<originalName>`
  * for collision resistance on any file type. The spec format
@@ -23,7 +23,7 @@ import type { Issue } from '../types/index.ts';
 import { slugify } from './slugs.ts';
 import { moveToTrash as adapterMoveToTrash } from '../adapters/trash.ts';
 
-export const ISSUE_TRASH_DIRECTORY = '.nomad.md/.trash';
+export const ISSUE_TRASH_DIRECTORY = '.quill.md/.trash';
 
 /**
  * Compute the ERS §6.5 trash path for an issue file. Pure — no I/O.
@@ -42,7 +42,7 @@ export function trashedIssuePath(
  * Move an issue file to the trash directory using the ERS §6.5 filename
  * format. Falls back to the adapter-level primitive (which uses a UUID
  * suffix) when the source path does not look like an issue file (no
- * `.nomad.md/issues/` prefix), so the helper is safe to call from any
+ * `.quill.md/issues/` prefix), so the helper is safe to call from any
  * soft-delete path.
  *
  * The optional `now` parameter is the wall-clock timestamp (ms since
@@ -56,7 +56,7 @@ export async function moveIssueToTrash(
 	now: number = Date.now()
 ): Promise<string> {
 	const { parent } = splitPath(sourcePath);
-	if (parent === '.nomad.md/issues') {
+	if (parent === '.quill.md/issues') {
 		const trashPath = trashedIssuePath(issue, now);
 		await adapter.moveFile(sourcePath, trashPath);
 		return trashPath;

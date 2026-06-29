@@ -420,8 +420,6 @@ describe('LocalFsAdapter — writeTextFile (atomic write)', () => {
 		);
 	});
 
-
-
 	it('rejects content exceeding the per-file size limit', async () => {
 		const adapter = await lfa();
 		const huge = 'x'.repeat(10 * 1024 * 1024 + 1);

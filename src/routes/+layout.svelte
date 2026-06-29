@@ -102,6 +102,14 @@
 		$page.url.pathname.startsWith('/wizard') ? 'wizard' : mode.mode
 	);
 
+	// Synchronize the HTML class with the theme store continuously.
+	// This ensures changes from the Settings panel instantly apply.
+	$effect(() => {
+		if (typeof document !== 'undefined') {
+			document.documentElement.classList.toggle('dark', theme.theme === 'dark');
+		}
+	});
+
 	// Bootstrap the mode + theme on mount. `mode.bootstrap()` restores the
 	// last folder handle from IndexedDB; `theme` reads localStorage.
 	// Both are no-ops on the server / in tests.
@@ -118,7 +126,7 @@
 			if (mode.localAdapter) {
 				await Promise.all([config.load(), templates.load()]);
 				await issues.load();
-				
+
 				if (config.config === null && !$page.url.pathname.startsWith('/wizard')) {
 					await goto(resolve('/wizard'));
 				}
@@ -127,7 +135,7 @@
 				await issues.load();
 			}
 		} catch (cause) {
-			console.error('[nomad-md] bootstrap failed:', cause);
+			console.error('[quill-md] bootstrap failed:', cause);
 		}
 	});
 

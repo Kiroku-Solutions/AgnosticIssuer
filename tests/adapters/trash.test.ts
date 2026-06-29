@@ -34,7 +34,7 @@ describe('moveToTrash', () => {
 		const trashPath = await moveToTrash(fs, 'notes.txt');
 
 		// Format: `<timestamp>-<uuid8>-<originalName>` — see trash.ts doc.
-		expect(trashPath).toMatch(/^\.nomad\.md\/\.trash\/\d+-[0-9a-f]{8}-notes\.txt$/);
+		expect(trashPath).toMatch(/^\.quill\.md\/\.trash\/\d+-[0-9a-f]{8}-notes\.txt$/);
 		expect(trashPath).toContain('-notes.txt');
 
 		const content = await fs.readTextFile(trashPath);
@@ -67,7 +67,7 @@ describe('moveToTrash', () => {
 		expect(afterTimestamp.slice(uuid8DashIdx + 1)).toBe('report.md');
 	});
 
-	it('creates .nomad.md/.trash/ implicitly on first move', async () => {
+	it('creates .quill.md/.trash/ implicitly on first move', async () => {
 		await fs.writeTextFile('todo.txt', 'buy milk');
 
 		await moveToTrash(fs, 'todo.txt');
@@ -89,12 +89,12 @@ describe('moveToTrash', () => {
 	});
 
 	it('handles nested paths correctly', async () => {
-		await fs.writeTextFile('.nomad.md/issues/0001-test.md', 'content');
+		await fs.writeTextFile('.quill.md/issues/0001-test.md', 'content');
 
-		const trashPath = await moveToTrash(fs, '.nomad.md/issues/0001-test.md');
+		const trashPath = await moveToTrash(fs, '.quill.md/issues/0001-test.md');
 
 		expect(trashPath).toContain('-0001-test.md');
-		await expect(fs.readTextFile('.nomad.md/issues/0001-test.md')).rejects.toThrow(
+		await expect(fs.readTextFile('.quill.md/issues/0001-test.md')).rejects.toThrow(
 			AdapterNotFoundError
 		);
 	});
@@ -188,7 +188,7 @@ describe('full cycle: create → moveToTrash → emptyTrash', () => {
 
 	it('reproduces the FR-4 soft-delete lifecycle end-to-end', async () => {
 		// Arrange: create an issue file (mirrors the real FR-4 happy path).
-		const issuePath = '.nomad.md/issues/0001-cycle.md';
+		const issuePath = '.quill.md/issues/0001-cycle.md';
 		await fs.writeTextFile(issuePath, '# Cycle test issue\nbody');
 
 		// Verify the file exists at the source path before trashing.
@@ -199,7 +199,7 @@ describe('full cycle: create → moveToTrash → emptyTrash', () => {
 
 		// The trash path lives under TRASH_DIRECTORY and is timestamp + uuid prefixed.
 		expect(trashPath.startsWith(`${TRASH_DIRECTORY}/`)).toBe(true);
-		expect(trashPath).toMatch(/^\.nomad\.md\/\.trash\/\d+-[0-9a-f]{8}-0001-cycle\.md$/);
+		expect(trashPath).toMatch(/^\.quill\.md\/\.trash\/\d+-[0-9a-f]{8}-0001-cycle\.md$/);
 
 		// The source is gone, the trash copy preserves the payload.
 		await expect(fs.readTextFile(issuePath)).rejects.toThrow(AdapterNotFoundError);
@@ -222,7 +222,7 @@ describe('full cycle: create → moveToTrash → emptyTrash', () => {
 	});
 
 	it('handles a batch lifecycle (multiple create/trash/empty cycles in sequence)', async () => {
-		const files = ['.nomad.md/issues/a.md', '.nomad.md/issues/b.md', '.nomad.md/issues/c.md'];
+		const files = ['.quill.md/issues/a.md', '.quill.md/issues/b.md', '.quill.md/issues/c.md'];
 		for (const f of files) await fs.writeTextFile(f, `body of ${f}`);
 
 		// Trash all three in parallel — timestamps may collide, but paths stay unique.
@@ -245,7 +245,7 @@ describe('full cycle: create → moveToTrash → emptyTrash', () => {
 });
 
 describe('TRASH_DIRECTORY constant', () => {
-	it('is ".nomad.md/.trash"', () => {
-		expect(TRASH_DIRECTORY).toBe('.nomad.md/.trash');
+	it('is ".quill.md/.trash"', () => {
+		expect(TRASH_DIRECTORY).toBe('.quill.md/.trash');
 	});
 });

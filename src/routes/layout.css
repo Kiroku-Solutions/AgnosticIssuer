@@ -6,3 +6,32 @@
  * `<html class="dark">` convention instead so the no-flash
  * inline script in `app.html` can coordinate. */
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--animate-shake: shake 0.3s ease-in-out infinite;
+	--animate-pop: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+	@keyframes shake {
+		0%,
+		100% {
+			transform: rotate(0deg) scale(0.9);
+		}
+		25% {
+			transform: rotate(-2deg) scale(0.9);
+		}
+		75% {
+			transform: rotate(2deg) scale(0.9);
+		}
+	}
+
+	@keyframes pop {
+		0% {
+			transform: scale(0.85);
+			opacity: 0.5;
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+}

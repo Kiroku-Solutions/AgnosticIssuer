@@ -45,11 +45,11 @@
 		bind:value
 		aria-invalid={error ? 'true' : undefined}
 		aria-describedby={error ? errorId : undefined}
-		class="w-full bg-canvas text-ink rounded-md border border-hairline p-4 transition-shadow duration-[var(--motion-fast)] ease-[var(--ease-out)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary focus:border-transparent placeholder-muted disabled:opacity-50 disabled:cursor-not-allowed resize-y {error
-			? 'ring-2 ring-inset ring-[var(--color-cb-down)] border-transparent'
+		class="w-full bg-background text-foreground rounded-md border border-border p-4 transition-shadow duration-[var(--motion-fast)] ease-[var(--ease-out)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary focus:border-transparent placeholder-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed resize-y {error
+			? 'ring-2 ring-inset ring-error border-transparent'
 			: ''} {extraClass}"
 		{...rest}></textarea>
 	{#if error}
-		<p id={errorId} class="text-[var(--color-cb-down)] text-sm mt-1" role="alert">{error}</p>
+		<p id={errorId} class="text-error text-sm mt-1" role="alert">{error}</p>
 	{/if}
 </div>

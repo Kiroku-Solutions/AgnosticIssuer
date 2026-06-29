@@ -44,7 +44,7 @@
 	const sections = $derived(active ? active.issue.sections : []);
 
 	const activeSectionName = $derived(
-		(_userSection && sections.some((s) => s.name === _userSection))
+		_userSection && sections.some((s) => s.name === _userSection)
 			? _userSection
 			: (sections[0]?.name ?? null)
 	);
@@ -98,11 +98,11 @@
 
 {#if active}
 	<aside
-		class="fixed inset-y-0 right-0 z-40 flex w-[40rem] max-w-full flex-col border-l border-hairline bg-canvas/85 backdrop-blur-2xl shadow-[var(--shadow-soft)]"
+		class="fixed inset-y-0 right-0 z-40 flex w-[40rem] max-w-full flex-col border-l border-border bg-background"
 		data-testid="editor-panel"
 	>
 		<div
-			class="flex items-center gap-3 border-b border-hairline px-6 py-4"
+			class="flex items-center gap-3 border-b border-border px-6 py-4"
 			data-testid="editor-panel-header"
 		>
 			<span class="font-mono text-xs opacity-60">{idBadge}</span>
@@ -138,7 +138,7 @@
 			{:else}
 				{#if sectionNav.length > 0}
 					<div
-						class="mb-4 flex flex-wrap gap-1 border-b border-hairline pb-2"
+						class="mb-4 flex flex-wrap gap-1 border-b border-border pb-2"
 						role="tablist"
 						aria-label={t('editor.sectionsAria')}
 						data-testid="editor-section-nav"
@@ -150,8 +150,8 @@
 								role="tab"
 								aria-selected={isOn}
 								class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset transition-colors {isOn
-									? 'bg-ink text-canvas'
-									: 'text-muted hover:bg-black/5 hover:text-ink'}"
+									? 'bg-foreground text-background'
+									: 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'}"
 								onclick={() => setActiveSection(sec.id)}
 							>
 								{sec.label}
@@ -187,7 +187,7 @@
 		</div>
 
 		<footer
-			class="flex items-center gap-3 border-t border-hairline px-6 py-4 bg-surface-soft"
+			class="flex items-center gap-3 border-t border-border px-6 py-4 bg-surface"
 			data-testid="editor-panel-footer"
 		>
 			{#if isReadOnly}

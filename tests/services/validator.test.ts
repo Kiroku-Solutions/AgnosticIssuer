@@ -29,7 +29,9 @@ const template: Template = {
 
 /** A minimal `Config` whose statuses match the issues' status field. */
 const config: Config = {
-	statuses: [{ id: 'open', name: 'Open', color: '#fff' }],
+	product_goal: '',
+	definition_of_done: [],
+	statuses: [{ id: 'open', name: 'Open', color: '#fff', category: 'todo' }],
 	default_status: 'open',
 	labels: [],
 	users: [],
@@ -54,6 +56,8 @@ function makeIssue(id: number, relations: readonly Relation[] = []): Issue {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [],

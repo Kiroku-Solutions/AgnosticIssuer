@@ -1,7 +1,7 @@
 /**
  * Soft-delete helpers over a {@link DirectoryAdapter}.
  *
- * Files are moved into a reserved `.nomad.md/.trash/` directory with a
+ * Files are moved into a reserved `.quill.md/.trash/` directory with a
  * timestamp + short-UUID prefix so they can be restored or permanently
  * removed.
  *
@@ -9,7 +9,7 @@
  *
  * A trashed file is stored at:
  * ```
- * .nomad.md/.trash/<timestamp>-<uuid8>-<originalName>
+ * .quill.md/.trash/<timestamp>-<uuid8>-<originalName>
  * ```
  * where `<timestamp> = Date.now()` (Unix ms) and `<uuid8>` is the first
  * 8 hex characters of `crypto.randomUUID()`. The combination is unique
@@ -26,7 +26,7 @@
  * `writeTextFile` call, not to trash operations).
  *
  * The trash directory itself is created implicitly — the first file moved to
- * trash triggers creation of `.nomad.md/.trash/`. Both adapter implementations
+ * trash triggers creation of `.quill.md/.trash/`. Both adapter implementations
  * (`MemoryFsAdapter.listDirectory`, `LocalFsAdapter.listDirectory`) return an
  * empty list rather than throwing when the directory does not exist, so
  * `emptyTrash` returns `0` instead of bubbling a `not-found` error.
@@ -37,14 +37,14 @@
 import { splitPath } from './directory-adapter.ts';
 import type { DirectoryAdapter } from './directory-adapter.ts';
 
-/** Reserved directory inside every `.nomad.md/` root. */
-export const TRASH_DIRECTORY = '.nomad.md/.trash';
+/** Reserved directory inside every `.quill.md/` root. */
+export const TRASH_DIRECTORY = '.quill.md/.trash';
 
 /**
  * Move a file to the trash directory.
  *
  * The destination path is
- * `.nomad.md/.trash/<timestamp>-<uuid8>-<originalName>` — the
+ * `.quill.md/.trash/<timestamp>-<uuid8>-<originalName>` — the
  * `<timestamp>` orders entries by trashing time, the `<uuid8>` makes the
  * path unique even when two operations happen in the same millisecond,
  * and `<originalName>` is preserved verbatim so the user can still

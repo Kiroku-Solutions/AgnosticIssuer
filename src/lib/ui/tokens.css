@@ -1,54 +1,66 @@
+:root {
+	/* ☀️ Light Theme */
+	--background: #fdfbf7;
+	--foreground: #121b26;
+	--surface: #ffffff;
+	--surface-foreground: #121b26;
+	--muted: #f4e2b8;
+	--muted-foreground: #4a5b69;
+	--border: #e5dece;
+	--primary: #121b26;
+	--primary-foreground: #fdfbf7;
+	--secondary: #86b0bc;
+	--secondary-foreground: #0b1118;
+	--accent: #223240;
+}
+
+.dark,
+.dark * {
+	color-scheme: dark;
+	/* 🌙 Dark Theme */
+	--background: #0b1118;
+	--foreground: #f8fafc;
+	--surface: #121b26;
+	--surface-foreground: #f8fafc;
+	--muted: #223240;
+	--muted-foreground: #9baebc;
+	--border: #223240;
+	--primary: #86b0bc;
+	--primary-foreground: #0b1118;
+	--secondary: #f4e2b8;
+	--secondary-foreground: #121b26;
+	--accent: #9ebfca;
+
+	--shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 @theme {
-	/* ── Coinbase Brand Colors (OKLCH) ── */
-	--color-cb-blue: oklch(53.2% 0.232 261);
-	--color-cb-blue-active: oklch(47% 0.21 261);
-	--color-cb-blue-disabled: oklch(76% 0.04 261);
-	
-	/* Surface */
-	--color-cb-canvas: oklch(100% 0 0);
-	--color-cb-surface-soft: oklch(97% 0 0);
-	--color-cb-surface-strong: oklch(94.5% 0.005 261);
-	--color-cb-surface-dark: oklch(17.3% 0.005 261);
-	--color-cb-surface-dark-elevated: oklch(22% 0.005 261);
+	/* ── Official Brand Colors mapped for Tailwind utilties ── */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-surface: var(--surface);
+	--color-surface-foreground: var(--surface-foreground);
 
-	/* Hairline */
-	--color-cb-hairline: oklch(89% 0.008 261);
-	--color-cb-hairline-soft: oklch(94.5% 0.005 261);
-
-	/* Text */
-	--color-cb-ink: oklch(17.3% 0.005 261);
-	--color-cb-body: oklch(51% 0.015 261);
-	--color-cb-muted: oklch(62% 0.01 261);
-	--color-cb-muted-soft: oklch(72% 0.005 261);
-	--color-cb-on-primary: oklch(100% 0 0);
-	--color-cb-on-dark: oklch(100% 0 0);
-	--color-cb-on-dark-soft: oklch(72% 0.005 261);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-border: var(--border);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-accent: var(--accent);
 
 	/* Semantics */
-	--color-cb-up: oklch(64% 0.17 145); /* #05b169 */
-	--color-cb-down: oklch(52% 0.19 25); /* #cf202f */
-	--color-cb-yellow: oklch(82% 0.16 85); /* #f4b000 */
+	--color-success: oklch(64% 0.17 145); /* #05b169 */
+	--color-error: oklch(52% 0.19 25); /* #cf202f */
+	--color-warning: oklch(82% 0.16 85); /* #f4b000 */
 
-	/* ── Aliases ── */
-	--color-primary: var(--color-cb-blue);
-	--color-primary-active: var(--color-cb-blue-active);
-	--color-primary-disabled: var(--color-cb-blue-disabled);
-	
-	--color-canvas: var(--color-cb-canvas);
-	--color-surface-soft: var(--color-cb-surface-soft);
-	--color-surface-strong: var(--color-cb-surface-strong);
-	
-	--color-surface-dark: var(--color-cb-surface-dark);
-	--color-surface-dark-elevated: var(--color-cb-surface-dark-elevated);
-	
-	--color-ink: var(--color-cb-ink);
-	--color-body: var(--color-cb-body);
-	--color-muted: var(--color-cb-muted);
-	--color-hairline: var(--color-cb-hairline);
-	
 	/* ── Typography ── */
-	--font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	--font-mono: 'JetBrains Mono', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--font-sans:
+		'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+		'Helvetica Neue', Arial, sans-serif;
+	--font-mono:
+		'JetBrains Mono', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	--font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
 	/* ── Spacing ── */
@@ -76,22 +88,8 @@
 	--motion-fast: 150ms;
 	--motion-base: 250ms;
 
-	/* ── Shadow (Single Tier per Coinbase) ── */
+	/* ── Shadow ── */
 	--shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-/* Dark mode overrides */
-:where(.dark, .dark *) {
-	--color-canvas: var(--color-cb-surface-dark);
-	--color-surface-soft: var(--color-cb-surface-dark-elevated);
-	--color-surface-strong: oklch(27% 0.005 261);
-	
-	--color-ink: var(--color-cb-on-dark);
-	--color-body: var(--color-cb-on-dark-soft);
-	--color-muted: var(--color-cb-muted);
-	--color-hairline: oklch(27% 0.005 261);
-
-	--shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {

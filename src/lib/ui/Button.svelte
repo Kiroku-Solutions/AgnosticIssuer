@@ -41,38 +41,38 @@
 		...rest
 	}: Props = $props();
 
-	// Coinbase heuristics: 
+	// Coinbase heuristics:
 	// Primary: blue background, white text.
 	// Secondary: soft strong surface, ink text.
 	// Outline: hairline border, transparent bg.
 	// Ghost: transparent bg, blue text.
 	const variantClass = $derived(
 		variant === 'primary'
-			? 'bg-primary text-white hover:bg-primary-active'
+			? 'bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground'
 			: variant === 'secondary'
-				? 'bg-surface-strong text-ink hover:bg-hairline'
+				? 'bg-surface text-foreground hover:bg-muted hover:text-muted-foreground'
 				: variant === 'ghost'
-					? 'bg-transparent text-primary hover:bg-surface-soft'
+					? 'bg-transparent text-primary hover:bg-muted hover:text-muted-foreground'
 					: variant === 'outline'
-						? 'border border-hairline bg-transparent text-ink hover:bg-surface-soft'
+						? 'border border-border bg-transparent text-foreground hover:bg-muted hover:text-muted-foreground'
 						: variant === 'error'
-							? 'bg-[var(--color-cb-down)] text-white opacity-90 hover:opacity-100'
-							: 'bg-[var(--color-cb-up)] text-white opacity-90 hover:opacity-100'
+							? 'bg-error text-white opacity-90 hover:opacity-100'
+							: 'bg-success text-white opacity-90 hover:opacity-100'
 	);
 
 	const disabledClass = $derived(
 		disabled || loading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
 	);
 
-	// Coinbase sizing: 
+	// Coinbase sizing:
 	// md -> 44px height (py-2.5 px-5)
 	// lg -> 56px height (py-4 px-8)
 	// sm -> 32px height (py-1.5 px-4)
 	const sizeClass = $derived(
-		size === 'sm' 
-			? 'h-8 px-4 text-sm' 
-			: size === 'lg' 
-				? 'h-14 px-8 text-base' 
+		size === 'sm'
+			? 'h-8 px-4 text-sm'
+			: size === 'lg'
+				? 'h-14 px-8 text-base'
 				: 'h-11 px-5 text-base'
 	);
 
@@ -81,15 +81,25 @@
 
 <button
 	{type}
-	class="inline-flex items-center justify-center font-sans font-semibold rounded-pill transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-canvas {variantClass} {sizeClass} {disabledClass} {extraClass}"
+	class="inline-flex items-center justify-center font-sans font-semibold rounded-pill transition-all duration-[var(--motion-fast)] ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 {variantClass} {sizeClass} {disabledClass} {extraClass}"
 	disabled={isInactive}
 	aria-busy={loading || undefined}
 	{...rest}
 >
 	{#if loading}
-		<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-			<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+		<svg
+			class="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+		>
+			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+			></circle>
+			<path
+				class="opacity-75"
+				fill="currentColor"
+				d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+			></path>
 		</svg>
 	{/if}
 	{#if children}{@render children()}{/if}

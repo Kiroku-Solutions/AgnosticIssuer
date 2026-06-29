@@ -112,7 +112,7 @@ export class LocalFsAdapter implements DirectoryAdapter {
 			// The `id` lets the browser remember the user's choice per origin,
 			// so subsequent calls skip the picker and re-request permission.
 			handle = await window.showDirectoryPicker({
-				id: 'nomad-md-folder',
+				id: 'quill-md-folder',
 				mode: 'readwrite'
 			});
 		} catch (cause) {
@@ -296,8 +296,6 @@ export class LocalFsAdapter implements DirectoryAdapter {
 
 		this.assertNotRoot(fromNormalized);
 		this.assertNotRoot(toNormalized);
-
-		const fromSplit = splitPath(fromNormalized);
 		// Different parent or same parent: read + write + remove.
 		// The standard Local File System Access API does not support move().
 		const content = await this.readTextFile(fromNormalized);

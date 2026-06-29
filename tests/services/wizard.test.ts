@@ -1,8 +1,8 @@
 /**
  * Tests for `src/lib/services/wizard.ts`.
  *
- * The wizard service is the atomic write of `.nomad.md/config.json` and
- * `.nomad.md/templates/*.json` (FR-11 / UC-5). It runs once on the
+ * The wizard service is the atomic write of `.quill.md/config.json` and
+ * `.quill.md/templates/*.json` (FR-11 / UC-5). It runs once on the
  * first-run wizard apply and is also called by the Settings panel's
  * "Reset to defaults" affordance.
  *
@@ -50,7 +50,7 @@ describe('writeWizardSetup — happy path', () => {
 		expect(written.map((t) => t.id)).toEqual(['bug', 'task']);
 
 		// config.json was written and parses back to the default shape.
-		const cfgText = await fs.readTextFile('.nomad.md/config.json');
+		const cfgText = await fs.readTextFile('.quill.md/config.json');
 		const cfg = JSON.parse(cfgText);
 		expect(cfg.statuses.map((s: { id: string }) => s.id)).toEqual([
 			'open',
@@ -62,12 +62,12 @@ describe('writeWizardSetup — happy path', () => {
 		expect(cfg.default_status).toBe('open');
 
 		// Each template was written verbatim from the built-in bundle.
-		const bugText = await fs.readTextFile('.nomad.md/templates/bug.json');
+		const bugText = await fs.readTextFile('.quill.md/templates/bug.json');
 		const bug = JSON.parse(bugText);
 		expect(bug.id).toBe('bug');
 		expect(bug.fields.map((f: { key: string }) => f.key)).toContain('severity');
 
-		const taskText = await fs.readTextFile('.nomad.md/templates/task.json');
+		const taskText = await fs.readTextFile('.quill.md/templates/task.json');
 		const task = JSON.parse(taskText);
 		expect(task.id).toBe('task');
 	});
@@ -77,7 +77,7 @@ describe('writeWizardSetup — happy path', () => {
 		custom.default_status = 'in_progress';
 		custom.statuses = custom.statuses.filter((s) => s.id !== 'closed');
 		await writeWizardSetup(fs, ['epic'], { config: custom });
-		const cfgText = await fs.readTextFile('.nomad.md/config.json');
+		const cfgText = await fs.readTextFile('.quill.md/config.json');
 		const cfg = JSON.parse(cfgText);
 		expect(cfg.default_status).toBe('in_progress');
 		expect(cfg.statuses.find((s: { id: string }) => s.id === 'closed')).toBeUndefined();
@@ -93,22 +93,22 @@ describe('writeWizardSetup — overwrite flags', () => {
 	it('skips an existing config when overwriteConfig is false (default)', async () => {
 		// Pre-seed a config.
 		await fs.writeTextFile(
-			'.nomad.md/config.json',
+			'.quill.md/config.json',
 			JSON.stringify({ custom: 'preserved' }, null, '\t') + '\n'
 		);
 		await writeWizardSetup(fs, ['bug']);
-		const cfgText = await fs.readTextFile('.nomad.md/config.json');
+		const cfgText = await fs.readTextFile('.quill.md/config.json');
 		const cfg = JSON.parse(cfgText);
 		expect(cfg.custom).toBe('preserved');
 	});
 
 	it('overwrites an existing config when overwriteConfig is true', async () => {
 		await fs.writeTextFile(
-			'.nomad.md/config.json',
+			'.quill.md/config.json',
 			JSON.stringify({ custom: 'will-be-replaced' }, null, '\t') + '\n'
 		);
 		await writeWizardSetup(fs, ['bug'], { overwriteConfig: true });
-		const cfgText = await fs.readTextFile('.nomad.md/config.json');
+		const cfgText = await fs.readTextFile('.quill.md/config.json');
 		const cfg = JSON.parse(cfgText);
 		expect(cfg.custom).toBeUndefined();
 		expect(cfg.statuses).toBeDefined();
@@ -120,11 +120,11 @@ describe('writeWizardSetup — overwrite flags', () => {
 		expect(original).toBeDefined();
 		const tampered = { ...original, custom: 'preserved' };
 		await fs.writeTextFile(
-			'.nomad.md/templates/bug.json',
+			'.quill.md/templates/bug.json',
 			JSON.stringify(tampered, null, '\t') + '\n'
 		);
 		await writeWizardSetup(fs, ['bug']);
-		const bugText = await fs.readTextFile('.nomad.md/templates/bug.json');
+		const bugText = await fs.readTextFile('.quill.md/templates/bug.json');
 		const bug = JSON.parse(bugText);
 		expect(bug.custom).toBe('preserved');
 	});
@@ -133,11 +133,11 @@ describe('writeWizardSetup — overwrite flags', () => {
 		const original = getBuiltInTemplate('bug');
 		const tampered = { ...original, custom: 'will-be-replaced' };
 		await fs.writeTextFile(
-			'.nomad.md/templates/bug.json',
+			'.quill.md/templates/bug.json',
 			JSON.stringify(tampered, null, '\t') + '\n'
 		);
 		await writeWizardSetup(fs, ['bug'], { overwriteTemplates: true });
-		const bugText = await fs.readTextFile('.nomad.md/templates/bug.json');
+		const bugText = await fs.readTextFile('.quill.md/templates/bug.json');
 		const bug = JSON.parse(bugText);
 		expect(bug.custom).toBeUndefined();
 		expect(bug.id).toBe('bug');

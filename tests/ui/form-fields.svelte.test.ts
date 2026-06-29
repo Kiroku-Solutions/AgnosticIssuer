@@ -83,9 +83,11 @@ vi.mock('$lib/state', () => ({
 // ─── Fixtures ─────────────────────────────────────────────────────────────
 
 const CONFIG: Config = {
+	product_goal: '',
+	definition_of_done: [],
 	statuses: [
-		{ id: 'open', name: 'Open', color: '#0f0' },
-		{ id: 'closed', name: 'Closed', color: '#888' }
+		{ id: 'open', name: 'Open', color: '#0f0', category: 'todo' },
+		{ id: 'closed', name: 'Closed', color: '#888', category: 'done' }
 	],
 	default_status: 'open',
 	labels: [
@@ -116,6 +118,8 @@ function makeIssue(): Issue {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [],
@@ -126,7 +130,7 @@ function makeIssue(): Issue {
 function makeLoaded(): LoadedIssue {
 	return {
 		issue: makeIssue(),
-		sourcePath: '.nomad.md/issues/0042-test.md'
+		sourcePath: '.quill.md/issues/0042-test.md'
 	};
 }
 
@@ -226,6 +230,7 @@ function buildStub(opts: StubOpts = {}): StoreGraph {
 			error: null,
 			load: () => Promise.resolve(),
 			create: () => Promise.resolve(1 as never),
+			importIssue: () => Promise.resolve(1 as never),
 			update: () => {},
 			save: () => Promise.resolve(),
 			discard: () => {},

@@ -158,6 +158,8 @@ export async function parseIssueFile(text: string, sourcePath: string): Promise<
 		startDate: toIsoDateOrNull(fm['start_date']),
 		endDate: toIsoDateOrNull(fm['end_date']),
 		duration: toNumberOrNull(fm['duration']),
+		sprintId: asStringOrNull(fm['sprint_id']),
+		estimate: toNumberOrNull(fm['estimate']),
 		integrityHash,
 		customFields: extractCustomFields(fm),
 		sections: parseSections(parsed.content),

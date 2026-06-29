@@ -1,5 +1,5 @@
 <!--
-	LeftRail.svelte — sticky left sidebar for nomad.md (sub-phase 6C,
+	LeftRail.svelte — sticky left sidebar for quill.md (sub-phase 6C,
 	ERS §4.1.1 item 2).
 
 	Behaviour:
@@ -47,25 +47,41 @@
 		warningCount > 0 ? (stores.issues.integrityWarnings[0]?.issue.id ?? null) : null
 	);
 
+	const mobileOpen = $derived(stores.ui.mobileNavOpen);
+	function closeMobileNav() {
+		stores.ui.closeMobileNav();
+	}
+
 	function onViewChange(id: string): void {
 		if (id === 'list' || id === 'kanban' || id === 'gantt') {
 			stores.view.setView(id);
+			closeMobileNav();
 		}
 	}
 
 	function reviewFirstWarning(): void {
 		if (firstWarningId !== null) {
 			stores.editor.open(firstWarningId);
+			closeMobileNav();
 		}
 	}
 </script>
+
+{#if mobileOpen}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
+		onclick={closeMobileNav}
+	></div>
+{/if}
 
 {#if collapsed}
 	<aside
 		data-testid="leftrail"
 		data-collapsed="true"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width-collapsed)] flex-col items-center gap-3 border-r border-hairline bg-surface-soft py-4 md:flex transition-all duration-[var(--motion-base)]"
+		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width-collapsed)] flex-col items-center gap-3 border-r border-border bg-surface py-4 md:flex transition-all duration-[var(--motion-base)]"
 	>
 		<IconButton label={t('leftrail.expandNav')} onclick={() => (collapsed = false)}>
 			<PanelLeftOpen class="h-5 w-5" aria-hidden="true" />
@@ -84,10 +100,19 @@
 		data-testid="leftrail"
 		data-collapsed="false"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-hairline bg-surface-soft p-4 md:flex transition-all duration-[var(--motion-base)]"
+		class="fixed top-0 bottom-0 left-0 z-50 h-screen w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-border bg-surface p-4 transition-transform duration-[var(--motion-base)] md:sticky md:top-[var(--topbar-height)] md:z-20 md:h-[calc(100vh-var(--topbar-height))] md:flex md:translate-x-0 {mobileOpen ? 'flex translate-x-0 shadow-2xl' : 'hidden -translate-x-full md:flex md:shadow-none'}"
 	>
-		<div class="flex items-center gap-2">
-			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted">
+		<div class="flex items-center gap-2 md:hidden">
+			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+				{t('leftrail.viewsHeading')}
+			</h2>
+			<IconButton label={t('common.close')} onclick={closeMobileNav}>
+				<PanelLeftClose class="h-4 w-4" aria-hidden="true" />
+			</IconButton>
+		</div>
+
+		<div class="hidden md:flex items-center gap-2">
+			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 				{t('leftrail.viewsHeading')}
 			</h2>
 			<IconButton label={t('leftrail.collapseNav')} onclick={() => (collapsed = true)}>
@@ -97,10 +122,36 @@
 
 		<Tabs tabs={viewTabs} value={stores.view.view} onchange={onViewChange} class="w-full" />
 
+		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+			{t('leftrail.planningHeading')}
+		</h2>
+		<div class="flex flex-col gap-1">
+			<button
+				type="button"
+				class="flex items-center justify-start gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors duration-[var(--motion-fast)] ease-out cursor-pointer {stores
+					.view.view === 'backlog'
+					? 'bg-primary text-primary-foreground'
+					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+				onclick={() => { stores.view.setView('backlog'); closeMobileNav(); }}
+			>
+				<span>{t('leftrail.view.backlog')}</span>
+			</button>
+			<button
+				type="button"
+				class="flex items-center justify-start gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors duration-[var(--motion-fast)] ease-out cursor-pointer {stores
+					.view.view === 'sprint'
+					? 'bg-primary text-primary-foreground'
+					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+				onclick={() => { stores.view.setView('sprint'); closeMobileNav(); }}
+			>
+				<span>{t('leftrail.view.sprint')}</span>
+			</button>
+		</div>
+
 		{#if warningCount > 0 && firstWarningId !== null}
 			<button
 				type="button"
-				class="flex items-center w-full cursor-pointer justify-start gap-2 py-2 px-3 rounded-md bg-[var(--color-cb-yellow)]/10 text-ink border border-[var(--color-cb-yellow)] text-sm font-semibold transition-colors hover:bg-[var(--color-cb-yellow)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+				class="flex items-center w-full cursor-pointer justify-start gap-2 py-2 px-3 rounded-md bg-[var(--color-cb-yellow)]/10 text-foreground border border-[var(--color-cb-yellow)] text-sm font-semibold transition-colors hover:bg-[var(--color-cb-yellow)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
 				onclick={reviewFirstWarning}
 				aria-label={t('leftrail.integrityReview', { n: warningCount })}
 			>
@@ -111,7 +162,7 @@
 			</button>
 		{/if}
 
-		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted">
+		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 			{t('leftrail.filtersHeading')}
 		</h2>
 		<FilterBar />

@@ -32,4 +32,7 @@
 	);
 </script>
 
-<div class="animate-pulse bg-surface-strong {roundedClass} {width} {height} {extraClass}" aria-hidden="true"></div>
+<div
+	class="animate-pulse bg-muted {roundedClass} {width} {height} {extraClass}"
+	aria-hidden="true"
+></div>

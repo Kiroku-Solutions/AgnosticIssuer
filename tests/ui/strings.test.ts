@@ -18,8 +18,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { STRINGS, t } from '../../src/lib/ui/strings';
+import { i18n } from '../../src/lib/ui/i18n/store.svelte';
 
 describe('t helper + STRINGS map', () => {
+	beforeEach(() => {
+		i18n.locale = 'en';
+	});
+
 	describe('plain string leaves', () => {
 		it('returns the literal for a simple key', () => {
 			expect(t('common.save')).toBe('Save');
@@ -27,9 +32,9 @@ describe('t helper + STRINGS map', () => {
 		});
 
 		it('walks dotted paths across nested surfaces', () => {
-			expect(t('app.name')).toBe('nomad.md');
+			expect(t('app.name')).toBe('Quill.md');
 			expect(t('app.version')).toBe('v0.0.1');
-			expect(t('home.heroTitle')).toBe('nomad.md');
+			expect(t('home.heroTitle')).toBe('quill.md');
 			expect(t('home.heroSubtitle')).toBe('Issues that travel with your repo');
 		});
 

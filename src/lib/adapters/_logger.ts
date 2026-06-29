@@ -36,9 +36,9 @@
  * `remote-git` module, which uses the lower-level `logRaw` path that
  * still redacts by the brand.
  */
-export const PAT_BRAND: unique symbol = Symbol('nomad-md:pat');
-export const PROXY_URL_BRAND: unique symbol = Symbol('nomad-md:proxy-url');
-export const SAFE_HTML_BRAND: unique symbol = Symbol('nomad-md:safe-html');
+export const PAT_BRAND: unique symbol = Symbol('quill-md:pat');
+export const PROXY_URL_BRAND: unique symbol = Symbol('quill-md:proxy-url');
+export const SAFE_HTML_BRAND: unique symbol = Symbol('quill-md:safe-html');
 
 export type Pat = string & { readonly [PAT_BRAND]: true };
 

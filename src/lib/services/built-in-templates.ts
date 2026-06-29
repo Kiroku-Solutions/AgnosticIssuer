@@ -3,7 +3,7 @@
  *
  * These four templates — Epic, User Story, Task, Bug — are bundled with
  * the application and offered through the first-run wizard (FR-11).
- * Selecting one writes its JSON verbatim into `.nomad.md/templates/`.
+ * Selecting one writes its JSON verbatim into `.quill.md/templates/`.
  *
  * The shapes mirror ERS Appendix B.2-B.5 exactly so the existing
  * `assertTemplate` validator (in `template-loader.ts`) accepts them
@@ -30,7 +30,9 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 				obligatory: false,
 				options_source: 'config.labels'
 			},
-			{ id: 3, key: 'relations', name: 'Relations', type: 'relations', obligatory: false }
+			{ id: 3, key: 'relations', name: 'Relations', type: 'relations', obligatory: false },
+			{ id: 4, key: 'start_date', name: 'Start date', type: 'date', obligatory: false },
+			{ id: 5, key: 'end_date', name: 'End date', type: 'date', obligatory: false }
 		],
 		sections: [
 			{ id: 1, key: 'summary', name: 'Summary', obligatory: true, default: '' },
@@ -45,6 +47,29 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 		]
 	},
 	{
+		id: 'use-case',
+		name: 'Use Case',
+		icon: 'file-text',
+		color: '#a855f7',
+		default_status: 'open',
+		fields: [
+			{ id: 1, key: 'assignee', name: 'Assignee', type: 'user', obligatory: false },
+			{
+				id: 2,
+				key: 'labels',
+				name: 'Labels',
+				type: 'multi-select',
+				obligatory: false,
+				options_source: 'config.labels'
+			},
+			{ id: 3, key: 'relations', name: 'Relations', type: 'relations', obligatory: false }
+		],
+		sections: [
+			{ id: 1, key: 'description', name: 'Description', obligatory: true, default: '' },
+			{ id: 2, key: 'main_flow', name: 'Main Flow', obligatory: true, default: '' }
+		]
+	},
+	{
 		id: 'user-story',
 		name: 'User Story',
 		icon: 'book-open',
@@ -54,16 +79,41 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 			{ id: 1, key: 'user', name: 'As a', type: 'text', obligatory: true },
 			{ id: 2, key: 'action', name: 'I want', type: 'text', obligatory: true },
 			{ id: 3, key: 'objective', name: 'So that', type: 'text', obligatory: true },
-			{ id: 4, key: 'assignee', name: 'Assignee', type: 'user', obligatory: false },
+			{
+				id: 4,
+				key: 'estimate',
+				name: 'Estimate (points/hours)',
+				type: 'number',
+				obligatory: false
+			},
+			{
+				id: 41,
+				key: 'sprint_id',
+				name: 'Sprint',
+				type: 'select',
+				obligatory: false,
+				options_source: 'issues.sprints'
+			},
 			{
 				id: 5,
+				key: 'priority',
+				name: 'Priority',
+				type: 'select',
+				obligatory: false,
+				options: ['high', 'medium', 'low']
+			},
+			{ id: 6, key: 'assignee', name: 'Assignee', type: 'user', obligatory: false },
+			{
+				id: 7,
 				key: 'labels',
 				name: 'Labels',
 				type: 'multi-select',
 				obligatory: false,
 				options_source: 'config.labels'
 			},
-			{ id: 6, key: 'relations', name: 'Relations', type: 'relations', obligatory: false }
+			{ id: 8, key: 'relations', name: 'Relations', type: 'relations', obligatory: false },
+			{ id: 9, key: 'start_date', name: 'Start date', type: 'date', obligatory: false },
+			{ id: 10, key: 'end_date', name: 'End date', type: 'date', obligatory: false }
 		],
 		sections: [
 			{ id: 1, key: 'description', name: 'Description', obligatory: true, default: '' },
@@ -90,6 +140,14 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 				type: 'number',
 				obligatory: false
 			},
+			{
+				id: 11,
+				key: 'sprint_id',
+				name: 'Sprint',
+				type: 'select',
+				obligatory: false,
+				options_source: 'issues.sprints'
+			},
 			{ id: 2, key: 'assignee', name: 'Assignee', type: 'user', obligatory: false },
 			{
 				id: 3,
@@ -99,7 +157,9 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 				obligatory: false,
 				options_source: 'config.labels'
 			},
-			{ id: 4, key: 'relations', name: 'Relations', type: 'relations', obligatory: false }
+			{ id: 4, key: 'relations', name: 'Relations', type: 'relations', obligatory: false },
+			{ id: 5, key: 'start_date', name: 'Start date', type: 'date', obligatory: false },
+			{ id: 6, key: 'end_date', name: 'End date', type: 'date', obligatory: false }
 		],
 		sections: [
 			{ id: 1, key: 'description', name: 'Description', obligatory: true, default: '' },
@@ -129,6 +189,15 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 				obligatory: true,
 				options: ['p0', 'p1', 'p2', 'p3']
 			},
+			{ id: 21, key: 'estimate', name: 'Estimate (hours)', type: 'number', obligatory: false },
+			{
+				id: 22,
+				key: 'sprint_id',
+				name: 'Sprint',
+				type: 'select',
+				obligatory: false,
+				options_source: 'issues.sprints'
+			},
 			{ id: 3, key: 'assignee', name: 'Assignee', type: 'user', obligatory: false },
 			{
 				id: 4,
@@ -157,6 +226,20 @@ export const BUILT_IN_TEMPLATES: readonly Template[] = [
 				default: ''
 			}
 		]
+	},
+	{
+		id: 'sprint',
+		name: 'Sprint',
+		icon: 'milestone',
+		color: '#eab308',
+		default_status: 'open',
+		fields: [
+			{ id: 1, key: 'sprint_number', name: 'Sprint Number', type: 'number', obligatory: true },
+			{ id: 2, key: 'start_date', name: 'Start date', type: 'date', obligatory: false },
+			{ id: 3, key: 'end_date', name: 'End date', type: 'date', obligatory: false },
+			{ id: 4, key: 'relations', name: 'Relations', type: 'relations', obligatory: false }
+		],
+		sections: [{ id: 1, key: 'goals', name: 'Sprint Goals', obligatory: false, default: '' }]
 	}
 ];
 
@@ -172,12 +255,14 @@ export function getBuiltInTemplate(id: string): Template | undefined {
  */
 export function defaultConfig(): Config {
 	return {
+		product_goal: '',
+		definition_of_done: [],
 		statuses: [
-			{ id: 'open', name: 'Open', color: '#22c55e' },
-			{ id: 'in_progress', name: 'In progress', color: '#3b82f6' },
-			{ id: 'in_review', name: 'In review', color: '#f59e0b' },
-			{ id: 'done', name: 'Done', color: '#10b981' },
-			{ id: 'closed', name: 'Closed', color: '#6b7280' }
+			{ id: 'open', name: 'Open', color: '#22c55e', category: 'todo' },
+			{ id: 'in_progress', name: 'In progress', color: '#3b82f6', category: 'doing' },
+			{ id: 'in_review', name: 'In review', color: '#f59e0b', category: 'doing' },
+			{ id: 'done', name: 'Done', color: '#10b981', category: 'done' },
+			{ id: 'closed', name: 'Closed', color: '#6b7280', category: 'cancelled' }
 		],
 		default_status: 'open',
 		labels: [

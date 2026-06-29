@@ -111,7 +111,7 @@ describe('remote-git live: git.fetch filter forwarding', () => {
 			return;
 		}
 		await fetchSubtree({
-			url: 'https://github.com/nomad-md/live-test' as RepoUrl,
+			url: 'https://github.com/quill-md/live-test' as RepoUrl,
 			branch: 'main' as Branch,
 			pat: null
 		});
@@ -140,13 +140,13 @@ describe('remote-git live: git.fetch filter forwarding', () => {
 		}
 		// First fetch → warn should fire exactly once.
 		await fetchSubtree({
-			url: 'https://github.com/nomad-md/live-test-1' as RepoUrl,
+			url: 'https://github.com/quill-md/live-test-1' as RepoUrl,
 			branch: 'main' as Branch,
 			pat: null
 		});
 		// Second fetch → warn must NOT fire again (one-shot).
 		await fetchSubtree({
-			url: 'https://github.com/nomad-md/live-test-2' as RepoUrl,
+			url: 'https://github.com/quill-md/live-test-2' as RepoUrl,
 			branch: 'main' as Branch,
 			pat: null
 		});
@@ -178,7 +178,7 @@ describe('remote-git live: git.fetch filter forwarding', () => {
 			return;
 		}
 		await fetchSubtree({
-			url: 'https://github.com/nomad-md/live-test-positive' as RepoUrl,
+			url: 'https://github.com/quill-md/live-test-positive' as RepoUrl,
 			branch: 'main' as Branch,
 			pat: null
 		});
@@ -189,7 +189,7 @@ describe('remote-git live: git.fetch filter forwarding', () => {
 
 	it('forwards a no-credential onAuth when pat is null', async () => {
 		await fetchSubtree({
-			url: 'https://github.com/nomad-md/live-test-anon' as RepoUrl,
+			url: 'https://github.com/quill-md/live-test-anon' as RepoUrl,
 			branch: 'main' as Branch,
 			pat: null
 		});
@@ -201,7 +201,7 @@ describe('remote-git live: git.fetch filter forwarding', () => {
 
 	it('forwards a credentialed onAuth when pat is provided', async () => {
 		await fetchSubtree({
-			url: 'https://github.com/nomad-md/live-test-auth' as RepoUrl,
+			url: 'https://github.com/quill-md/live-test-auth' as RepoUrl,
 			branch: 'main' as Branch,
 			pat: 'ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789'
 		});

@@ -1,11 +1,11 @@
 /**
  * Tests for `src/lib/services/built-in-templates.ts`.
  *
- * The built-in template bundle is the four ERS §6.4 templates (Epic,
- * User Story, Task, Bug) that ship with the application and are offered
+ * The built-in template bundle is the six ERS §6.4 templates (Epic,
+ * Use Case, User Story, Task, Bug, Sprint) that ship with the application and are offered
  * through the first-run wizard (FR-11). The tests pin:
- *  - the bundle has exactly four entries;
- *  - the four ids match the ERS Appendix C table;
+ *  - the bundle has exactly six entries;
+ *  - the six ids match the ERS Appendix C table;
  *  - `getBuiltInTemplate` finds each one and returns `undefined` for
  *    unknown ids;
  *  - `defaultConfig()` returns the ERS §6.3.1 shape;
@@ -19,14 +19,14 @@ import {
 	getBuiltInTemplate
 } from '$lib/services/built-in-templates';
 
-const EXPECTED_IDS = ['epic', 'user-story', 'task', 'bug'] as const;
+const EXPECTED_IDS = ['epic', 'use-case', 'user-story', 'task', 'bug', 'sprint'] as const;
 
 describe('BUILT_IN_TEMPLATES', () => {
-	it('has exactly four entries', () => {
-		expect(BUILT_IN_TEMPLATES).toHaveLength(4);
+	it('has exactly six entries', () => {
+		expect(BUILT_IN_TEMPLATES).toHaveLength(6);
 	});
 
-	it('contains the four ERS Appendix C ids in declaration order', () => {
+	it('contains the six ERS Appendix C ids in declaration order', () => {
 		expect(BUILT_IN_TEMPLATES.map((t) => t.id)).toEqual([...EXPECTED_IDS]);
 	});
 

@@ -1,4 +1,4 @@
-# Current Project Status — nomad\.md
+# Current Project Status — quill\.md
 
 > Last updated at end of **Step 6** of the v0 plan.
 > Source of truth for what is currently implemented and what comes next.
@@ -36,9 +36,9 @@ ERS scope covered by v0: FR-1, FR-2, FR-3, FR-4, FR-5 (read-only), FR-8, FR-9, F
 | `src/lib/services/parser.ts`            | `parseIssueFile(text, sourcePath)` — text → `LoadedIssue`. Uses `gray-matter` for the frontmatter block and a custom scanner for `<!-- [SECTION_START: name] -->` markers. Computes FR-15 integrity on load.            |
 | `src/lib/services/serializer.ts`        | `serializeIssue(issue)` and `canonicalForm(issue)`. Emits system keys in `SYSTEM_FRONTMATTER_KEY_ORDER`, then custom fields, then the freshly computed `integrity_hash`.                                                |
 | `src/lib/services/validator.ts`         | `validateIssue(issue, ctx)` returning `{ ok, errors[] }`. Implements FR-8 checks (obligatory template fields/sections, status membership, relation validity) and FR-9 cycle detection (parent/child/blocks/depends_on). |
-| `src/lib/services/config-loader.ts`     | `loadConfig(adapter)` — reads `.nomad.md/config.json`, validates shape, throws an actionable error per FR-3.                                                                                                            |
-| `src/lib/services/template-loader.ts`   | `loadTemplates(adapter)` — reads every `*.json` under `.nomad.md/templates/`, validates shape.                                                                                                                          |
-| `src/lib/services/issue-loader.ts`      | `loadIssues(adapter)` — reads every `*.md` under `.nomad.md/issues/`, parses each via `parseIssueFile`. Missing directory is treated as empty set.                                                                      |
+| `src/lib/services/config-loader.ts`     | `loadConfig(adapter)` — reads `.quill.md/config.json`, validates shape, throws an actionable error per FR-3.                                                                                                            |
+| `src/lib/services/template-loader.ts`   | `loadTemplates(adapter)` — reads every `*.json` under `.quill.md/templates/`, validates shape.                                                                                                                          |
+| `src/lib/services/issue-loader.ts`      | `loadIssues(adapter)` — reads every `*.md` under `.quill.md/issues/`, parses each via `parseIssueFile`. Missing directory is treated as empty set.                                                                      |
 | `src/lib/services/index.ts`             | Barrel re-exports.                                                                                                                                                                                                      |
 
 ### Key design decisions
@@ -133,7 +133,7 @@ D  src/lib/vitest-examples/*          (step 1)
 
 ### Key design decisions
 
-- **Partial clone via tree walk.** isomorphic-git's `filepaths` filter isn't stable, so we fetch with `depth:1 + singleBranch` and then walk `git.TREE({ref: 'HEAD'})` to extract only the `.nomad.md/` subtree into a clean directory (Step 3 §3.5).
+- **Partial clone via tree walk.** isomorphic-git's `filepaths` filter isn't stable, so we fetch with `depth:1 + singleBranch` and then walk `git.TREE({ref: 'HEAD'})` to extract only the `.quill.md/` subtree into a clean directory (Step 3 §3.5).
 - **Three-project Vitest split.** `client` (Chromium/Playwright for FSA-backed tests), `server` (Node for isomorphic-git + memory-fs + the new service-layer tests), and a dedicated `renderer` project (jsdom-injected window for `DOMPurify`). Required because the renderer needs `SharedArrayBuffer` for jsdom, which Chromium only provides behind cross-origin isolation headers — easier to sandbox.
 - **Branded types are nominal + runtime-registered.** TypeScript brands cost zero at runtime, but a bare `string` can still flow through `as unknown as Branded` casts. Each brand has a `Set<string>` registry in `_logger.ts`; `brand*` adds the value, `is*` checks membership. `clearCache` now re-validates the brand before any operation (same pattern as `revalidateRepoUrl` / `revalidateBranch`).
 - **PAT hygiene.** PAT is held only in the `onAuth` closure for the duration of `fetchSubtree`. The `_logger` redactor recognises both the brand and PAT-shaped strings (GitHub classic 40-hex, GitHub fine-grained `ghp_*`, GitLab `glpat-*`) as defence-in-depth.
@@ -189,8 +189,8 @@ The state layer is a thin reactive layer between the service / adapter tier and 
 | `src/lib/state/templates.ts`      | 159 | `TemplatesStatus`, `TemplatesStore`, `createTemplatesStore(adapterProvider)`. `byType` is a `Map<id, Template>` derived getter.                                                                                                                                                                                                    |
 | `src/lib/state/issues.ts`         | 411 | The heaviest store: CRUD (`load`/`create`/`update`/`save`/`discard`/`remove`/`validate`), `dirty` set, `pendingSaves` per-id lock, `byId`/`byStatus`/`integrityWarnings` derivations, snapshot-based `discard()` revert.                                                                                                           |
 | `src/lib/state/filter.ts`         | 131 | URL ↔ state via `serialize`/`parse` (loss-less round-trip). Step 6's `+layout.svelte` wires `popstate` / `replaceState`.                                                                                                                                                                                                           |
-| `src/lib/state/view.ts`           | 60  | `View` (`'list' \| 'kanban' \| 'gantt'`), persisted to `localStorage.nomad.md.view`.                                                                                                                                                                                                                                               |
-| `src/lib/state/theme.ts`          | 66  | `Theme` (`'light' \| 'dark'`), persisted to `localStorage.nomad.md.theme`.                                                                                                                                                                                                                                                         |
+| `src/lib/state/view.ts`           | 60  | `View` (`'list' \| 'kanban' \| 'gantt'`), persisted to `localStorage.quill.md.view`.                                                                                                                                                                                                                                               |
+| `src/lib/state/theme.ts`          | 66  | `Theme` (`'light' \| 'dark'`), persisted to `localStorage.quill.md.theme`.                                                                                                                                                                                                                                                         |
 | `src/lib/state/editor.ts`         | 258 | `EditorStore` with `open`/`close`/`patchField`/`patchSection`/`save`/`discard`; deep-clones on `open`; delegates persistence to `issues.save(activeId)`.                                                                                                                                                                           |
 | `src/lib/state/index.ts`          | 61  | Barrel re-exports every factory + type. No module-level singletons — Step 6 instantiates per mount and propagates via `setContext`.                                                                                                                                                                                                |
 | `tests/state/_context.test.ts`    | 176 | `assertBrowser`, `createStateContext`, `debouncedSave` (4 cases)                                                                                                                                                                                                                                                                   |
@@ -273,7 +273,7 @@ Aggregate: the **core (adapters + services)** is at ~4.5/5 — good enough to fa
 | CVE-2026-53550 | moderate | `js-yaml` ≤4.1.1 | `gray-matter` → `js-yaml`  | Pin `js-yaml@^4.2.0` via `pnpm.overrides`.      |
 | CVE-2024-47764 | low      | `cookie` <0.7.0  | `@sveltejs/kit` → `cookie` | Wait for upstream bump or override to `^0.7.0`. |
 
-The `js-yaml` DoS is the only one with a realistic attack path: a hostile `.nomad.md/issues/*.md` file (crafted merge keys in the YAML frontmatter) freezes the browser main thread for several seconds on parse. Reachable in Local Mode if the user opens a third-party folder, and in Remote Read-Only Mode if a PR lands such a file in the source repo.
+The `js-yaml` DoS is the only one with a realistic attack path: a hostile `.quill.md/issues/*.md` file (crafted merge keys in the YAML frontmatter) freezes the browser main thread for several seconds on parse. Reachable in Local Mode if the user opens a third-party folder, and in Remote Read-Only Mode if a PR lands such a file in the source repo.
 
 ### Carry-overs from the audit (folded into Step 5/6/8)
 
@@ -330,12 +330,12 @@ Stores to build (one file each under `src/lib/state/`):
 | Store            | Source of truth                               | Consumes                                                         | Notes                                                                                            |
 | ---------------- | --------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `modeStore`      | `local` \| `remote` \| `home`                 | `handle-store`, `remote-git`                                     | Resolves the active handle on cold start, runs `queryPermission`, transitions to `home` on deny. |
-| `configStore`    | `.nomad.md/config.json`                       | `config-loader`, `directory-adapter`                             | Cached in memory; refetch on `mode` change or explicit refresh.                                  |
-| `templatesStore` | `.nomad.md/templates/*.json`                  | `template-loader`, `directory-adapter`                           | Reload after first-run wizard writes new templates.                                              |
-| `issuesStore`    | `.nomad.md/issues/*.md`                       | `issue-loader`, `parser`, `serializer`, `integrity`, `validator` | Holds `LoadedIssue[]` plus in-flight mutations (dirty issues, pending saves).                    |
+| `configStore`    | `.quill.md/config.json`                       | `config-loader`, `directory-adapter`                             | Cached in memory; refetch on `mode` change or explicit refresh.                                  |
+| `templatesStore` | `.quill.md/templates/*.json`                  | `template-loader`, `directory-adapter`                           | Reload after first-run wizard writes new templates.                                              |
+| `issuesStore`    | `.quill.md/issues/*.md`                       | `issue-loader`, `parser`, `serializer`, `integrity`, `validator` | Holds `LoadedIssue[]` plus in-flight mutations (dirty issues, pending saves).                    |
 | `filterStore`    | URL query params                              | none                                                             | Single source for filter state; serializable to/from `?…` per FR-7.                              |
 | `viewStore`      | `list` \| `kanban` \| `gantt`                 | none                                                             | Persisted to `localStorage`.                                                                     |
-| `themeStore`     | `light` \| `dark`                             | none                                                             | `localStorage.nomad.md.theme` (already specified in ERS NFR-14).                                 |
+| `themeStore`     | `light` \| `dark`                             | none                                                             | `localStorage.quill.md.theme` (already specified in ERS NFR-14).                                 |
 | `editorStore`    | active issue + dirty flag + integrity warning | `issuesStore`, `validator`                                       | Drives the right-rail editor pane.                                                               |
 
 ### Cross-cutting rules (locked for Step 5)
@@ -509,7 +509,7 @@ verification chain is green.
   English string lands in a `.svelte` file outside the map.
 - **Minimum-viable CSP + Trusted Types + SRI.** `static/_headers`
   ships the audit's CSP template with a small strengthening (added
-  `blob:` for DOMPurify image sinks + the `trusted-types nomad-md
+  `blob:` for DOMPurify image sinks + the `trusted-types quill-md
   dompurify default` policy name). Every `<link rel="modulepreload">`
   and module `<script>` is stamped with `integrity="sha384-…"` via
   `scripts/add-sri.mjs`. `scripts/check-csp.mjs` scans the build
@@ -537,7 +537,7 @@ verification chain is green.
   `build/integrity.json` emitted; re-read verification confirms no
   partial-write failure mode.
 - **Trusted Types.** `require-trusted-types-for 'script'` +
-  `trusted-types nomad-md dompurify default`. DOMPurify is the
+  `trusted-types quill-md dompurify default`. DOMPurify is the
   documented Trusted Types sink.
 - **GitHub Pages equivalent.** The existing `<meta http-equiv>`
   fallback in `src/app.html:13` covers `frame-ancestors 'none'`. The
@@ -964,12 +964,12 @@ and tick each box.
 2. Home screen renders with "Open local folder" + "Browse
    remote repository". Recent folders list is empty on first run.
 3. Click "Open local folder"; the directory picker appears.
-4. Pick a folder that does **not** contain `.nomad.md/`. The
+4. Pick a folder that does **not** contain `.quill.md/`. The
    wizard route is reached; the "Use built-in templates" panel
    is enabled, "Create your own" is disabled with the
    "coming soon" tooltip.
 5. Tick `Task` + `Bug`; click "Apply and continue". The folder
-   now has `.nomad.md/{config.json, templates/task.json,
+   now has `.quill.md/{config.json, templates/task.json,
    templates/bug.json, issues/}`.
 6. The local view loads. Click "New issue" → pick "Bug".
 7. The editor renders the Bug form. Fill `title = "Smoke test
@@ -986,7 +986,7 @@ and tick each box.
 1. Switch to Firefox (no FSA — Local Edit Mode is hidden
    there).
 2. Click "Browse remote repository". Enter
-   `https://github.com/<user>/<repo-with-nomad-md>`, branch
+   `https://github.com/<user>/<repo-with-quill-md>`, branch
    `main`, paste a PAT (classic 40-hex or fine-grained `ghp_*`).
 3. The fetch banner names the configured CORS proxy (default
    `cors.isomorphic-git.org`) with the "the proxy operator can

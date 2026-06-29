@@ -31,11 +31,11 @@ describe('configStore.save — happy path', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('writes the validated config to .nomad.md/config.json', async () => {
+	it('writes the validated config to .quill.md/config.json', async () => {
 		const store = createConfigStore(() => fs);
 		const cfg = defaultConfig();
 		await store.save(cfg);
-		const written = await fs.readTextFile('.nomad.md/config.json');
+		const written = await fs.readTextFile('.quill.md/config.json');
 		const parsed = JSON.parse(written);
 		expect(parsed.default_status).toBe('open');
 		expect(parsed.statuses).toHaveLength(5);
@@ -70,7 +70,7 @@ describe('configStore.save — validation failure', () => {
 		expect(store.status).toBe('error');
 		expect(store.error).toBeInstanceOf(Error);
 		// No file was written.
-		await expect(fs.readTextFile('.nomad.md/config.json')).rejects.toThrow();
+		await expect(fs.readTextFile('.quill.md/config.json')).rejects.toThrow();
 	});
 });
 

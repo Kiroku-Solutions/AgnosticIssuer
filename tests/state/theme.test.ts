@@ -55,12 +55,12 @@ describe('createThemeStore — defaults', () => {
 	});
 
 	it("defaults to 'light' when the stored value is unrecognised", () => {
-		const store = createThemeStore({ storage: makeStorage({ 'nomad.md.theme': 'high-contrast' }) });
+		const store = createThemeStore({ storage: makeStorage({ 'quill.md.theme': 'high-contrast' }) });
 		expect(store.theme).toBe('light');
 	});
 
 	it('reads an existing valid value from localStorage', () => {
-		const store = createThemeStore({ storage: makeStorage({ 'nomad.md.theme': 'dark' }) });
+		const store = createThemeStore({ storage: makeStorage({ 'quill.md.theme': 'dark' }) });
 		expect(store.theme).toBe('dark');
 	});
 });
@@ -71,15 +71,15 @@ describe('createThemeStore — toggle', () => {
 		const store = createThemeStore({ storage: ls });
 		store.toggle();
 		expect(store.theme).toBe('dark');
-		expect(ls.getItem('nomad.md.theme')).toBe('dark');
+		expect(ls.getItem('quill.md.theme')).toBe('dark');
 	});
 
 	it('toggles dark → light and persists', () => {
-		const ls = makeStorage({ 'nomad.md.theme': 'dark' });
+		const ls = makeStorage({ 'quill.md.theme': 'dark' });
 		const store = createThemeStore({ storage: ls });
 		store.toggle();
 		expect(store.theme).toBe('light');
-		expect(ls.getItem('nomad.md.theme')).toBe('light');
+		expect(ls.getItem('quill.md.theme')).toBe('light');
 	});
 
 	it('a fresh store reads the same value back (reload survival)', () => {
@@ -97,7 +97,7 @@ describe('createThemeStore — setTheme', () => {
 		const store = createThemeStore({ storage: ls });
 		store.setTheme('dark');
 		expect(store.theme).toBe('dark');
-		expect(ls.getItem('nomad.md.theme')).toBe('dark');
+		expect(ls.getItem('quill.md.theme')).toBe('dark');
 	});
 });
 
@@ -128,7 +128,7 @@ describe('createThemeStore — prefers-color-scheme fallback (FR-14)', () => {
 	});
 
 	it('the stored value beats the OS preference (FR-14 explicit user choice)', () => {
-		const ls = makeStorage({ 'nomad.md.theme': 'light' });
+		const ls = makeStorage({ 'quill.md.theme': 'light' });
 		const store = createThemeStore({ storage: ls, matchMedia: makeMatchMedia(true) });
 		expect(store.theme).toBe('light');
 	});
@@ -191,7 +191,7 @@ describe('createThemeStore — system preference (sub-phase 6H)', () => {
 	});
 
 	it("restores a stored 'system' preference and resolves it through the OS", () => {
-		const ls = makeStorage({ 'nomad.md.theme': 'system' });
+		const ls = makeStorage({ 'quill.md.theme': 'system' });
 		const { matchMedia } = makeMatchMediaWithListener(true);
 		const store = createThemeStore({
 			storage: ls,
@@ -213,11 +213,11 @@ describe('createThemeStore — system preference (sub-phase 6H)', () => {
 		store.setTheme('system');
 		expect(store.preference).toBe('system');
 		expect(store.theme).toBe('light');
-		expect(ls.getItem('nomad.md.theme')).toBe('system');
+		expect(ls.getItem('quill.md.theme')).toBe('system');
 	});
 
 	it("setTheme('dark') overrides a 'system' preference and persists", () => {
-		const ls = makeStorage({ 'nomad.md.theme': 'system' });
+		const ls = makeStorage({ 'quill.md.theme': 'system' });
 		const { matchMedia } = makeMatchMediaWithListener(false);
 		const store = createThemeStore({
 			storage: ls,
@@ -227,11 +227,11 @@ describe('createThemeStore — system preference (sub-phase 6H)', () => {
 		store.setTheme('dark');
 		expect(store.preference).toBe('dark');
 		expect(store.theme).toBe('dark');
-		expect(ls.getItem('nomad.md.theme')).toBe('dark');
+		expect(ls.getItem('quill.md.theme')).toBe('dark');
 	});
 
 	it("toggle() from 'system' lands on an explicit dark preference when effective is light", () => {
-		const ls = makeStorage({ 'nomad.md.theme': 'system' });
+		const ls = makeStorage({ 'quill.md.theme': 'system' });
 		const { matchMedia } = makeMatchMediaWithListener(false);
 		const store = createThemeStore({
 			storage: ls,
@@ -241,7 +241,7 @@ describe('createThemeStore — system preference (sub-phase 6H)', () => {
 		store.toggle();
 		expect(store.preference).toBe('dark');
 		expect(store.theme).toBe('dark');
-		expect(ls.getItem('nomad.md.theme')).toBe('dark');
+		expect(ls.getItem('quill.md.theme')).toBe('dark');
 	});
 
 	it("OS preference change updates effective theme live while preference is 'system'", () => {
@@ -269,7 +269,7 @@ describe('createThemeStore — system preference (sub-phase 6H)', () => {
 	});
 
 	it("OS preference change is a no-op when preference is an explicit 'dark'", () => {
-		const ls = makeStorage({ 'nomad.md.theme': 'dark' });
+		const ls = makeStorage({ 'quill.md.theme': 'dark' });
 		const { matchMedia, dispatch } = makeMatchMediaWithListener(false);
 		const store = createThemeStore({
 			storage: ls,

@@ -1,6 +1,6 @@
 /**
- * Wizard service — atomic write of `.nomad.md/config.json` and
- * `.nomad.md/templates/*.json` (FR-11 / UC-5).
+ * Wizard service — atomic write of `.quill.md/config.json` and
+ * `.quill.md/templates/*.json` (FR-11 / UC-5).
  *
  * Pure service: takes a {@link DirectoryAdapter} (the active local
  * adapter from the mode store) and a set of built-in template ids.
@@ -23,8 +23,8 @@ import type { WritableDirectoryAdapter } from '../adapters/directory-adapter.ts'
 import type { Config, Template } from '../types/index.ts';
 import { BUILT_IN_TEMPLATES, defaultConfig, getBuiltInTemplate } from './built-in-templates.ts';
 
-const CONFIG_PATH = '.nomad.md/config.json';
-const TEMPLATES_DIR = '.nomad.md/templates';
+const CONFIG_PATH = '.quill.md/config.json';
+const TEMPLATES_DIR = '.quill.md/templates';
 
 export interface WizardSetupOptions {
 	/** When `true`, overwrite an existing config.json. Defaults to `false`. */

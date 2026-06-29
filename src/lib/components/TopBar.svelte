@@ -1,5 +1,5 @@
 <!--
-	TopBar.svelte — sticky top chrome for nomad.md (sub-phase 6C,
+	TopBar.svelte — sticky top chrome for quill.md (sub-phase 6C,
 	ERS §4.1.1 item 1).
 
 	Behaviour:
@@ -26,13 +26,16 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import Settings from '@lucide/svelte/icons/settings';
-	import { Badge, IconButton, Tooltip } from '$lib/ui';
+	import MenuIcon from '@lucide/svelte/icons/menu';
+	import { Badge, IconButton, Tooltip, Button } from '$lib/ui';
 	import { t } from '$lib/ui/strings';
 	import ProxyWarningBanner from './ProxyWarningBanner.svelte';
 	import SettingsPanel from './SettingsPanel.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { getStores } from '$lib/state';
+	import Bird from '$lib/assets/Bird.svg';
 
 	export type ShellMode = 'home' | 'local' | 'remote' | 'wizard';
 
@@ -63,24 +66,43 @@
 	});
 
 	const indicatorText = $derived(folderName ?? repoLabel ?? null);
+	const productGoal = $derived(stores.config.config?.product_goal ?? null);
 
 	function toggleSettings(): void {
 		stores.ui.toggleSettings();
+	}
+
+	function cancelWizard(): void {
+		void goto(resolve('/'));
 	}
 </script>
 
 <header
 	data-testid="topbar"
 	aria-label={t('topbar.ariaLabel')}
-	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-hairline bg-canvas/80 backdrop-blur-md px-6 transition-colors duration-[var(--motion-slow)]"
+	class="sticky top-0 z-30 flex h-[var(--topbar-height)] w-full items-center gap-3 border-b border-border bg-background/80 backdrop-blur-md px-4 md:px-6 transition-colors duration-[var(--motion-slow)]"
 >
+	{#if mode === 'local' || mode === 'remote'}
+		<div class="md:hidden flex-shrink-0 -ml-2 mr-1">
+			<IconButton
+				label={t('topbar.toggleMobileNav')}
+				onclick={() => stores.ui.toggleMobileNav()}
+			>
+				<MenuIcon class="h-6 w-6" aria-hidden="true" />
+			</IconButton>
+		</div>
+	{/if}
+
 	<a
 		href={resolve('/')}
-		class="flex items-baseline gap-2 font-display font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
+		class="flex items-center gap-3 font-display font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
 		aria-label={t('app.homeAria')}
 	>
-		<span class="text-xl text-ink">{t('app.name')}</span>
-		<span class="text-xs text-muted font-sans font-medium">{t('app.version')}</span>
+		<img src={Bird} alt={t('app.logoAlt')} class="h-7 w-7" />
+		<div class="flex items-baseline gap-2">
+			<span class="text-xl text-foreground">{t('app.name')}</span>
+			<span class="text-xs text-muted-foreground font-sans font-medium">{t('app.version')}</span>
+		</div>
 	</a>
 
 	<Badge variant={badge.variant} size="sm">{badge.label}</Badge>
@@ -95,19 +117,37 @@
 		</span>
 	{/if}
 
-	<div class="flex-1"></div>
+	{#if productGoal}
+		<div class="hidden md:flex flex-1 items-center justify-center mx-4">
+			<span
+				class="text-sm text-foreground/80 font-medium truncate max-w-lg bg-base-200/50 px-3 py-1 rounded-full border border-border"
+				title="Product Goal: {productGoal}"
+				data-testid="topbar-product-goal"
+			>
+				🎯 {productGoal}
+			</span>
+		</div>
+	{:else}
+		<div class="flex-1"></div>
+	{/if}
 
 	<ThemeToggle />
 
-	<Tooltip text={t('topbar.settingsTooltip')} position="bottom">
-		<IconButton
-			label={t('topbar.openSettings')}
-			onclick={toggleSettings}
-			data-testid="topbar-settings"
-		>
-			<Settings class="h-5 w-5" aria-hidden="true" />
-		</IconButton>
-	</Tooltip>
+	{#if mode !== 'wizard'}
+		<Tooltip text={t('topbar.settingsTooltip')} position="bottom">
+			<IconButton
+				label={t('topbar.openSettings')}
+				onclick={toggleSettings}
+				data-testid="topbar-settings"
+			>
+				<Settings class="h-5 w-5" aria-hidden="true" />
+			</IconButton>
+		</Tooltip>
+	{:else}
+		<Button variant="ghost" size="sm" onclick={cancelWizard} data-testid="topbar-wizard-cancel">
+			{t('wizard.cancel')}
+		</Button>
+	{/if}
 </header>
 
 {#if stores.mode.proxyWarning}

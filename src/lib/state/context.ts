@@ -45,7 +45,7 @@ export interface StoreGraph {
 	readonly ui: UiStore;
 }
 
-const STORES_KEY = Symbol('nomad-md.stores');
+const STORES_KEY = Symbol('quill-md.stores');
 
 /**
  * Bind a {@link StoreGraph} on the current Svelte context. Called once

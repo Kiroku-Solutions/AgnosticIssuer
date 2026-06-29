@@ -50,8 +50,8 @@ describe('createTemplatesStore — happy path', () => {
 	let fs: MemoryFsAdapter;
 	beforeEach(async () => {
 		fs = new MemoryFsAdapter();
-		await fs.writeTextFile('.nomad.md/templates/bug.json', VALID_BUG);
-		await fs.writeTextFile('.nomad.md/templates/task.json', VALID_TASK);
+		await fs.writeTextFile('.quill.md/templates/bug.json', VALID_BUG);
+		await fs.writeTextFile('.quill.md/templates/task.json', VALID_TASK);
 	});
 
 	it('returns the parsed templates sorted by id', async () => {
@@ -89,7 +89,7 @@ describe('createTemplatesStore — missing directory', () => {
 		// `MemoryFsAdapter.listDirectory` auto-creates directories and returns
 		// [], so this exercises the in-memory path. The production missing-dir
 		// path (FSA throws ENOENT, loader wraps it with "Could not list
-		// .nomad.md/templates:") is exercised by the next test.
+		// .quill.md/templates:") is exercised by the next test.
 		const fs = new MemoryFsAdapter();
 		const store = createTemplatesStore(() => fs);
 		await store.load();
@@ -114,7 +114,7 @@ describe('createTemplatesStore — missing directory', () => {
 describe('createTemplatesStore — malformed file', () => {
 	it('surfaces status=error and error instanceof Error on malformed JSON', async () => {
 		const fs = new MemoryFsAdapter();
-		await fs.writeTextFile('.nomad.md/templates/bug.json', '{ not json');
+		await fs.writeTextFile('.quill.md/templates/bug.json', '{ not json');
 		const store = createTemplatesStore(() => fs);
 		await store.load();
 		expect(store.status).toBe('error');
@@ -126,7 +126,7 @@ describe('createTemplatesStore — malformed file', () => {
 		const fs = new MemoryFsAdapter();
 		const bad = JSON.parse(VALID_BUG) as Record<string, unknown>;
 		delete bad['id'];
-		await fs.writeTextFile('.nomad.md/templates/bug.json', JSON.stringify(bad));
+		await fs.writeTextFile('.quill.md/templates/bug.json', JSON.stringify(bad));
 		const store = createTemplatesStore(() => fs);
 		await store.load();
 		expect(store.status).toBe('error');
@@ -144,8 +144,8 @@ describe('createTemplatesStore — supersede', () => {
 		// state reflects adapter 2 — the supersede contract.
 		const fs1 = new MemoryFsAdapter();
 		const fs2 = new MemoryFsAdapter();
-		await fs2.writeTextFile('.nomad.md/templates/bug.json', VALID_BUG);
-		await fs2.writeTextFile('.nomad.md/templates/task.json', VALID_TASK);
+		await fs2.writeTextFile('.quill.md/templates/bug.json', VALID_BUG);
+		await fs2.writeTextFile('.quill.md/templates/task.json', VALID_TASK);
 
 		let currentAdapter: MemoryFsAdapter = fs1;
 		const store = createTemplatesStore(() => currentAdapter);
