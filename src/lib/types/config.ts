@@ -5,6 +5,7 @@ export interface Status {
 	id: string;
 	name: string;
 	color: string;
+	category: 'todo' | 'doing' | 'done' | 'cancelled';
 }
 
 /** A label in the project catalog. Referenced by `issue.labels[]`. */
@@ -34,6 +35,8 @@ export interface RemoteConfig {
 }
 
 export interface Config {
+	product_goal: string;
+	definition_of_done: string[];
 	statuses: Status[];
 	default_status: string;
 	labels: Label[];

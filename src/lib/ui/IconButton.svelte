@@ -37,7 +37,7 @@
 	{type}
 	aria-label={label}
 	{disabled}
-	class="inline-flex items-center justify-center p-2 rounded-full text-muted hover:bg-surface-soft hover:text-ink transition-colors duration-[var(--motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed {extraClass}"
+	class="inline-flex items-center justify-center p-2 rounded-full text-muted-foreground hover:bg-surface hover:text-foreground transition-colors duration-[var(--motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed {extraClass}"
 	{...rest}
 >
 	{#if children}{@render children()}{/if}

@@ -60,12 +60,13 @@ export interface FilterState {
 	label?: string;
 	type?: string;
 	q?: string;
+	sprintId?: string;
 	creationDate?: DateRange;
 	updatedDate?: DateRange;
 }
 
 /** Flat keys that live at the top level of the URL query. */
-const SCALAR_KEYS = ['status', 'assignee', 'label', 'type', 'q'] as const;
+const SCALAR_KEYS = ['status', 'assignee', 'label', 'type', 'q', 'sprintId'] as const;
 /** Date-range field names; encoded as `<field>_from` / `<field>_to`. */
 const DATE_FIELDS = ['created', 'updated'] as const;
 const ALL_KEYS = [...SCALAR_KEYS, ...DATE_FIELDS.flatMap((f) => [`${f}_from`, `${f}_to`])] as const;

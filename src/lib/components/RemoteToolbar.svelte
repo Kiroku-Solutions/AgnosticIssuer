@@ -104,7 +104,7 @@
 </script>
 
 <nav
-	class="sticky top-[var(--topbar-height)] z-10 flex flex-wrap items-center gap-3 border-b border-hairline bg-surface-soft/80 backdrop-blur-xl px-6 py-3 transition-colors duration-[var(--motion-slow)]"
+	class="sticky top-[var(--topbar-height)] z-10 flex flex-wrap items-center gap-3 border-b border-border bg-surface/80 backdrop-blur-xl px-6 py-3 transition-colors duration-[var(--motion-slow)]"
 	data-testid="remote-toolbar"
 >
 	<Button
@@ -127,21 +127,27 @@
 
 	{#if fetchedLabel !== null}
 		<span
-			class="text-[11px] font-bold uppercase tracking-widest text-muted"
+			class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
 			data-testid="remote-toolbar-last-fetched"
 			aria-label={t('remoteToolbar.lastFetchedAria', { label: fetchedLabel })}
 		>
 			{t('remoteToolbar.lastFetched', { label: fetchedLabel })}
 		</span>
 	{:else}
-		<span class="text-[11px] font-bold uppercase tracking-widest text-muted" data-testid="remote-toolbar-last-fetched-pending">
+		<span
+			class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+			data-testid="remote-toolbar-last-fetched-pending"
+		>
 			{t('remoteToolbar.notYetFetched')}
 		</span>
 	{/if}
 
 	<div class="flex-1"></div>
 
-	<span class="text-[11px] font-bold uppercase tracking-widest text-muted" data-testid="remote-toolbar-status">
+	<span
+		class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+		data-testid="remote-toolbar-status"
+	>
 		{t('remoteToolbar.view', { n: issueCount })}
 	</span>
 
@@ -157,16 +163,27 @@
 </nav>
 
 {#if refreshError}
-	<div class="border-b border-hairline bg-surface-soft px-6 py-3">
-		<div role="alert" data-testid="remote-toolbar-error" class="flex items-center gap-3 px-4 py-3 bg-[var(--color-cb-down)]/10 text-ink border border-[var(--color-cb-down)] rounded-md text-sm">
+	<div class="border-b border-border bg-surface px-6 py-3">
+		<div
+			role="alert"
+			data-testid="remote-toolbar-error"
+			class="flex items-center gap-3 px-4 py-3 bg-error/10 text-foreground border border-error rounded-md text-sm"
+		>
 			<span class="flex-1">{refreshError}</span>
 			<button
 				type="button"
-				class="shrink-0 p-1 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+				class="shrink-0 p-1 rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 				aria-label={t('remoteToolbar.dismissErrorAria')}
 				onclick={() => (refreshError = null)}
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					></path></svg
+				>
 			</button>
 		</div>
 	</div>

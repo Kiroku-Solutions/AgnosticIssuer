@@ -81,6 +81,10 @@ function yamlValueFor(issue: Issue, yamlKey: string): unknown {
 			return issue.endDate ?? undefined;
 		case FIELD_TO_YAML.duration:
 			return issue.duration ?? undefined;
+		case FIELD_TO_YAML.sprintId:
+			return issue.sprintId ?? undefined;
+		case FIELD_TO_YAML.estimate:
+			return issue.estimate ?? undefined;
 		default:
 			return undefined;
 	}

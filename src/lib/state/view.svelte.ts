@@ -7,7 +7,7 @@
  * wrapping at the call site).
  *
  * Behaviour:
- *  - On construction we read `localStorage.nomad.md.view` and default to
+ *  - On construction we read `localStorage.quill.md.view` and default to
  *    `'list'` if missing / unrecognised. Unrecognised values are silently
  *    coerced to `'list'` (defensive — we never want a stale key to block
  *    the UI).
@@ -22,12 +22,12 @@
 
 import { assertBrowser } from './_context.ts';
 
-export type View = 'list' | 'kanban' | 'gantt';
+export type View = 'list' | 'kanban' | 'gantt' | 'backlog' | 'sprint';
 
 /** Allowed view values in declaration order. */
-const ALL_VIEWS: readonly View[] = ['list', 'kanban', 'gantt'];
+const ALL_VIEWS: readonly View[] = ['list', 'kanban', 'gantt', 'backlog', 'sprint'];
 
-const STORAGE_KEY = 'nomad.md.view';
+const STORAGE_KEY = 'quill.md.view';
 
 function isView(v: unknown): v is View {
 	return typeof v === 'string' && (ALL_VIEWS as readonly string[]).includes(v);

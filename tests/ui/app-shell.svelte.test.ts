@@ -70,9 +70,9 @@ vi.mock('$lib/state', () => ({
 // ESM rewriter cannot interop cleanly. A side-effect-free stub keeps
 // the test isolated from the filesystem / IndexedDB / network.
 vi.mock('$lib/adapters', () => ({
-	TRASH_DIRECTORY: '.nomad.md/.trash',
+	TRASH_DIRECTORY: '.quill.md/.trash',
 	emptyTrash: () => Promise.resolve(0),
-	moveToTrash: () => Promise.resolve('.nomad.md/.trash/test'),
+	moveToTrash: () => Promise.resolve('.quill.md/.trash/test'),
 	handleStore: {
 		removeRecent: () => Promise.resolve()
 	}

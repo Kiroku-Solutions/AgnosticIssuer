@@ -21,6 +21,10 @@
 	let { compact = false, class: extraClass = '', children }: Props = $props();
 </script>
 
-<div class="flex flex-col bg-canvas border border-hairline rounded-xl shadow-sm {compact ? 'p-4' : 'p-8'} {extraClass}">
+<div
+	class="flex flex-col bg-surface border border-border rounded-xl shadow-sm transition-all duration-[var(--motion-fast)] ease-in-out {compact
+		? 'p-4'
+		: 'p-8'} {extraClass}"
+>
 	{#if children}{@render children()}{/if}
 </div>

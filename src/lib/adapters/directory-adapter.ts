@@ -18,7 +18,7 @@
  * (ERS C-2).
  *
  * Paths are POSIX-style and relative to the adapter root, e.g.
- * `.nomad.md/config.json`. The service layer treats the adapter as opaque:
+ * `.quill.md/config.json`. The service layer treats the adapter as opaque:
  * it never sees a `FileSystemDirectoryHandle` or any other browser-specific
  * type.
  *

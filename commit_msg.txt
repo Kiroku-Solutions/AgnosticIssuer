@@ -1,0 +1,26 @@
+feat: comprehensive i18n, agile views, and branding update
+
+This commit encompasses a series of major changes across the codebase, touching ~125 files, focused on three core areas:
+
+1. Internationalization (i18n) [Native Svelte 5 Runes]:
+- Created `src/lib/ui/i18n/` structure to house strongly-typed dictionaries.
+- Implemented `en.ts` and `es.ts` translations for the entire UI surface.
+- Refactored `strings.ts` to consume the new `I18nStore` (`store.svelte.ts`) dynamically, maintaining the existing `t()` signature but adding reactivity.
+- Updated `SettingsPanel.svelte` with a language selector, persisting choices in `localStorage`.
+- Adjusted testing suite (`tests/ui/strings.test.ts`) to force `en` mode during vitest execution.
+
+2. Agile Methodology Tracking & Views:
+- Created new specialized views for Scrum/Agile workflows: `SprintView.svelte` and `BacklogView.svelte`.
+- Updated `KanbanView.svelte` and `ListView.svelte` to accommodate Epic/Sprint grouping and metadata.
+- Implemented `FilterBar` logic updates for filtering issues based on new Agile properties.
+
+3. Branding & Global Refactoring (quill.md):
+- Replaced general references with the new `quill.md` branding.
+- Added `Bird.svg` as the new logo and swapped `favicon.svg`.
+- Documented findings on Agile and Scrum methodology states of the art in `docs/research/` folders.
+
+4. Tests & Adapters:
+- Refactored adapter tests (`tests/adapters/*`) and service tests (`tests/services/*`) to align with new string literals and states.
+- Enhanced a11y tests in `step-6.a11y.test.ts` to validate the new views and components without violations.
+
+Note: No configuration changes were pushed to external remotes.

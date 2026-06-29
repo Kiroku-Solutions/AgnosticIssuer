@@ -1,4 +1,4 @@
-# nomad\.md
+# quill\.md
 
 A markdown-based, local-first issue tracker that travels with your repository.
 

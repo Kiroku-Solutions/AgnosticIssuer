@@ -13,6 +13,7 @@
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
 	import Monitor from '@lucide/svelte/icons/monitor';
+	import Globe from '@lucide/svelte/icons/globe';
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import X from '@lucide/svelte/icons/x';
@@ -28,6 +29,12 @@
 		{ id: 'light', label: t('settings.themeLight'), icon: Sun },
 		{ id: 'dark', label: t('settings.themeDark'), icon: Moon },
 		{ id: 'system', label: t('settings.themeSystem'), icon: Monitor }
+	];
+
+	import { i18n, type Locale } from '$lib/ui/i18n/store.svelte';
+	const langOptions: ReadonlyArray<{ id: Locale; label: string }> = [
+		{ id: 'en', label: t('settings.languageEn') },
+		{ id: 'es', label: t('settings.languageEs') }
 	];
 
 	const corsProxy = $derived(stores.config.config?.remote.cors_proxy ?? '');
@@ -52,8 +59,6 @@
 			trashCount = 0;
 		}
 	}
-
-
 
 	$effect(() => {
 		if (!open) return;
@@ -101,32 +106,36 @@
 {#if open}
 	<button
 		type="button"
-		class="fixed inset-0 z-40 cursor-default backdrop-blur-sm bg-ink/40 transition-opacity duration-[var(--motion-base)]"
+		class="fixed inset-0 z-40 cursor-default backdrop-blur-sm bg-black/40 transition-opacity duration-[var(--motion-base)]"
 		aria-label={t('settings.backdropAria')}
 		onclick={() => stores.ui.closeSettings()}
 		data-testid="settings-backdrop"
 	></button>
 
 	<div
-		class="fixed inset-y-0 right-0 z-50 flex w-[28rem] max-w-full flex-col border-l border-hairline bg-canvas shadow-[0_0_40px_rgba(0,0,0,0.1)] transition-transform duration-[var(--motion-base)] ease-[var(--ease-out)]"
+		class="fixed inset-y-0 right-0 z-50 flex w-[28rem] max-w-full flex-col border-l border-border bg-background shadow-[0_0_40px_rgba(0,0,0,0.1)] transition-transform duration-[var(--motion-base)] ease-[var(--ease-out)]"
 		data-testid="settings-panel"
 		role="dialog"
 		aria-modal="true"
 		aria-label={t('settings.title')}
 	>
 		<div
-			class="flex items-center justify-between gap-3 border-b border-hairline px-6 py-4"
+			class="flex items-center justify-between gap-3 border-b border-border px-6 py-4"
 			data-testid="settings-header"
 		>
-			<h2 class="text-xl font-display font-semibold text-ink">{t('settings.title')}</h2>
-			<IconButton label={t('settings.closeAria')} onclick={() => stores.ui.closeSettings()} data-testid="settings-close">
+			<h2 class="text-xl font-display font-semibold text-foreground">{t('settings.title')}</h2>
+			<IconButton
+				label={t('settings.closeAria')}
+				onclick={() => stores.ui.closeSettings()}
+				data-testid="settings-close"
+			>
 				<X class="h-4 w-4" aria-hidden="true" />
 			</IconButton>
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 py-4">
 			<section class="flex flex-col gap-2" data-testid="settings-theme">
-				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 					{t('settings.themeHeading')}
 				</h3>
 				<div class="flex gap-2">
@@ -155,8 +164,32 @@
 				{/if}
 			</section>
 
+			<section class="mt-6 flex flex-col gap-2" data-testid="settings-language">
+				<h3
+					class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1"
+				>
+					<Globe class="h-3 w-3 inline-block" />
+					{t('settings.languageHeading')}
+				</h3>
+				<div class="flex gap-2">
+					{#each langOptions as opt (opt.id)}
+						{@const active = i18n.locale === opt.id}
+						<Button
+							variant={active ? 'primary' : 'secondary'}
+							size="sm"
+							onclick={() => (i18n.locale = opt.id)}
+							class="flex-1"
+							data-testid="settings-lang-{opt.id}"
+							aria-pressed={active}
+						>
+							<span>{opt.label}</span>
+						</Button>
+					{/each}
+				</div>
+			</section>
+
 			<section class="mt-6 flex flex-col gap-2" data-testid="settings-cors">
-				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 					{t('settings.corsHeading')}
 				</h3>
 				<Input
@@ -171,7 +204,7 @@
 			</section>
 
 			<section class="mt-6 flex flex-col gap-2" data-testid="settings-recent">
-				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 					{t('settings.recentHeading')}
 				</h3>
 				<Card compact>
@@ -180,7 +213,7 @@
 			</section>
 
 			<section class="mt-6 flex flex-col gap-3" data-testid="settings-commands">
-				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted">
+				<h3 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 					{t('settings.commandsHeading')}
 				</h3>
 				<div class="flex flex-wrap gap-2">

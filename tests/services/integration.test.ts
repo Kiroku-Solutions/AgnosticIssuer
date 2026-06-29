@@ -33,10 +33,12 @@ import { emptyTrash, moveToTrash, TRASH_DIRECTORY } from '$lib/adapters/trash';
 import type { Config, Issue, Template } from '$lib/types';
 
 const VALID_CONFIG: Config = {
+	product_goal: '',
+	definition_of_done: [],
 	statuses: [
-		{ id: 'open', name: 'Open', color: '#fff' },
-		{ id: 'in_progress', name: 'In Progress', color: '#0f0' },
-		{ id: 'done', name: 'Done', color: '#888' }
+		{ id: 'open', name: 'Open', color: '#fff', category: 'todo' },
+		{ id: 'in_progress', name: 'In Progress', color: '#0f0', category: 'doing' },
+		{ id: 'done', name: 'Done', color: '#888', category: 'done' }
 	],
 	default_status: 'open',
 	labels: [
@@ -85,15 +87,15 @@ async function seedFixtures(
 	fs: MemoryFsAdapter,
 	opts: { includeIssues?: number; includeTemplates?: Template[] } = {}
 ): Promise<void> {
-	await fs.writeTextFile('.nomad.md/config.json', JSON.stringify(VALID_CONFIG));
+	await fs.writeTextFile('.quill.md/config.json', JSON.stringify(VALID_CONFIG));
 	const templates = opts.includeTemplates ?? [VALID_TASK_TEMPLATE, VALID_BUG_TEMPLATE];
 	for (const t of templates) {
-		await fs.writeTextFile(`.nomad.md/templates/${t.id}.json`, JSON.stringify(t));
+		await fs.writeTextFile(`.quill.md/templates/${t.id}.json`, JSON.stringify(t));
 	}
 	if (opts.includeIssues && opts.includeIssues > 0) {
 		for (let i = 1; i <= opts.includeIssues; i++) {
 			const md = await renderFixtureIssue(i, `Issue ${i}`);
-			await fs.writeTextFile(`.nomad.md/issues/${buildIssueFilename(i, `Issue ${i}`)}`, md);
+			await fs.writeTextFile(`.quill.md/issues/${buildIssueFilename(i, `Issue ${i}`)}`, md);
 		}
 	}
 }
@@ -113,6 +115,8 @@ async function renderFixtureIssue(id: number, title: string): Promise<string> {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [{ name: 'Description', markdown: `Body of ${title}.` }],
@@ -167,6 +171,8 @@ describe('integration — create → save → re-read', () => {
 		// 2. Compose a new issue from a template (task) + the loaded config.
 		const title = 'Add login screen';
 		const newIssue: Issue = {
+			sprintId: null,
+			estimate: null,
 			id: nextId,
 			title,
 			author: 'jane',
@@ -192,7 +198,7 @@ describe('integration — create → save → re-read', () => {
 		// 3. Serialize and write through the adapter.
 		const serialized = await serializeIssue(newIssue);
 		const filename = buildIssueFilename(newIssue.id, newIssue.title);
-		const fullPath = `.nomad.md/issues/${filename}`;
+		const fullPath = `.quill.md/issues/${filename}`;
 		await fs.writeTextFile(fullPath, serialized);
 
 		// 4. Re-read the directory — the new file must appear.
@@ -263,7 +269,7 @@ describe('integration — delete (move-to-trash)', () => {
 		const target = before[0]!;
 		const trashPath = await moveToTrash(fs, target.sourcePath);
 
-		// The trash path is under .nomad.md/.trash/<timestamp>-<filename>
+		// The trash path is under .quill.md/.trash/<timestamp>-<filename>
 		expect(trashPath.startsWith(`${TRASH_DIRECTORY}/`)).toBe(true);
 		expect(trashPath).toContain(target.sourcePath.split('/').pop());
 
@@ -279,7 +285,7 @@ describe('integration — delete (move-to-trash)', () => {
 	});
 
 	it('emptyTrash clears the trash directory without touching issues outside it', async () => {
-		// 1. Keep one issue in `.nomad.md/issues/` (the "untouched" one).
+		// 1. Keep one issue in `.quill.md/issues/` (the "untouched" one).
 		// 2. Move the other one to trash.
 		// 3. Empty the trash.
 		// 4. Assert the kept issue is still present, and the trash is empty.
@@ -314,6 +320,8 @@ describe('integration — multi-template workflow', () => {
 		expect(bug).toBeDefined();
 
 		const taskIssue: Issue = {
+			sprintId: null,
+			estimate: null,
 			id: 1,
 			title: 'Implement login',
 			author: 'jane',
@@ -346,6 +354,8 @@ describe('integration — multi-template workflow', () => {
 			startDate: null,
 			endDate: null,
 			duration: null,
+			sprintId: null,
+			estimate: null,
 			integrityHash: null,
 			customFields: { severity: 'high' },
 			sections: [{ name: 'Description', markdown: 'bug body' }],
@@ -353,11 +363,11 @@ describe('integration — multi-template workflow', () => {
 		};
 
 		await fs.writeTextFile(
-			`.nomad.md/issues/${buildIssueFilename(taskIssue.id, taskIssue.title)}`,
+			`.quill.md/issues/${buildIssueFilename(taskIssue.id, taskIssue.title)}`,
 			await serializeIssue(taskIssue)
 		);
 		await fs.writeTextFile(
-			`.nomad.md/issues/${buildIssueFilename(bugIssue.id, bugIssue.title)}`,
+			`.quill.md/issues/${buildIssueFilename(bugIssue.id, bugIssue.title)}`,
 			await serializeIssue(bugIssue)
 		);
 
@@ -377,6 +387,8 @@ describe('integration — round-trip via serialize → write → read → parse'
 		await seedFixtures(fs);
 
 		const original: Issue = {
+			sprintId: null,
+			estimate: null,
 			id: 42,
 			title: 'Fix login redirect',
 			author: 'jane',
@@ -402,7 +414,7 @@ describe('integration — round-trip via serialize → write → read → parse'
 			integrityWarning: false
 		};
 
-		const path = `.nomad.md/issues/${buildIssueFilename(original.id, original.title)}`;
+		const path = `.quill.md/issues/${buildIssueFilename(original.id, original.title)}`;
 		await fs.writeTextFile(path, await serializeIssue(original));
 
 		const reloaded = await loadIssues(fs);

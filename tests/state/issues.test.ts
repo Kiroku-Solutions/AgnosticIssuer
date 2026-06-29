@@ -40,8 +40,8 @@ import type { Issue, LoadedIssue } from '$lib/types';
 
 const VALID_CONFIG = JSON.stringify({
 	statuses: [
-		{ id: 'open', name: 'Open', color: '#fff' },
-		{ id: 'closed', name: 'Closed', color: '#000' }
+		{ id: 'open', name: 'Open', color: '#fff', category: 'todo' },
+		{ id: 'closed', name: 'Closed', color: '#000', category: 'done' }
 	],
 	default_status: 'open',
 	labels: [],
@@ -86,6 +86,8 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [{ name: 'Description', markdown: 'Initial description.' }],
@@ -98,7 +100,7 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
 async function seedIssueFile(fs: MemoryFsAdapter, issue: Issue): Promise<void> {
 	const text = await serializeIssue(issue);
 	const padded = String(issue.id).padStart(4, '0');
-	await fs.writeTextFile(`.nomad.md/issues/${padded}-issue.md`, text);
+	await fs.writeTextFile(`.quill.md/issues/${padded}-issue.md`, text);
 }
 
 /** Wire up the three stores against the same adapter. */
@@ -107,9 +109,9 @@ async function makeStores(fs: MemoryFsAdapter): Promise<{
 	templates: ReturnType<typeof createTemplatesStore>;
 	issues: ReturnType<typeof createIssuesStore>;
 }> {
-	await fs.writeTextFile('.nomad.md/config.json', VALID_CONFIG);
-	await fs.writeTextFile('.nomad.md/templates/bug.json', VALID_BUG);
-	await fs.writeTextFile('.nomad.md/templates/task.json', VALID_TASK);
+	await fs.writeTextFile('.quill.md/config.json', VALID_CONFIG);
+	await fs.writeTextFile('.quill.md/templates/bug.json', VALID_BUG);
+	await fs.writeTextFile('.quill.md/templates/task.json', VALID_TASK);
 
 	const config = createConfigStore(() => fs);
 	const templates = createTemplatesStore(() => fs);
@@ -155,7 +157,7 @@ describe('createIssuesStore — load partial failure', () => {
 		// content and produces an issue with all-default fields and no hash,
 		// which trips `integrityWarning: true`.
 		await fs.writeTextFile(
-			'.nomad.md/issues/0002-bad.md',
+			'.quill.md/issues/0002-bad.md',
 			'<!-- [SECTION_START: Description] -->\nbroken\n<!-- [SECTION_END: Description] -->\n'
 		);
 
@@ -169,7 +171,7 @@ describe('createIssuesStore — load partial failure', () => {
 		// produce a positive id.
 		const warned = issues.integrityWarnings[0];
 		expect(warned).toBeDefined();
-		expect(warned?.sourcePath).toBe('.nomad.md/issues/0002-bad.md');
+		expect(warned?.sourcePath).toBe('.quill.md/issues/0002-bad.md');
 		expect(warned?.issue.integrityWarning).toBe(true);
 	});
 });
@@ -189,8 +191,8 @@ describe('createIssuesStore — create', () => {
 		expect(id2).toBe(2);
 
 		const snap = fs.snapshot();
-		expect(snap.files['.nomad.md/issues/0001-foo.md']).toBeDefined();
-		expect(snap.files['.nomad.md/issues/0002-bar.md']).toBeDefined();
+		expect(snap.files['.quill.md/issues/0001-foo.md']).toBeDefined();
+		expect(snap.files['.quill.md/issues/0002-bar.md']).toBeDefined();
 		expect(issues.issues).toHaveLength(2);
 	});
 });
@@ -202,17 +204,17 @@ describe('createIssuesStore — update', () => {
 	it('marks dirty but does not touch disk', async () => {
 		const fs = new MemoryFsAdapter();
 		const original = await serializeIssue(makeIssue({ id: 1, title: 'Original' }));
-		await fs.writeTextFile('.nomad.md/issues/0001-original.md', original);
+		await fs.writeTextFile('.quill.md/issues/0001-original.md', original);
 
 		const { issues } = await makeStores(fs);
 		await issues.load();
-		const before = fs.snapshot().files['.nomad.md/issues/0001-original.md'];
+		const before = fs.snapshot().files['.quill.md/issues/0001-original.md'];
 		expect(before).toBeDefined();
 
 		issues.update(1, { title: 'Renamed' });
 		expect(issues.dirty.has(1)).toBe(true);
 
-		const after = fs.snapshot().files['.nomad.md/issues/0001-original.md'];
+		const after = fs.snapshot().files['.quill.md/issues/0001-original.md'];
 		expect(after).toBe(before);
 		expect(issues.issues[0]?.issue.title).toBe('Renamed');
 	});
@@ -296,11 +298,11 @@ describe('createIssuesStore — remove', () => {
 		// seedIssueFile names the file `<padded>-issue.md`, so the trashed
 		// file should follow ERS §6.5: `<timestamp>-<id>-<slug>.md`.
 		// The issue has id=1 and title="Doomed still" (slug: doomed-still).
-		const originalPath = '.nomad.md/issues/0001-issue.md';
+		const originalPath = '.quill.md/issues/0001-issue.md';
 		expect(snap.files[originalPath]).toBeUndefined();
-		const trashFiles = Object.keys(snap.files).filter((p) => p.startsWith('.nomad.md/.trash/'));
+		const trashFiles = Object.keys(snap.files).filter((p) => p.startsWith('.quill.md/.trash/'));
 		expect(trashFiles).toHaveLength(1);
-		expect(trashFiles[0]).toMatch(/\.nomad\.md\/\.trash\/\d+-1-doomed-still\.md$/);
+		expect(trashFiles[0]).toMatch(/\.quill\.md\/\.trash\/\d+-1-doomed-still\.md$/);
 	});
 });
 
@@ -369,11 +371,11 @@ describe('createIssuesStore — discard', () => {
 		await issues.load();
 		issues.update(1, { title: 'Y' });
 		expect(issues.dirty.has(1)).toBe(true);
-		const before = fs.snapshot().files['.nomad.md/issues/0001-x.md'];
+		const before = fs.snapshot().files['.quill.md/issues/0001-x.md'];
 
 		issues.discard(1);
 		expect(issues.dirty.has(1)).toBe(false);
-		const after = fs.snapshot().files['.nomad.md/issues/0001-x.md'];
+		const after = fs.snapshot().files['.quill.md/issues/0001-x.md'];
 		expect(after).toBe(before);
 	});
 });
@@ -392,7 +394,7 @@ describe('createIssuesStore — integrityWarnings', () => {
 		const realHash = await computeIntegrityHash(canonical);
 		const text = await serializeIssue(issue);
 		const tampered = text.replace(realHash, 'sha256:' + '0'.repeat(64));
-		await fs.writeTextFile('.nomad.md/issues/0001-tampered.md', tampered);
+		await fs.writeTextFile('.quill.md/issues/0001-tampered.md', tampered);
 
 		const { issues } = await makeStores(fs);
 		await issues.load();
@@ -502,8 +504,8 @@ describe('createIssuesStore — byStatus with unknown status', () => {
 describe('createIssuesStore — validate on unloaded store', () => {
 	it('returns [] (does not throw) when called before load()', async () => {
 		const fs = new MemoryFsAdapter();
-		await fs.writeTextFile('.nomad.md/config.json', VALID_CONFIG);
-		await fs.writeTextFile('.nomad.md/templates/bug.json', VALID_BUG);
+		await fs.writeTextFile('.quill.md/config.json', VALID_CONFIG);
+		await fs.writeTextFile('.quill.md/templates/bug.json', VALID_BUG);
 
 		const config = createConfigStore(() => fs);
 		const templates = createTemplatesStore(() => fs);

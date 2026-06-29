@@ -96,8 +96,8 @@ describe('issuePath', () => {
 		expect(issuePath(42, 'Fix login redirect!')).toBe(`${ISSUES_DIR}/0042-fix-login-redirect.md`);
 	});
 
-	it('exposes ISSUES_DIR as ".nomad.md/issues"', () => {
-		expect(ISSUES_DIR).toBe('.nomad.md/issues');
+	it('exposes ISSUES_DIR as ".quill.md/issues"', () => {
+		expect(ISSUES_DIR).toBe('.quill.md/issues');
 	});
 });
 
@@ -116,7 +116,7 @@ describe('createIssue — write + reparse round-trip', () => {
 
 		expect(li.issue.id).toBe(1);
 		expect(li.issue.title).toBe('New thing');
-		expect(li.sourcePath).toBe('.nomad.md/issues/0001-new-thing.md');
+		expect(li.sourcePath).toBe('.quill.md/issues/0001-new-thing.md');
 
 		// The file must exist on disk after the call.
 		const onDisk = await fs.readTextFile(li.sourcePath);
@@ -165,6 +165,8 @@ describe('saveIssue — overwrite + last-write-wins', () => {
 			startDate: null,
 			endDate: null,
 			duration: null,
+			sprintId: null,
+			estimate: null,
 			integrityHash: null,
 			customFields: {},
 			sections: [],
@@ -173,7 +175,7 @@ describe('saveIssue — overwrite + last-write-wins', () => {
 	}
 
 	it('overwrites an existing file in place (same sourcePath)', async () => {
-		const path = '.nomad.md/issues/0001-hello.md';
+		const path = '.quill.md/issues/0001-hello.md';
 		const li1 = await saveIssue(fs, baseIssue(), path);
 		expect(li1.issue.title).toBe('Hello');
 
@@ -192,7 +194,7 @@ describe('saveIssue — overwrite + last-write-wins', () => {
 		// paths (per its docs); the service layer is expected to
 		// serialise. Here we await each save in turn to exercise the
 		// "last write wins" semantics deterministically.
-		const path = '.nomad.md/issues/0001-hello.md';
+		const path = '.quill.md/issues/0001-hello.md';
 		await saveIssue(fs, { ...baseIssue(), title: 'First' }, path);
 		await saveIssue(fs, { ...baseIssue(), title: 'Second' }, path);
 		await saveIssue(fs, { ...baseIssue(), title: 'Third' }, path);

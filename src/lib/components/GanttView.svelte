@@ -55,7 +55,7 @@
 
 	const derivedGanttData = $derived(
 		(() => {
-			const all = issues.issues;
+			const all = Array.from(issues.byId.values());
 			const f = filter.filter;
 			const groupBy =
 				(
@@ -239,7 +239,7 @@
 	{#if isEmpty}
 		<EmptyState title={t('gantt.emptyTitle')} body={t('gantt.emptyBody')} />
 	{:else}
-		<div class="overflow-x-auto rounded-xl border border-hairline bg-canvas shadow-sm">
+		<div class="overflow-x-auto rounded-xl border border-border bg-background shadow-sm">
 			<svg
 				aria-roledescription={t('gantt.roleDescription')}
 				aria-label={t('gantt.ariaLabel')}
@@ -348,11 +348,13 @@
 		</div>
 	{/if}
 
-	<details class="rounded-xl border border-hairline bg-surface-soft p-5 text-sm mt-8">
-		<summary class="cursor-pointer font-bold text-ink">{t('gantt.fallbackSummary')}</summary>
-		<div class="mt-4 overflow-x-auto border border-hairline rounded-lg bg-canvas shadow-sm">
+	<details class="rounded-xl border border-border bg-surface p-5 text-sm mt-8">
+		<summary class="cursor-pointer font-bold text-foreground">{t('gantt.fallbackSummary')}</summary>
+		<div class="mt-4 overflow-x-auto border border-border rounded-lg bg-background shadow-sm">
 			<table class="w-full text-left text-sm whitespace-nowrap">
-				<thead class="bg-surface-soft border-b border-hairline text-[11px] font-bold uppercase tracking-widest text-muted">
+				<thead
+					class="bg-surface border-b border-border text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+				>
 					<tr>
 						<th class="px-4 py-3">{t('gantt.fallbackHeaders.id')}</th>
 						<th class="px-4 py-3">{t('gantt.fallbackHeaders.title')}</th>
@@ -365,8 +367,13 @@
 				</thead>
 				<tbody class="divide-y divide-hairline">
 					{#each bars as bar (bar.id)}
-						<tr class="hover:bg-surface-soft transition-colors cursor-pointer text-ink" onclick={() => open(bar.id)}>
-							<td class="font-mono text-xs text-muted px-4 py-3">{bar.id.toString().padStart(4, '0')}</td>
+						<tr
+							class="hover:bg-surface transition-colors cursor-pointer text-foreground"
+							onclick={() => open(bar.id)}
+						>
+							<td class="font-mono text-xs text-muted-foreground px-4 py-3"
+								>{bar.id.toString().padStart(4, '0')}</td
+							>
 							<td class="px-4 py-3">{bar.title}</td>
 							<td class="px-4 py-3">{bar.type}</td>
 							<td class="px-4 py-3">{bar.status}</td>
@@ -380,7 +387,7 @@
 					{/each}
 					{#each undated as li (li.issue.id)}
 						<tr
-							class="hover:bg-surface-soft transition-colors cursor-pointer text-muted"
+							class="hover:bg-surface transition-colors cursor-pointer text-muted-foreground"
 							onclick={() => open(brandIssueId(li.issue.id))}
 						>
 							<td class="font-mono text-xs px-4 py-3">{li.issue.id.toString().padStart(4, '0')}</td>
@@ -393,7 +400,9 @@
 					{/each}
 					{#if bars.length === 0 && undated.length === 0}
 						<tr>
-							<td colspan="7" class="py-12 text-center text-muted font-medium italic">{t('gantt.fallbackEmpty')}</td>
+							<td colspan="7" class="py-12 text-center text-muted-foreground font-medium italic"
+								>{t('gantt.fallbackEmpty')}</td
+							>
 						</tr>
 					{/if}
 				</tbody>

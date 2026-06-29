@@ -75,7 +75,7 @@
 		await stores.mode.openLocalFolder(record.handle);
 		await Promise.all([stores.config.load(), stores.templates.load()]);
 		await stores.issues.load();
-		
+
 		if (stores.config.config === null) {
 			await goto(resolve('/wizard'));
 		} else {
@@ -86,7 +86,7 @@
 
 {#if visible.length > 0}
 	<section data-testid="recent-folders" class="flex flex-col gap-2">
-		<h2 class="text-[11px] font-bold uppercase tracking-widest text-muted">
+		<h2 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 			{t('home.recentFolders.title')}
 		</h2>
 		<ul class="flex flex-col gap-1" role="list">
@@ -95,7 +95,7 @@
 				<li
 					data-testid="recent-folder-row"
 					data-record-id={record.id}
-					class="flex items-center gap-3 rounded-md border border-transparent px-2 py-2 hover:bg-surface-soft transition-colors focus-within:border-primary"
+					class="flex items-center gap-3 rounded-md border border-transparent px-2 py-2 hover:bg-surface transition-colors focus-within:border-primary"
 				>
 					<Folder class="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
 					<button

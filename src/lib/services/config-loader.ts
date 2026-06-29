@@ -1,7 +1,7 @@
 import type { ReadOnlyDirectoryAdapter } from '../adapters/directory-adapter.ts';
 import type { Config } from '../types/index.ts';
 
-const CONFIG_PATH = '.nomad.md/config.json';
+const CONFIG_PATH = '.quill.md/config.json';
 
 function isString(value: unknown): value is string {
 	return typeof value === 'string' && value.length > 0;
@@ -70,11 +70,37 @@ function assertConfig(value: unknown): Config {
 	}
 	const v = value as Record<string, unknown>;
 
+	if (v['product_goal'] === undefined) {
+		v['product_goal'] = '';
+	} else if (typeof v['product_goal'] !== 'string') {
+		throw new Error('config.json: "product_goal" must be a string');
+	}
+
+	if (v['definition_of_done'] === undefined) {
+		v['definition_of_done'] = [];
+	} else if (!Array.isArray(v['definition_of_done'])) {
+		throw new Error('config.json: "definition_of_done" must be an array of strings');
+	} else {
+		for (let i = 0; i < (v['definition_of_done'] as unknown[]).length; i++) {
+			if (typeof (v['definition_of_done'] as unknown[])[i] !== 'string') {
+				throw new Error(`config.json: definition_of_done[${i}] must be a string`);
+			}
+		}
+	}
+
 	if (!Array.isArray(v['statuses'])) {
 		throw new Error('config.json: "statuses" must be an array');
 	}
 	for (let i = 0; i < (v['statuses'] as unknown[]).length; i++) {
-		assertCatalogEntry('statuses', i, (v['statuses'] as unknown[])[i], [['color', 'color']]);
+		const statusObj = (v['statuses'] as Record<string, unknown>[])[i];
+		if (statusObj['category'] === undefined) {
+			statusObj['category'] = 'todo';
+		} else if (!['todo', 'doing', 'done', 'cancelled'].includes(statusObj['category'] as string)) {
+			throw new Error(
+				`config.json: statuses[${i}].category must be 'todo', 'doing', 'done', or 'cancelled'`
+			);
+		}
+		assertCatalogEntry('statuses', i, statusObj, [['color', 'color']]);
 	}
 	if (!isString(v['default_status'])) {
 		throw new Error('config.json: "default_status" must be a non-empty string');
@@ -139,7 +165,7 @@ function assertConfig(value: unknown): Config {
 }
 
 /**
- * Load and validate `.nomad.md/config.json`.
+ * Load and validate `.quill.md/config.json`.
  *
  * Throws an actionable error if the file is missing or malformed (ERS FR-3).
  */
@@ -150,8 +176,8 @@ export async function loadConfig(adapter: ReadOnlyDirectoryAdapter): Promise<Con
 	} catch (cause) {
 		throw new Error(
 			`Could not read ${CONFIG_PATH}. ` +
-				'Make sure the selected folder contains a nomad.md setup ' +
-				'(a `.nomad.md/config.json` file). ' +
+				'Make sure the selected folder contains a quill.md setup ' +
+				'(a `.quill.md/config.json` file). ' +
 				`Underlying error: ${(cause as Error).message}`,
 			{ cause }
 		);

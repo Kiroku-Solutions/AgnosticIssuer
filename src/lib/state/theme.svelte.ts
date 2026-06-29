@@ -10,7 +10,7 @@
  *    The `theme` slot always resolves to the *effective* `'light' |
  *    'dark'` value so existing consumers (notably the locked
  *    `ThemeToggle.svelte`) keep working without changes.
- *  - On construction we read `localStorage.nomad.md.theme` first, then
+ *  - On construction we read `localStorage.quill.md.theme` first, then
  *    fall back to the OS-level `prefers-color-scheme` media query, then
  *    to `'light'` as a last resort (ERS FR-14).
  *  - `setTheme(t)` updates the preference slot, writes through to
@@ -47,7 +47,7 @@ const ALL_THEMES: readonly Theme[] = ['light', 'dark', 'system'];
 /** Allowed stored values — `'system'` is allowed (matches the user's
  * pick). The previous locked build only accepted `'light' | 'dark'`;
  * the wildcard below is forward-compatible. */
-const STORAGE_KEY = 'nomad.md.theme';
+const STORAGE_KEY = 'quill.md.theme';
 
 function isTheme(v: unknown): v is Theme {
 	return typeof v === 'string' && (ALL_THEMES as readonly string[]).includes(v);

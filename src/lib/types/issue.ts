@@ -59,6 +59,8 @@ export interface Issue {
 	startDate: string | null;
 	endDate: string | null;
 	duration: number | null;
+	sprintId: string | null;
+	estimate: number | null;
 	integrityHash: string | null;
 	customFields: Record<string, FrontmatterValue>;
 	sections: IssueSection[];
@@ -86,6 +88,8 @@ export const SYSTEM_FRONTMATTER_KEY_ORDER = [
 	'start_date',
 	'end_date',
 	'duration',
+	'sprint_id',
+	'estimate',
 	'integrity_hash'
 ] as const;
 
@@ -110,6 +114,8 @@ export interface FieldNameMap {
 	startDate: 'start_date';
 	endDate: 'end_date';
 	duration: 'duration';
+	sprintId: 'sprint_id';
+	estimate: 'estimate';
 	integrityHash: 'integrity_hash';
 }
 
@@ -127,6 +133,8 @@ export const FIELD_TO_YAML: FieldNameMap = {
 	startDate: 'start_date',
 	endDate: 'end_date',
 	duration: 'duration',
+	sprintId: 'sprint_id',
+	estimate: 'estimate',
 	integrityHash: 'integrity_hash'
 };
 

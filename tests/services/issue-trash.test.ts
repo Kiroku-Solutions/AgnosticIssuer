@@ -9,12 +9,12 @@
  *    - produces the ERS §6.5 format for a known id + title.
  *    - honours the explicit `now` parameter for deterministic tests.
  *  - `moveIssueToTrash`:
- *    - moves a file from `.nomad.md/issues/...` using the typed
+ *    - moves a file from `.quill.md/issues/...` using the typed
  *      `<timestamp>-<id>-<slug>.md` format.
  *    - removes the file from the source location after the move.
  *    - falls back to the adapter-level helper (UUID-suffixed) when
- *      the source path is not under `.nomad.md/issues/`.
- *  - `ISSUE_TRASH_DIRECTORY` is `.nomad.md/.trash`.
+ *      the source path is not under `.quill.md/issues/`.
+ *  - `ISSUE_TRASH_DIRECTORY` is `.quill.md/.trash`.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
@@ -25,7 +25,7 @@ import {
 } from '$lib/services/issue-trash';
 import type { Issue } from '$lib/types';
 
-const ISSUE_PATH = '.nomad.md/issues/0007-fix-login.md';
+const ISSUE_PATH = '.quill.md/issues/0007-fix-login.md';
 
 function makeIssue(id = 7, title = 'Fix login'): Pick<Issue, 'id' | 'title'> {
 	return { id, title };
@@ -34,19 +34,19 @@ function makeIssue(id = 7, title = 'Fix login'): Pick<Issue, 'id' | 'title'> {
 describe('trashedIssuePath (pure helper)', () => {
 	it('produces the ERS §6.5 "<timestamp>-<id>-<slug>.md" format', () => {
 		const path = trashedIssuePath(makeIssue(), 1736899200000);
-		expect(path).toBe('.nomad.md/.trash/1736899200000-7-fix-login.md');
+		expect(path).toBe('.quill.md/.trash/1736899200000-7-fix-login.md');
 	});
 
 	it('honours an explicit `now` parameter for deterministic output', () => {
 		const a = trashedIssuePath(makeIssue(42, 'Sprint retro'), 1_700_000_000_000);
 		const b = trashedIssuePath(makeIssue(42, 'Sprint retro'), 1_800_000_000_000);
-		expect(a).toBe('.nomad.md/.trash/1700000000000-42-sprint-retro.md');
-		expect(b).toBe('.nomad.md/.trash/1800000000000-42-sprint-retro.md');
+		expect(a).toBe('.quill.md/.trash/1700000000000-42-sprint-retro.md');
+		expect(b).toBe('.quill.md/.trash/1800000000000-42-sprint-retro.md');
 		expect(a).not.toBe(b);
 	});
 
-	it('exposes ISSUE_TRASH_DIRECTORY as ".nomad.md/.trash"', () => {
-		expect(ISSUE_TRASH_DIRECTORY).toBe('.nomad.md/.trash');
+	it('exposes ISSUE_TRASH_DIRECTORY as ".quill.md/.trash"', () => {
+		expect(ISSUE_TRASH_DIRECTORY).toBe('.quill.md/.trash');
 	});
 });
 
@@ -70,8 +70,8 @@ describe('moveIssueToTrash — issue source path', () => {
 	it('removes the file from the source location after the move', async () => {
 		await moveIssueToTrash(fs, makeIssue(), ISSUE_PATH, 1_700_000_000_000);
 		// The source path no longer exists; the only file under
-		// `.nomad.md/issues/` is gone.
-		const issuesEntries = await fs.listDirectory('.nomad.md/issues');
+		// `.quill.md/issues/` is gone.
+		const issuesEntries = await fs.listDirectory('.quill.md/issues');
 		expect(issuesEntries).toEqual([]);
 	});
 });
@@ -83,10 +83,10 @@ describe('moveIssueToTrash — non-issue source path', () => {
 	});
 
 	it('falls back to the adapter-level helper (UUID-suffixed) for non-issue paths', async () => {
-		// A source path outside `.nomad.md/issues/` is treated as a
+		// A source path outside `.quill.md/issues/` is treated as a
 		// generic file: the helper defers to `adapters/trash.ts`, which
 		// uses `<timestamp>-<uuid8>-<originalName>` instead.
-		const stray = '.nomad.md/stray-attachment.txt';
+		const stray = '.quill.md/stray-attachment.txt';
 		await fs.writeTextFile(stray, 'not an issue');
 
 		const trashPath = await moveIssueToTrash(fs, makeIssue(), stray, 1_700_000_000_000);

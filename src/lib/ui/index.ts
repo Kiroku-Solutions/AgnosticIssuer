@@ -1,5 +1,5 @@
 /**
- * Primitive component library for nomad.md — sub-phase 6B.
+ * Primitive component library for quill.md — sub-phase 6B.
  *
  * These are thin Svelte 5 wrappers around daisyUI 5 classes. Hero
  * surfaces (TopBar, LeftRail, EditorPanel, Wizard, SettingsPanel,

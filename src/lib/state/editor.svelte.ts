@@ -230,6 +230,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
 			return activeId;
 		},
 		get draft() {
+			void revision;
 			return draft;
 		},
 		get isDirty() {

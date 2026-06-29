@@ -1,5 +1,5 @@
 <!--
-	LeftRail.svelte — sticky left sidebar for nomad.md (sub-phase 6C,
+	LeftRail.svelte — sticky left sidebar for quill.md (sub-phase 6C,
 	ERS §4.1.1 item 2).
 
 	Behaviour:
@@ -65,7 +65,7 @@
 		data-testid="leftrail"
 		data-collapsed="true"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width-collapsed)] flex-col items-center gap-3 border-r border-hairline bg-surface-soft py-4 md:flex transition-all duration-[var(--motion-base)]"
+		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width-collapsed)] flex-col items-center gap-3 border-r border-border bg-surface py-4 md:flex transition-all duration-[var(--motion-base)]"
 	>
 		<IconButton label={t('leftrail.expandNav')} onclick={() => (collapsed = false)}>
 			<PanelLeftOpen class="h-5 w-5" aria-hidden="true" />
@@ -84,10 +84,10 @@
 		data-testid="leftrail"
 		data-collapsed="false"
 		aria-label={t('leftrail.ariaLabel')}
-		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-hairline bg-surface-soft p-4 md:flex transition-all duration-[var(--motion-base)]"
+		class="sticky top-[var(--topbar-height)] z-20 hidden h-[calc(100vh-var(--topbar-height))] w-[var(--leftrail-width)] shrink-0 flex-col gap-4 border-r border-border bg-surface p-4 md:flex transition-all duration-[var(--motion-base)]"
 	>
 		<div class="flex items-center gap-2">
-			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted">
+			<h2 class="flex-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 				{t('leftrail.viewsHeading')}
 			</h2>
 			<IconButton label={t('leftrail.collapseNav')} onclick={() => (collapsed = true)}>
@@ -97,10 +97,36 @@
 
 		<Tabs tabs={viewTabs} value={stores.view.view} onchange={onViewChange} class="w-full" />
 
+		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+			{t('leftrail.planningHeading')}
+		</h2>
+		<div class="flex flex-col gap-1">
+			<button
+				type="button"
+				class="flex items-center justify-start gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors duration-[var(--motion-fast)] ease-out cursor-pointer {stores
+					.view.view === 'backlog'
+					? 'bg-primary text-primary-foreground'
+					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+				onclick={() => stores.view.setView('backlog')}
+			>
+				<span>{t('leftrail.view.backlog')}</span>
+			</button>
+			<button
+				type="button"
+				class="flex items-center justify-start gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors duration-[var(--motion-fast)] ease-out cursor-pointer {stores
+					.view.view === 'sprint'
+					? 'bg-primary text-primary-foreground'
+					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+				onclick={() => stores.view.setView('sprint')}
+			>
+				<span>{t('leftrail.view.sprint')}</span>
+			</button>
+		</div>
+
 		{#if warningCount > 0 && firstWarningId !== null}
 			<button
 				type="button"
-				class="flex items-center w-full cursor-pointer justify-start gap-2 py-2 px-3 rounded-md bg-[var(--color-cb-yellow)]/10 text-ink border border-[var(--color-cb-yellow)] text-sm font-semibold transition-colors hover:bg-[var(--color-cb-yellow)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+				class="flex items-center w-full cursor-pointer justify-start gap-2 py-2 px-3 rounded-md bg-[var(--color-cb-yellow)]/10 text-foreground border border-[var(--color-cb-yellow)] text-sm font-semibold transition-colors hover:bg-[var(--color-cb-yellow)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
 				onclick={reviewFirstWarning}
 				aria-label={t('leftrail.integrityReview', { n: warningCount })}
 			>
@@ -111,7 +137,7 @@
 			</button>
 		{/if}
 
-		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted">
+		<h2 class="mt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
 			{t('leftrail.filtersHeading')}
 		</h2>
 		<FilterBar />

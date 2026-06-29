@@ -69,7 +69,7 @@
 
 <dialog
 	bind:this={dialogEl}
-	class="fixed inset-0 m-auto bg-canvas/90 backdrop-blur-xl text-ink rounded-2xl border border-hairline p-8 shadow-2xl w-[calc(100%-2rem)] max-w-lg max-h-[85vh] overflow-y-auto backdrop:bg-black/30 backdrop:backdrop-blur-sm transition-all focus-visible:outline-none {extraClass}"
+	class="fixed inset-0 m-auto bg-background text-foreground rounded-2xl border border-border p-8 w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto backdrop:bg-black/50 transition-all focus-visible:outline-none {extraClass}"
 	onclose={onNativeClose}
 	onclick={onBackdropClick}
 	aria-modal="true"

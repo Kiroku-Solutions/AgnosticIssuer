@@ -51,25 +51,32 @@
 	<div
 		role="alert"
 		data-testid="integrity-warning-banner"
-		class="flex items-start gap-4 px-6 py-4 bg-[var(--color-cb-down)]/10 text-ink border-b border-[var(--color-cb-down)]"
+		class="flex items-start gap-4 px-6 py-4 bg-error/10 text-foreground border-b border-error"
 	>
-		<AlertTriangle class="h-5 w-5 shrink-0 text-[var(--color-cb-down)]" aria-hidden="true" />
+		<AlertTriangle class="h-5 w-5 shrink-0 text-error" aria-hidden="true" />
 		<span class="flex-1 text-sm font-sans mt-0.5">{t('integrity.bannerBody', { n: count })}</span>
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
-				class="text-xs font-semibold uppercase tracking-wider text-[var(--color-cb-down)] hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+				class="text-xs font-semibold uppercase tracking-wider text-error hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 				onclick={review}
 			>
 				{t('common.review')}
 			</button>
 			<button
 				type="button"
-				class="shrink-0 p-1 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ml-4"
+				class="shrink-0 p-1 rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ml-4"
 				aria-label={t('integrity.dismissAria')}
 				onclick={dismiss}
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					></path></svg
+				>
 			</button>
 		</div>
 	</div>

@@ -60,10 +60,14 @@
 		{checked}
 		{disabled}
 		aria-label={ariaLabel ?? undefined}
-		class="appearance-none w-5 h-5 border border-hairline rounded-full flex-shrink-0 bg-canvas transition-all duration-[var(--motion-fast)] ease-[var(--ease-out)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed checked:border-[6px] checked:border-primary checked:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+		class="appearance-none w-5 h-5 border border-border rounded-full flex-shrink-0 bg-background transition-all duration-[var(--motion-fast)] ease-[var(--ease-out)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed checked:border-[6px] checked:border-primary checked:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 		{...rest}
 	/>
 	{#if label}
-		<label for={id} class="font-sans text-sm text-ink cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed">{label}</label>
+		<label
+			for={id}
+			class="font-sans text-sm text-foreground cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+			>{label}</label
+		>
 	{/if}
 </div>

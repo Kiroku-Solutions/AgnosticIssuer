@@ -8,13 +8,13 @@
  * contain `$effect` (effects belong in components).
  *
  * Behaviour:
- *  - `load()` reads `.nomad.md/config.json` via the active adapter and
+ *  - `load()` reads `.quill.md/config.json` via the active adapter and
  *    populates `config`. The service throws on missing / malformed files;
  *    we surface the error in `state='error'` and `error`.
  *  - `refresh()` is a re-export of `load()` — kept as a separate verb so
  *    the UI can wire a refresh button without aliasing it to "load".
  *  - A missing config file (the user is opening a fresh repo with no
- *    `.nomad.md/`) results in `config: null` and `state: 'ready'`. The
+ *    `.quill.md/`) results in `config: null` and `state: 'ready'`. The
  *    FR-11 wizard handles the empty-repo case.
  *
  * Dependencies:
@@ -50,7 +50,7 @@ export interface ConfigStore {
 	/** Synonym for `load()`. */
 	readonly refresh: () => Promise<void>;
 	/**
-	 * Persist a new `Config` to `.nomad.md/config.json`. Validates the
+	 * Persist a new `Config` to `.quill.md/config.json`. Validates the
 	 * shape first; on validation failure, sets `status: 'error'` and
 	 * stores the error in `error` (no write is attempted). On write
 	 * failure, re-throws and leaves `config` untouched (no partial
@@ -129,11 +129,11 @@ export function createConfigStore(
 			}
 			// Missing file: treat as empty repo (FR-11). The loader wraps
 			// the original AdapterNotFoundError in a generic Error with a
-			// canonical message ("Could not read .nomad.md/config.json"),
+			// canonical message ("Could not read .quill.md/config.json"),
 			// so we match by message rather than instanceof. The cause
 			// chain is preserved for diagnostics.
 			const msg = cause instanceof Error ? cause.message : String(cause);
-			if (msg.startsWith('Could not read .nomad.md/config.json')) {
+			if (msg.startsWith('Could not read .quill.md/config.json')) {
 				config = null;
 				status = 'ready';
 				error = null;
@@ -151,7 +151,7 @@ export function createConfigStore(
 	}
 
 	/**
-	 * Persist a candidate `Config` to `.nomad.md/config.json`. The
+	 * Persist a candidate `Config` to `.quill.md/config.json`. The
 	 * active adapter is re-evaluated on every call so the latest
 	 * `localAdapter` / `remoteAdapter` binding wins.
 	 *
@@ -208,7 +208,7 @@ export function createConfigStore(
 		// writable, but the union type isn't fully eliminated because
 		// of how the function signature interacts with the provider's
 		// return type.
-		await (adapter as WritableDirectoryAdapter).writeTextFile('.nomad.md/config.json', text);
+		await (adapter as WritableDirectoryAdapter).writeTextFile('.quill.md/config.json', text);
 		config = validated;
 		status = 'ready';
 		error = null;

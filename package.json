@@ -1,5 +1,5 @@
 {
-	"name": "nomad-md",
+	"name": "quill-md",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
@@ -53,7 +53,6 @@
 		"prettier-plugin-tailwindcss": "^0.8.0",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
-		"svelte-dnd-action": "^0.9",
 		"tailwindcss": "^4.3.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1",

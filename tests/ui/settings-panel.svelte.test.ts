@@ -52,9 +52,9 @@ vi.mock('$lib/state', () => ({
 }));
 
 vi.mock('$lib/adapters', () => ({
-	TRASH_DIRECTORY: '.nomad.md/.trash',
+	TRASH_DIRECTORY: '.quill.md/.trash',
 	emptyTrash: () => Promise.resolve(0),
-	moveToTrash: () => Promise.resolve('.nomad.md/.trash/test'),
+	moveToTrash: () => Promise.resolve('.quill.md/.trash/test'),
 	handleStore: {
 		removeRecent: (id: string) => {
 			removedIds.push(id);
@@ -82,6 +82,8 @@ function buildStub(opts: {
 	settingsOpen?: boolean;
 }): StoreGraph {
 	const config: Config = {
+		product_goal: '',
+		definition_of_done: [],
 		statuses: [],
 		default_status: '',
 		labels: [],

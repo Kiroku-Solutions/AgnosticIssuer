@@ -13,44 +13,73 @@
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import Info from '@lucide/svelte/icons/info';
+	import CheckCircle from '@lucide/svelte/icons/check-circle-2';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import X from '@lucide/svelte/icons/x';
 
 	type Variant = 'info' | 'success' | 'warning' | 'error';
 
 	type Props = {
-		variant: Variant;
+		variant?: Variant;
 		onclose?: () => void;
 		class?: string;
 		children?: Snippet;
 	};
 
-	let { variant, onclose, class: extraClass = '', children }: Props = $props();
+	let { variant = 'info', onclose, class: extraClass = '', children }: Props = $props();
 
-	const variantClass = $derived(
+	const config = $derived(
 		variant === 'error'
-			? 'bg-[var(--color-cb-down)]/10 border-[var(--color-cb-down)] text-ink'
+			? {
+					bg: 'bg-error/5',
+					border: 'border-error/20 border-l-error',
+					icon: AlertCircle,
+					iconColor: 'text-error'
+				}
 			: variant === 'warning'
-				? 'bg-[var(--color-cb-yellow)]/10 border-[var(--color-cb-yellow)] text-ink'
+				? {
+						bg: 'bg-warning/5',
+						border: 'border-warning/20 border-l-warning',
+						icon: AlertTriangle,
+						iconColor: 'text-warning'
+					}
 				: variant === 'success'
-					? 'bg-[var(--color-cb-up)]/10 border-[var(--color-cb-up)] text-ink'
-					: 'bg-surface-strong border-hairline text-ink'
+					? {
+							bg: 'bg-success/5',
+							border: 'border-success/20 border-l-success',
+							icon: CheckCircle,
+							iconColor: 'text-success'
+						}
+					: {
+							bg: 'bg-primary/5',
+							border: 'border-primary/20 border-l-primary',
+							icon: Info,
+							iconColor: 'text-primary'
+						}
 	);
+	const Icon = $derived(config.icon);
 </script>
 
 <div
 	role={variant === 'error' || variant === 'warning' ? 'alert' : 'status'}
-	class="flex items-start gap-4 p-4 rounded-xl border {variantClass} {extraClass}"
+	class="flex items-start gap-3 p-4 rounded-xl border border-l-4 shadow-sm {config.bg} {config.border} {extraClass} transition-all duration-[var(--motion-base)]"
 >
-	<div class="flex-1 font-sans text-sm">
+	<div class="mt-0.5 shrink-0 {config.iconColor}">
+		<Icon class="h-5 w-5" aria-hidden="true" />
+	</div>
+	<div class="flex-1 font-sans text-sm text-foreground/90 font-medium leading-relaxed">
 		{#if children}{@render children()}{/if}
 	</div>
 	{#if onclose}
 		<button
 			type="button"
 			aria-label="Close"
-			class="shrink-0 p-1 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+			class="shrink-0 p-1.5 -m-1.5 rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 			onclick={onclose}
 		>
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+			<X class="w-4 h-4" aria-hidden="true" />
 		</button>
 	{/if}
 </div>

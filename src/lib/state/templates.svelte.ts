@@ -10,7 +10,7 @@
  * plain `$state` scalars.
  *
  * Behaviour:
- *  - `load()` reads every `*.json` file under `.nomad.md/templates/` via
+ *  - `load()` reads every `*.json` file under `.quill.md/templates/` via
  *    the active adapter and replaces `templates` atomically. The list is
  *    already sorted by `t.id` by the service.
  *  - `byType` is a `Map<id, Template>` derived from `templates` so the
@@ -117,14 +117,14 @@ export function createTemplatesStore(
 			}
 			// Missing templates directory: treat as empty (FR-11 wizard path).
 			// `loadTemplates` wraps the underlying `listDirectory` rejection
-			// with a canonical "Could not list .nomad.md/templates:" prefix;
+			// with a canonical "Could not list .quill.md/templates:" prefix;
 			// the FSA-backed LocalFsAdapter throws ENOENT, the remote adapter
 			// throws a similar 404. Both end up wrapped in this message. We
 			// match by message rather than instanceof so the store does not
 			// depend on adapter error types. The original cause is preserved
 			// on the Error instance for diagnostics.
 			const msg = cause instanceof Error ? cause.message : String(cause);
-			if (msg.startsWith('Could not list .nomad.md/templates:')) {
+			if (msg.startsWith('Could not list .quill.md/templates:')) {
 				templates = [];
 				status = 'ready';
 				error = null;

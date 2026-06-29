@@ -27,7 +27,7 @@
 
 <div
 	role="status"
-	class="flex flex-col items-center justify-center gap-3 rounded-xl border border-hairline bg-canvas p-12 text-center {extraClass}"
+	class="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-background p-12 text-center {extraClass}"
 >
 	<svg
 		aria-hidden="true"
@@ -36,7 +36,7 @@
 		fill="none"
 		stroke="currentColor"
 		stroke-width="1.5"
-		class="h-12 w-12 text-muted"
+		class="h-12 w-12 text-muted-foreground"
 	>
 		<path
 			stroke-linecap="round"
@@ -44,9 +44,9 @@
 			d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"
 		/>
 	</svg>
-	<h2 class="text-xl font-display text-ink mt-2">{title}</h2>
+	<h2 class="text-xl font-display text-foreground mt-2">{title}</h2>
 	{#if body}
-		<p class="max-w-md text-base text-muted">{body}</p>
+		<p class="max-w-md text-base text-muted-foreground">{body}</p>
 	{/if}
 	{#if action}
 		<Button class="mt-4" onclick={action.onselect}>

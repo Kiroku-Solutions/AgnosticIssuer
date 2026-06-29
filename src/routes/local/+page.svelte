@@ -23,6 +23,8 @@
 	import ListView from '$lib/components/ListView.svelte';
 	import KanbanView from '$lib/components/KanbanView.svelte';
 	import GanttView from '$lib/components/GanttView.svelte';
+	import BacklogView from '$lib/components/BacklogView.svelte';
+	import SprintView from '$lib/components/SprintView.svelte';
 	import EditorPanel from '$lib/components/EditorPanel.svelte';
 	import FilterUrlSync from '$lib/components/FilterUrlSync.svelte';
 	import LocalToolbar from '$lib/components/LocalToolbar.svelte';
@@ -49,6 +51,10 @@
 			<KanbanView />
 		{:else if stores.view.view === 'gantt'}
 			<GanttView />
+		{:else if stores.view.view === 'backlog'}
+			<BacklogView />
+		{:else if stores.view.view === 'sprint'}
+			<SprintView />
 		{/if}
 	</div>
 

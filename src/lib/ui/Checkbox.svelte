@@ -47,12 +47,16 @@
 		{id}
 		type="checkbox"
 		aria-label={ariaLabel ?? undefined}
-		class="appearance-none w-5 h-5 border border-hairline rounded-sm flex-shrink-0 bg-canvas transition-all duration-[var(--motion-fast)] ease-[var(--ease-out)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed checked:bg-primary checked:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 bg-no-repeat bg-center bg-[length:12px_12px] checked:bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M10.5%203L4.5%209L1.5%206%22%20stroke%3D%22white%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')]"
+		class="appearance-none w-5 h-5 border border-border rounded-sm flex-shrink-0 bg-background transition-all duration-[var(--motion-fast)] ease-[var(--ease-out)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed checked:bg-primary checked:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 bg-no-repeat bg-center bg-[length:12px_12px] checked:bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M10.5%203L4.5%209L1.5%206%22%20stroke%3D%22white%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')]"
 		bind:checked
 		{disabled}
 		{...rest}
 	/>
 	{#if label}
-		<label for={id} class="font-sans text-sm text-ink cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed">{label}</label>
+		<label
+			for={id}
+			class="font-sans text-sm text-foreground cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+			>{label}</label
+		>
 	{/if}
 </div>

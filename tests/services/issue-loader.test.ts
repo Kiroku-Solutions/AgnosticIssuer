@@ -1,7 +1,7 @@
 /**
  * Tests for {@link loadIssues} (`src/lib/services/issue-loader.ts`).
  *
- * The loader is the read-path entry point for `.nomad.md/issues/*.md`.
+ * The loader is the read-path entry point for `.quill.md/issues/*.md`.
  * Coverage targets:
  *  - Empty directory → `[]`.
  *  - Non-existent directory → `[]` (the loader swallows `listDirectory`
@@ -39,6 +39,8 @@ function makeIssue(id: number, title: string): Issue {
 		startDate: null,
 		endDate: null,
 		duration: null,
+		sprintId: null,
+		estimate: null,
 		integrityHash: null,
 		customFields: {},
 		sections: [],
@@ -81,13 +83,13 @@ describe('loadIssues — happy path', () => {
 
 	it('loads a single valid issue and exposes sourcePath', async () => {
 		const text = await serializeIssue(makeIssue(1, 'Only issue'));
-		await fs.writeTextFile('.nomad.md/issues/0001-only-issue.md', text);
+		await fs.writeTextFile('.quill.md/issues/0001-only-issue.md', text);
 
 		const loaded = await loadIssues(fs);
 		expect(loaded).toHaveLength(1);
 		expect(loaded[0]?.issue.id).toBe(1);
 		expect(loaded[0]?.issue.title).toBe('Only issue');
-		expect(loaded[0]?.sourcePath).toBe('.nomad.md/issues/0001-only-issue.md');
+		expect(loaded[0]?.sourcePath).toBe('.quill.md/issues/0001-only-issue.md');
 		expect(loaded[0]?.issue.integrityWarning).toBe(false);
 	});
 
@@ -101,8 +103,8 @@ describe('loadIssues — happy path', () => {
 		// Tamper with the body so the recomputed hash does not match
 		// the stored one; the parser flags the result.
 		const tampered = badOriginal.replace('title: Bad', 'title: Tampered');
-		await fs.writeTextFile('.nomad.md/issues/0001-good.md', good);
-		await fs.writeTextFile('.nomad.md/issues/0002-bad.md', tampered);
+		await fs.writeTextFile('.quill.md/issues/0001-good.md', good);
+		await fs.writeTextFile('.quill.md/issues/0002-bad.md', tampered);
 
 		const loaded = await loadIssues(fs);
 		expect(loaded).toHaveLength(2);
@@ -116,11 +118,11 @@ describe('loadIssues — happy path', () => {
 
 	it('ignores non-`.md` files in the issues directory', async () => {
 		const good = await serializeIssue(makeIssue(1, 'Only md'));
-		await fs.writeTextFile('.nomad.md/issues/0001-only-md.md', good);
+		await fs.writeTextFile('.quill.md/issues/0001-only-md.md', good);
 		// Stray files in the directory are not picked up by the loader.
-		await fs.writeTextFile('.nomad.md/issues/notes.txt', 'ignore me');
-		await fs.writeTextFile('.nomad.md/issues/README', 'ignore me');
-		await fs.writeTextFile('.nomad.md/issues/.DS_Store', 'mac metadata');
+		await fs.writeTextFile('.quill.md/issues/notes.txt', 'ignore me');
+		await fs.writeTextFile('.quill.md/issues/README', 'ignore me');
+		await fs.writeTextFile('.quill.md/issues/.DS_Store', 'mac metadata');
 
 		const loaded = await loadIssues(fs);
 		expect(loaded).toHaveLength(1);
@@ -133,7 +135,7 @@ describe('loadIssues — happy path', () => {
 		for (const id of [3, 1, 2]) {
 			const text = await serializeIssue(makeIssue(id, `Issue ${id}`));
 			await fs.writeTextFile(
-				`.nomad.md/issues/${String(id).padStart(4, '0')}-issue-${id}.md`,
+				`.quill.md/issues/${String(id).padStart(4, '0')}-issue-${id}.md`,
 				text
 			);
 		}

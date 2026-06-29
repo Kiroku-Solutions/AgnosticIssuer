@@ -2,7 +2,7 @@
  * Tests for the config store.
  *
  * Coverage targets:
- *  - load() reads `.nomad.md/config.json` and populates `config`.
+ *  - load() reads `.quill.md/config.json` and populates `config`.
  *  - load() with a missing config (fresh repo) leaves `config: null` and
  *    `status: 'ready'` (FR-11 / wizard path).
  *  - load() with a malformed JSON file surfaces the error in `error`
@@ -17,7 +17,7 @@ import { createConfigStore } from '$lib/state';
 import { MemoryFsAdapter } from '$lib/adapters/memory-fs';
 
 const VALID_CONFIG = JSON.stringify({
-	statuses: [{ id: 'open', name: 'Open', color: '#fff' }],
+	statuses: [{ id: 'open', name: 'Open', color: '#fff', category: 'todo' }],
 	default_status: 'open',
 	labels: [{ id: 'security', name: 'Security', color: '#f00' }],
 	users: [{ id: 'jane', name: 'Jane' }],
@@ -30,7 +30,7 @@ describe('createConfigStore — happy path', () => {
 	let fs: MemoryFsAdapter;
 	beforeEach(async () => {
 		fs = new MemoryFsAdapter();
-		await fs.writeTextFile('.nomad.md/config.json', VALID_CONFIG);
+		await fs.writeTextFile('.quill.md/config.json', VALID_CONFIG);
 	});
 	afterEach(() => {});
 
@@ -65,7 +65,7 @@ describe('createConfigStore — missing file', () => {
 describe('createConfigStore — malformed file', () => {
 	it('surfaces the error and sets status=error', async () => {
 		const fs = new MemoryFsAdapter();
-		await fs.writeTextFile('.nomad.md/config.json', '{ not json');
+		await fs.writeTextFile('.quill.md/config.json', '{ not json');
 		const store = createConfigStore(() => fs);
 		await store.load();
 		expect(store.status).toBe('error');
@@ -82,7 +82,7 @@ describe('createConfigStore — supersede', () => {
 		// state reflects adapter 2.
 		const fs1 = new MemoryFsAdapter();
 		const fs2 = new MemoryFsAdapter();
-		await fs2.writeTextFile('.nomad.md/config.json', VALID_CONFIG);
+		await fs2.writeTextFile('.quill.md/config.json', VALID_CONFIG);
 
 		let currentAdapter: MemoryFsAdapter = fs1;
 		const store = createConfigStore(() => currentAdapter);

@@ -23,7 +23,7 @@
  *  - No `$effect` lives inside the store; effects belong in components.
  *
  * Behaviour:
- *  - `load()` reads every `*.md` file under `.nomad.md/issues/` via the
+ *  - `load()` reads every `*.md` file under `.quill.md/issues/` via the
  *    active adapter and replaces `issues` atomically. The loader is
  *    already lenient on per-file failure — malformed files end up in
  *    `issues` with `integrityWarning: true`. The store surfaces them via
@@ -41,7 +41,7 @@
  *    the cached `LoadedIssue`. Per-id serialisation via `pendingSaves`
  *    joins a second `save(id)` onto the in-flight promise instead of
  *    issuing a parallel write.
- *  - `remove(id)` moves the file to `.nomad.md/.trash/` via the trash
+ *  - `remove(id)` moves the file to `.quill.md/.trash/` via the trash
  *    helper. It does not permanently delete the file (FR-4 soft-delete).
  *
  * Dependencies:
@@ -197,7 +197,7 @@ export interface IssuesStore {
 	readonly save: (id: number) => Promise<void>;
 	/** Clear the dirty flag for an issue without writing. */
 	readonly discard: (id: number) => void;
-	/** Soft-delete: move the issue's file to `.nomad.md/.trash/`. */
+	/** Soft-delete: move the issue's file to `.quill.md/.trash/`. */
 	readonly remove: (id: number) => Promise<void>;
 	/** Validate the issue and return the error list (empty if valid). */
 	readonly validate: (id: number) => readonly ValidationError[];
@@ -396,7 +396,7 @@ export function createIssuesStore(
 			},
 			issues.map((li) => li.issue)
 		);
-		issues.push(loaded);
+		issues = [...issues, loaded];
 		// Brand on the way out: the service layer's `createIssue` returns a
 		// raw `number` from `nextIssueId`. The store is the only place that
 		// brands ids, so consumers never see a raw number that bypassed
@@ -462,34 +462,42 @@ export function createIssuesStore(
 
 	function doSave(id: number): Promise<void> {
 		return (async () => {
-			const loaded = findLoaded(id);
-			if (!loaded) {
-				throw new Error(`Cannot save: issue ${id} not found`);
-			}
-			const validationCtx = buildValidationContext();
-			const result = validateIssue(loaded.issue, validationCtx);
-			if (!result.ok) {
-				errors.set(id, result.errors);
-				bumpErrors();
-				throw new Error(
-					`Validation failed for issue ${id}: ${result.errors.map((e) => e.field).join(', ')}`
+			do {
+				// Clear dirty BEFORE yielding to async I/O. If a keystroke happens
+				// during the I/O, it will set dirty to true again, and the loop
+				// will do a second pass to flush it. This guarantees we don't drop
+				// keystrokes while maintaining a single in-flight promise reference.
+				if (dirty.delete(id)) bumpDirty();
+
+				const loaded = findLoaded(id);
+				if (!loaded) {
+					throw new Error(`Cannot save: issue ${id} not found`);
+				}
+				const validationCtx = buildValidationContext();
+				const result = validateIssue(loaded.issue, validationCtx);
+				if (!result.ok) {
+					errors.set(id, result.errors);
+					bumpErrors();
+					throw new Error(
+						`Validation failed for issue ${id}: ${result.errors.map((e) => e.field).join(', ')}`
+					);
+				}
+				// Clear any stale validation errors from a previous round.
+				if (errors.delete(id)) bumpErrors();
+				const adapter = adapterProvider();
+				if (!adapter) throw new Error(`Cannot save: no adapter bound`);
+
+				const refreshed = await saveIssue(
+					requireWritable(adapter),
+					loaded.issue,
+					loaded.sourcePath
 				);
-			}
-			// Clear any stale validation errors from a previous round.
-			if (errors.delete(id)) bumpErrors();
-			const adapter = adapterProvider();
-			if (!adapter) throw new Error(`Cannot save: no adapter bound`);
-			// Delegate serialize + write + reparse to the service layer.
-			// This restores the unidirectional state → service → adapter
-			// dependency the plan promised (closing the audit-flagged leak).
-			const refreshed = await saveIssue(requireWritable(adapter), loaded.issue, loaded.sourcePath);
-			// Splice the refreshed record into the issues array so the cache
-			// reflects what was actually written.
-			const idx = issues.findIndex((li) => li.issue.id === id);
-			if (idx >= 0) issues[idx] = refreshed;
-			if (dirty.delete(id)) bumpDirty();
-			// The on-disk state is now the snapshot — clear any stale one.
-			snapshots.delete(id);
+
+				const idx = issues.findIndex((li) => li.issue.id === id);
+				if (idx >= 0) issues[idx] = refreshed;
+
+				snapshots.delete(id);
+			} while (dirty.has(id));
 		})();
 	}
 
@@ -497,8 +505,10 @@ export function createIssuesStore(
 		const existing = pendingSaves.get(id);
 		if (existing) return existing;
 		const p = doSave(id).finally(() => {
-			pendingSaves.delete(id);
-			bumpPendingSaves();
+			if (pendingSaves.get(id) === p) {
+				pendingSaves.delete(id);
+				bumpPendingSaves();
+			}
 		});
 		pendingSaves.set(id, p);
 		bumpPendingSaves();

@@ -57,12 +57,12 @@ describe('createViewStore — defaults', () => {
 	});
 
 	it("defaults to 'list' when the stored value is unrecognised", () => {
-		const store = createViewStore(makeStorage({ 'nomad.md.view': 'mosaic' }));
+		const store = createViewStore(makeStorage({ 'quill.md.view': 'mosaic' }));
 		expect(store.view).toBe('list');
 	});
 
 	it('reads an existing valid value from localStorage', () => {
-		const store = createViewStore(makeStorage({ 'nomad.md.view': 'kanban' }));
+		const store = createViewStore(makeStorage({ 'quill.md.view': 'kanban' }));
 		expect(store.view).toBe('kanban');
 	});
 });
@@ -72,7 +72,7 @@ describe('createViewStore — setView persistence', () => {
 		const ls = makeStorage();
 		const a = createViewStore(ls);
 		a.setView('gantt');
-		expect(ls.getItem('nomad.md.view')).toBe('gantt');
+		expect(ls.getItem('quill.md.view')).toBe('gantt');
 
 		// Simulate a "reload" by building a new store against the same
 		// storage backend.
@@ -90,12 +90,12 @@ describe('createViewStore — setView persistence', () => {
 
 	it('does not write through the "coerce unknown" path on read', () => {
 		// A stale 'mosaic' value should not be overwritten on construction.
-		const ls = makeStorage({ 'nomad.md.view': 'mosaic' });
+		const ls = makeStorage({ 'quill.md.view': 'mosaic' });
 		const store = createViewStore(ls);
 		expect(store.view).toBe('list');
-		expect(ls.getItem('nomad.md.view')).toBe('mosaic');
+		expect(ls.getItem('quill.md.view')).toBe('mosaic');
 		// The first setView replaces it with a valid value.
 		store.setView('kanban');
-		expect(ls.getItem('nomad.md.view')).toBe('kanban');
+		expect(ls.getItem('quill.md.view')).toBe('kanban');
 	});
 });

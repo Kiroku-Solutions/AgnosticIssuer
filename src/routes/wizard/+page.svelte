@@ -3,7 +3,7 @@
 	re-skin).
 
 	Triggered when the home page's "Open local folder" flow detects a
-	missing `.nomad.md/config.json` — see `+page.svelte`. The route is
+	missing `.quill.md/config.json` — see `+page.svelte`. The route is
 	also reachable directly via `/wizard` for users who want to
 	re-run the wizard over an existing project (the route is tolerant
 	of an already-set-up repo and offers to leave existing files in
@@ -31,7 +31,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { Alert, Badge, Button, Card, Checkbox, Radio, Tooltip } from '$lib/ui';
+	import { Alert, Button, Card, Checkbox, Radio, Tooltip } from '$lib/ui';
 	import { t } from '$lib/ui/strings';
 	import { BUILT_IN_TEMPLATES } from '$lib/services/built-in-templates';
 	import { writeWizardSetup } from '$lib/services/wizard';
@@ -93,24 +93,7 @@
 	}
 </script>
 
-<div class="flex min-h-screen flex-col bg-canvas text-ink">
-	<div
-		aria-label={t('modeBadge.firstRunSetup')}
-		class="sticky top-0 z-30 flex h-[var(--topbar-height)] items-center gap-4 border-b border-hairline bg-surface-soft px-8 transition-colors duration-[var(--motion-slow)]"
-	>
-		<a
-			href={resolve('/')}
-			class="flex items-baseline gap-2 font-bold tracking-tight hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
-			aria-label={t('app.homeAria')}
-		>
-			<span class="text-lg">{t('app.name')}</span>
-			<span class="text-xs opacity-60">{t('app.version')}</span>
-		</a>
-		<Badge variant="primary" size="sm">{t('modeBadge.firstRunSetup')}</Badge>
-		<div class="flex-1"></div>
-		<Button variant="ghost" size="sm" onclick={cancel}>{t('wizard.cancel')}</Button>
-	</div>
-
+<div class="flex min-h-screen flex-col bg-background text-foreground">
 	<div class="flex-1 px-6 py-10">
 		<div class="mx-auto flex max-w-3xl flex-col gap-8">
 			<section>
