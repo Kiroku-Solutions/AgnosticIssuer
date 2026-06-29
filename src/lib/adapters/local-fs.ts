@@ -224,13 +224,13 @@ export class LocalFsAdapter implements DirectoryAdapter {
 
 		const { parent, name } = splitPath(normalized);
 		const parentHandle = await this.resolveDirectoryHandle(parent, true);
-		const tempName = `.tmp-${globalThis.crypto.randomUUID()}`;
-
-		let tempHandle: FileSystemFileHandle | undefined;
+		let fileHandle: FileSystemFileHandle | undefined;
 		try {
-			tempHandle = await parentHandle.getFileHandle(tempName, { create: true });
+			// Atomic rename is not supported by the local File System Access API.
+			// Write directly to the target file.
+			fileHandle = await parentHandle.getFileHandle(name, { create: true });
 
-			const writable = await tempHandle.createWritable();
+			const writable = await fileHandle.createWritable();
 			try {
 				await writable.write(contents);
 				await writable.close();
@@ -238,21 +238,7 @@ export class LocalFsAdapter implements DirectoryAdapter {
 				await writable.abort();
 				throw cause;
 			}
-
-			// Atomic rename: temp → final name.
-			// On POSIX rename(2) is atomic; on Windows MoveFileEx is atomic for
-			// same-volume moves. NFR-7: no partial state observable.
-			await parentHandle.move(tempName, name);
 		} catch (cause) {
-			// Best-effort cleanup of the temp file; original is untouched.
-			if (tempHandle !== undefined) {
-				try {
-					await parentHandle.removeEntry(tempName);
-				} catch {
-					// Ignore cleanup failures.
-				}
-			}
-
 			if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
 				throw new FsaPermissionError(this.handle.name, cause);
 			}
@@ -312,26 +298,11 @@ export class LocalFsAdapter implements DirectoryAdapter {
 		this.assertNotRoot(toNormalized);
 
 		const fromSplit = splitPath(fromNormalized);
-		const toSplit = splitPath(toNormalized);
-
-		if (fromSplit.parent === toSplit.parent) {
-			// Same parent: DirectoryHandle.move is atomic within a directory.
-			await this.requirePermission();
-			const parent = await this.resolveDirectoryHandle(fromSplit.parent, false);
-			try {
-				await parent.move(fromSplit.name, toSplit.name);
-			} catch (cause) {
-				if (cause instanceof DOMException && cause.name === 'NotFoundError') {
-					throw new AdapterNotFoundError(fromNormalized, cause);
-				}
-				throw cause;
-			}
-		} else {
-			// Different parent: read + write + remove. Not atomic across directories.
-			const content = await this.readTextFile(fromNormalized);
-			await this.writeTextFile(toNormalized, content);
-			await this.removeFile(fromNormalized);
-		}
+		// Different parent or same parent: read + write + remove.
+		// The standard Local File System Access API does not support move().
+		const content = await this.readTextFile(fromNormalized);
+		await this.writeTextFile(toNormalized, content);
+		await this.removeFile(fromNormalized);
 	}
 
 	// ---------------------------------------------------------------------------

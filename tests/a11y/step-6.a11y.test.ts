@@ -174,6 +174,7 @@ function buildStub(opts: {
 	recentHandles?: HandleRecord[];
 	issues?: LoadedIssue[];
 	activeEditorId?: number | null;
+	settingsOpen?: boolean;
 }): StoreGraph {
 	const loaded = opts.issues ?? [];
 	const integrityWarnings = Array.from({ length: opts.integrityCount ?? 0 }, (_, i) => ({
@@ -214,14 +215,17 @@ function buildStub(opts: {
 			switchFolder: () => Promise.resolve(null),
 			openRemote: () => Promise.resolve(),
 			refreshRemote: () => Promise.resolve(),
+			clearRemoteCache: () => Promise.resolve(),
 			signOut: () => Promise.resolve()
 		},
 		config: {
 			config: CONFIG,
 			status: 'ready',
 			error: null,
+			isReadOnly: false,
 			load: () => Promise.resolve(),
-			refresh: () => Promise.resolve()
+			refresh: () => Promise.resolve(),
+			save: () => Promise.resolve()
 		},
 		templates: {
 			templates: TEMPLATES,
@@ -284,6 +288,18 @@ function buildStub(opts: {
 			theme: 'light',
 			setTheme: () => {},
 			toggle: () => {}
+		},
+		ui: {
+			get settingsOpen() {
+				return opts.settingsOpen ?? false;
+			},
+			openSettings: () => {},
+			closeSettings: () => {},
+			toggleSettings: () => {},
+			editorOpen: false,
+			openEditor: () => {},
+			closeEditor: () => {},
+			toggleEditor: () => {}
 		}
 	};
 }
@@ -454,6 +470,38 @@ describe('Step 6 — accessibility audit (NFR-4)', () => {
 		expect(scan.serious).toBe(0);
 	});
 
+	it('local gantt view — every bar exposes an aria-describedby prose block (Step 8, NFR-4)', async () => {
+		// Step 8 close-out for the 6K follow-up. Each bar's
+		// `<g role="button">` must reference a hidden prose span
+		// with the full status / type / group / start / end
+		// information so screen-reader users can hear the same
+		// detail that a sighted user gets from the bar's visual
+		// tooltip.
+		activeStub = buildStub({
+			mode: 'local',
+			issues: [makeLoaded(1, 'open', 'First issue'), makeLoaded(2, 'in_progress', 'Second issue')]
+		});
+		render(AppShell, { mode: 'local' });
+		if (activeStub) (activeStub.view as { view: string }).view = 'gantt';
+		render(LocalPage);
+		adoptIntoMain();
+
+		const buttons = document.querySelectorAll<SVGGElement>('g[role="button"]');
+		expect(buttons.length).toBeGreaterThan(0);
+		for (const btn of buttons) {
+			const descId = btn.getAttribute('aria-describedby');
+			expect(descId, `bar missing aria-describedby: ${btn.outerHTML.slice(0, 120)}`).not.toBeNull();
+			const descEl = document.getElementById(descId as string);
+			expect(descEl, `aria-describedby target not found: ${descId}`).not.toBeNull();
+			// The hidden span must NOT be aria-hidden — screen readers
+			// must be able to read it.
+			expect(descEl?.getAttribute('aria-hidden')).toBeNull();
+			// And it must have substantive content (status / type /
+			// group / start / end).
+			expect((descEl?.textContent ?? '').length).toBeGreaterThan(10);
+		}
+	});
+
 	it('editor panel — no serious or critical axe violations', async () => {
 		const li = makeLoaded(1, 'open', 'A real issue');
 		activeStub = buildStub({
@@ -486,10 +534,11 @@ describe('Step 6 — accessibility audit (NFR-4)', () => {
 	it('settings panel — no serious or critical axe violations', async () => {
 		activeStub = buildStub({
 			mode: 'local',
-			recentHandles: [makeHandle('recent-1', 'acme-projects')]
+			recentHandles: [makeHandle('recent-1', 'acme-projects')],
+			settingsOpen: true
 		});
 		render(AppShell, { mode: 'home' });
-		render(SettingsPanel, { open: true, onclose: () => undefined });
+		render(SettingsPanel);
 
 		const scan = await scanSurface();
 		logSummary('settings', scan);
@@ -600,7 +649,7 @@ describe('Step 6 — accessibility audit (NFR-4)', () => {
 				adoptIntoMain();
 			} else if (c.route === 'settings') {
 				render(AppShell, { mode: 'home' });
-				render(SettingsPanel, { open: true, onclose: () => undefined });
+				render(SettingsPanel);
 			} else if (c.route === 'home') {
 				render(AppShell, { mode: 'home' });
 				render(Home);

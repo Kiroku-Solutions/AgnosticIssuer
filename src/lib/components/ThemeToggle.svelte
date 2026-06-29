@@ -17,7 +17,7 @@
 
 <button
 	type="button"
-	class="btn btn-ghost btn-sm"
+	class="p-2 rounded-md text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cb-blue)] focus-visible:ring-offset-2"
 	onclick={toggle}
 	aria-label={theme.theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
 >

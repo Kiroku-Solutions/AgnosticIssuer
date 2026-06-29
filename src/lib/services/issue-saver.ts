@@ -37,6 +37,8 @@ export interface CreateIssueInput {
 	readonly status?: string;
 	/** Optional set of `Issue.customFields` to seed. Keys not in the template are kept verbatim. */
 	readonly customFields?: Readonly<Record<string, unknown>>;
+	/** Optional list of sections to seed. Important for satisfying template section requirements. */
+	readonly sections?: ReadonlyArray<{ readonly name: string; readonly markdown: string }>;
 }
 
 /**
@@ -68,7 +70,7 @@ export function buildDefaultIssue(
 		// serializer narrows each value via `yamlValueFor` at write time,
 		// so we accept the wider type here and trust the boundary check.
 		customFields: (input.customFields ? { ...input.customFields } : {}) as Issue['customFields'],
-		sections: [],
+		sections: input.sections ? input.sections.map((s) => ({ ...s })) : [],
 		integrityWarning: false
 	};
 }

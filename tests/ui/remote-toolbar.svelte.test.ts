@@ -80,6 +80,7 @@ function buildStub(opts: {
 				refreshCalls.push(pat);
 				return opts.refreshImpl ? opts.refreshImpl(pat) : Promise.resolve();
 			},
+			clearRemoteCache: () => Promise.resolve(),
 			signOut: () => {
 				signOutCalls.push(Date.now());
 				return Promise.resolve();
@@ -89,8 +90,10 @@ function buildStub(opts: {
 			config: null,
 			status: 'idle',
 			error: null,
+			isReadOnly: true,
 			load: () => Promise.resolve(),
-			refresh: () => Promise.resolve()
+			refresh: () => Promise.resolve(),
+			save: () => Promise.resolve()
 		},
 		templates: {
 			templates: [],
@@ -149,6 +152,16 @@ function buildStub(opts: {
 			theme: 'light',
 			setTheme: () => {},
 			toggle: () => {}
+		},
+		ui: {
+			settingsOpen: false,
+			openSettings: () => {},
+			closeSettings: () => {},
+			toggleSettings: () => {},
+			editorOpen: false,
+			openEditor: () => {},
+			closeEditor: () => {},
+			toggleEditor: () => {}
 		}
 	};
 }

@@ -15,64 +15,58 @@
 		return cfg?.statuses?.map((s) => s.id) ?? [];
 	}
 
-	let q = $state(filter.filter.q ?? '');
-	let status = $state(filter.filter.status ?? '');
-	let type = $state(filter.filter.type ?? '');
+	const q = $derived(filter.filter.q ?? '');
+	const status = $derived(filter.filter.status ?? '');
+	const type = $derived(filter.filter.type ?? '');
 
-	$effect(() => {
-		filter.set({
-			q: q || undefined,
-			status: status || undefined,
-			type: type || undefined
-		});
-	});
+	function update(partial: Partial<typeof filter.filter>): void {
+		filter.set({ ...filter.filter, ...partial });
+	}
 
 	function clear(): void {
-		q = '';
-		status = '';
-		type = '';
 		filter.clear();
 	}
 </script>
 
-<div class="flex flex-wrap items-center gap-3 p-3 bg-base-200 rounded-md">
-	<label class="form-control">
-		<div class="label py-0">
-			<span class="label-text text-xs opacity-70">{t('filter.searchLabel')}</span>
-		</div>
+<div class="flex flex-col gap-4">
+	<label class="flex flex-col gap-1.5">
+		<span class="text-[11px] font-bold uppercase tracking-widest text-muted">{t('filter.searchLabel')}</span>
 		<input
 			type="search"
-			class="input input-bordered input-sm w-56"
+			class="w-full bg-canvas text-ink rounded-md border border-hairline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow placeholder-muted"
 			placeholder={t('filter.searchPlaceholder')}
-			bind:value={q}
+			value={q}
+			oninput={(e) => update({ q: e.currentTarget.value || undefined })}
 		/>
 	</label>
 
-	<label class="form-control">
-		<div class="label py-0">
-			<span class="label-text text-xs opacity-70">{t('filter.statusLabel')}</span>
+	<label class="flex flex-col gap-1.5">
+		<span class="text-[11px] font-bold uppercase tracking-widest text-muted">{t('filter.statusLabel')}</span>
+		<div class="relative w-full">
+			<select class="w-full appearance-none bg-canvas text-ink rounded-md border border-hairline pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" value={status} onchange={(e) => update({ status: e.currentTarget.value || undefined })}>
+				<option value="">{t('common.all')}</option>
+				{#each statuses as id (id)}
+					<option value={id}>{id}</option>
+				{/each}
+			</select>
+			<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted">
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+			</div>
 		</div>
-		<select class="select select-bordered select-sm w-40" bind:value={status}>
-			<option value="">{t('common.all')}</option>
-			{#each statuses as id (id)}
-				<option value={id}>{id}</option>
-			{/each}
-		</select>
 	</label>
 
-	<label class="form-control">
-		<div class="label py-0">
-			<span class="label-text text-xs opacity-70">{t('filter.typeLabel')}</span>
-		</div>
+	<label class="flex flex-col gap-1.5">
+		<span class="text-[11px] font-bold uppercase tracking-widest text-muted">{t('filter.typeLabel')}</span>
 		<input
 			type="text"
-			class="input input-bordered input-sm w-32"
+			class="w-full bg-canvas text-ink rounded-md border border-hairline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow placeholder-muted"
 			placeholder={t('filter.typePlaceholder')}
-			bind:value={type}
+			value={type}
+			oninput={(e) => update({ type: e.currentTarget.value || undefined })}
 		/>
 	</label>
 
-	<button type="button" class="btn btn-ghost btn-sm ml-auto" onclick={clear}
-		>{t('filter.clearButton')}</button
-	>
+	<button type="button" class="text-[11px] font-bold uppercase tracking-widest text-muted hover:text-ink transition-colors mt-1 w-fit" onclick={clear}>
+		{t('filter.clearButton')}
+	</button>
 </div>

@@ -79,6 +79,7 @@ function buildStub(opts: {
 	corsProxy?: string;
 	recentHandles?: HandleRecord[];
 	hasLocalAdapter?: boolean;
+	settingsOpen?: boolean;
 }): StoreGraph {
 	const config: Config = {
 		statuses: [],
@@ -112,14 +113,17 @@ function buildStub(opts: {
 			switchFolder: () => Promise.resolve(null),
 			openRemote: () => Promise.resolve(),
 			refreshRemote: () => Promise.resolve(),
+			clearRemoteCache: () => Promise.resolve(),
 			signOut: () => Promise.resolve()
 		},
 		config: {
 			config,
 			status: 'ready',
 			error: null,
+			isReadOnly: !opts.hasLocalAdapter,
 			load: () => Promise.resolve(),
-			refresh: () => Promise.resolve()
+			refresh: () => Promise.resolve(),
+			save: () => Promise.resolve()
 		},
 		templates: {
 			templates: [],
@@ -180,6 +184,18 @@ function buildStub(opts: {
 				setThemeCalls.push(t);
 			},
 			toggle: () => {}
+		},
+		ui: {
+			get settingsOpen() {
+				return opts.settingsOpen ?? true;
+			},
+			openSettings: () => {},
+			closeSettings: () => {},
+			toggleSettings: () => {},
+			editorOpen: false,
+			openEditor: () => {},
+			closeEditor: () => {},
+			toggleEditor: () => {}
 		}
 	};
 }
@@ -195,7 +211,7 @@ describe('SettingsPanel', () => {
 
 	function renderOpen(opts: Parameters<typeof buildStub>[0] = {}): void {
 		activeStub = buildStub(opts);
-		render(SettingsPanel, { open: true, onclose: () => undefined });
+		render(SettingsPanel);
 	}
 
 	it('renders the three-button theme picker', async () => {
@@ -270,8 +286,8 @@ describe('SettingsPanel', () => {
 	});
 
 	it('does not render the panel when open is false', async () => {
-		activeStub = buildStub({});
-		render(SettingsPanel, { open: false, onclose: () => undefined });
+		activeStub = buildStub({ settingsOpen: false });
+		render(SettingsPanel);
 
 		expect(page.getByTestId('settings-panel').elements()).toHaveLength(0);
 	});

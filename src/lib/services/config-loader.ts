@@ -53,6 +53,17 @@ function assertCatalogEntry(
 	}
 }
 
+/**
+ * Validate a `Config` shape and return the typed object on success.
+ *
+ * Public so the state layer can re-validate a candidate `Config` (e.g.
+ * before writing it back from the Settings panel) without re-reading
+ * the file. Throws an actionable error on the first violation.
+ */
+export function validateConfigShape(value: unknown): Config {
+	return assertConfig(value);
+}
+
 function assertConfig(value: unknown): Config {
 	if (!value || typeof value !== 'object') {
 		throw new Error('config.json must be a JSON object');

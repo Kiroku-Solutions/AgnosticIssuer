@@ -10,13 +10,22 @@
 # Policy choices (v0 — sub-phase 6L, audit carry-over):
 #  - `default-src 'self'` — strict default; only same-origin by
 #    default. Every directive below is an explicit carve-out.
-#  - `script-src 'self' 'unsafe-inline'` — v0 trade-off. The
-#    no-flash theme bootstrap in `src/app.html` is a single inline
-#    `<script>` that must run before first paint. `adapter-static`
-#    does not support per-build nonces, and `strict-dynamic` would
-#    require the same. `'unsafe-inline'` keeps the no-flash
-#    contract while we evaluate the per-build nonce follow-up
-#    (documented in `docs/audits/2026-06-23/step-6-csp.md`).
+#  - `script-src 'self' 'unsafe-inline' 'nonce-__CSP_NONCE__'` —
+#    v0 trade-off (no-flash inline `<script>` in `src/app.html`
+#    must run before first paint; `adapter-static` does not
+#    support per-build nonces natively, so we synthesise one in
+#    `scripts/add-sri.mjs` per `pnpm build`). The `'nonce-…'`
+#    token is replaced at build time with a random 128-bit hex
+#    value (`__CSP_NONCE__` is the placeholder). The no-flash
+#    `<script>` in `src/app.html` is stamped with the matching
+#    `nonce="…"` attribute (also by `add-sri.mjs`). When the
+#    deployment host honours `_headers` (Netlify, Cloudflare
+#    Pages) the nonce applies. For hosts that strip
+#    `_headers` (e.g. plain GitHub Pages) the
+#    `<meta http-equiv="Content-Security-Policy">` fallback in
+#    `src/app.html` keeps `'self' 'unsafe-inline'` and the
+#    inline script works without a nonce. See
+#    `docs/audits/2026-06-23/step-6-csp.md` for the path here.
 #  - `style-src 'self' 'unsafe-inline'` — Tailwind 4 + Svelte's
 #    component-scoped styles occasionally emit inline `style="…"`
 #    attributes for transitions. Same trade-off; the per-build
@@ -78,7 +87,7 @@
 	Cross-Origin-Opener-Policy: same-origin
 	Cross-Origin-Embedder-Policy: require-corp
 	Cross-Origin-Resource-Policy: same-origin
-	Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://cors.isomorphic-git.org https://*.github.com https://*.gitlab.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types nomad-md dompurify default
+	Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'nonce-__CSP_NONCE__'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://cors.isomorphic-git.org https://*.github.com https://*.gitlab.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none';
 
 /_app/immutable/*
 	Cache-Control: public, max-age=31536000, immutable

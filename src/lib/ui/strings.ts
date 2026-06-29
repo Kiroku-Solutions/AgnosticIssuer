@@ -247,7 +247,13 @@ export const STRINGS = {
 			'Issue type cannot be changed after creation — create a new issue instead.',
 		assigneePlaceholder: 'Unassigned',
 		selectPlaceholder: 'Select…',
-		noIssues: 'No issues'
+		noIssues: 'No issues',
+		changeTypeTitle: 'Change issue type?',
+		changeTypeBody: (params: Params) =>
+			`Switching from "${params.old}" to "${params.new}" will reload the editor with the new template. Unsaved changes will be lost.`,
+		changeTypeConfirm: 'Change type',
+		changeTypeCancel: 'Cancel',
+		changeTypeAria: (params: Params) => `Confirm change from ${params.old} to ${params.new}`
 	},
 
 	markdown: {
@@ -270,7 +276,10 @@ export const STRINGS = {
 		recentHeading: 'Recent folders',
 		commandsHeading: 'Commands',
 		clearCache: 'Clear remote cache',
-		clearCacheRemoteTooltip: 'Clear cached remote clones (per-key) — wired in a follow-up',
+		clearCacheBusy: 'Clearing…',
+		clearCacheDone: 'Cache cleared. The next refresh will re-fetch the subtree.',
+		clearCacheError: (params: Params) => `Failed to clear cache: ${params.message}`,
+		clearCacheRemoteTooltip: 'Clear the cached remote clone for this repository',
 		clearCacheSignInTooltip: 'Sign in to a remote repository to enable this',
 		emptyTrash: (params: Params) => `Empty trash${Number(params.n) > 0 ? ` (${params.n})` : ''}`,
 		emptyTrashLocalTooltip: 'Empty the local .nomad.md/.trash/ folder',
@@ -296,7 +305,19 @@ export const STRINGS = {
 
 	kanban: {
 		cardAria: (params: Params) => `Issue ${params.id}: ${params.title} in column ${params.col}`,
-		readOnlyTooltip: 'Read-only — open this issue locally to change its status'
+		readOnlyTooltip: 'Read-only — open this issue locally to change its status',
+		// Step 8 WAI-ARIA DnD keyboard parity (NFR-4). The card
+		// "pickup / drop" pattern lets screen-reader users hear an
+		// explicit announcement when the move begins and ends.
+		// Arrow keys alone still commit (ERS NFR-4: "arrow keys to
+		// move the focused card between columns") — Space / Enter
+		// is the parallel explicit path. F2 is the standard
+		// "activate" verb for opening the editor.
+		pickedUp: (params: Params) =>
+			`Picked up issue ${params.id}. Use arrow keys to move, Space or Enter to drop, Escape to cancel.`,
+		dropped: (params: Params) => `Dropped issue ${params.id} in column ${params.col}`,
+		cancelled: (params: Params) => `Cancelled move of issue ${params.id}.`,
+		activateHint: 'Press F2 to open the issue editor'
 	},
 
 	gantt: {
@@ -305,6 +326,14 @@ export const STRINGS = {
 		ariaLabel: 'Gantt timeline',
 		roleDescription: 'gantt timeline',
 		barAria: (params: Params) => `Issue ${params.id}: ${params.title}`,
+		// Step 8 (NFR-4) — full per-bar prose for screen readers. Linked
+		// via `aria-describedby` so the bar's short `aria-label` stays
+		// scannable while a longer description (status, type, group,
+		// start, end / duration) is available on demand.
+		barDescription: (params: Params) =>
+			`Status ${params.status}, type ${params.type}, group ${params.group}. ` +
+			`Starts ${params.start ?? 'unknown'}, ` +
+			(params.end ? `ends ${params.end}.` : `duration ${params.duration ?? '?'} days.`),
 		truncation: '…',
 		fallbackSummary: 'Textual fallback (NFR-4 accessibility)',
 		fallbackEmpty: 'No issues match the current filter.',

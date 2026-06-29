@@ -25,6 +25,7 @@ import type { IssuesStore } from './issues.svelte.ts';
 import type { ModeStore } from './mode.svelte.ts';
 import type { TemplatesStore } from './templates.svelte.ts';
 import type { ThemeStore } from './theme.svelte.ts';
+import type { UiStore } from './ui.svelte.ts';
 import type { ViewStore } from './view.svelte.ts';
 
 export interface StoreGraph {
@@ -36,6 +37,12 @@ export interface StoreGraph {
 	readonly filter: FilterStore;
 	readonly view: ViewStore;
 	readonly theme: ThemeStore;
+	/**
+	 * Cross-surface UI state. Currently exposes only `settingsOpen`
+	 * (sub-phase 7C); the seam is in place for future cross-component
+	 * flags (command palette, toaster, etc.).
+	 */
+	readonly ui: UiStore;
 }
 
 const STORES_KEY = Symbol('nomad-md.stores');

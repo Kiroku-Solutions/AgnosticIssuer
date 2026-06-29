@@ -23,12 +23,12 @@
 	import FormFields from './FormFields.svelte';
 	import MarkdownPreview from './MarkdownPreview.svelte';
 
-	const { editor, mode, templates } = getStores();
+	const { editor, mode, templates, issues } = getStores();
 
 	type TabId = 'form' | 'write' | 'preview';
 
 	let activeTab = $state<TabId>('form');
-	let activeSectionName = $state<string | null>(null);
+	let _userSection = $state<string | null>(null);
 
 	const active = $derived(editor.activeId !== null ? editor.draft : null);
 
@@ -43,20 +43,11 @@
 
 	const sections = $derived(active ? active.issue.sections : []);
 
-	/**
-	 * Reset the active section when the editor opens or the section
-	 * list changes (e.g. after a template-driven save).
-	 */
-	$effect(() => {
-		if (active) {
-			const first = sections[0]?.name ?? null;
-			if (activeSectionName === null || !sections.some((s) => s.name === activeSectionName)) {
-				activeSectionName = first;
-			}
-		} else {
-			activeSectionName = null;
-		}
-	});
+	const activeSectionName = $derived(
+		(_userSection && sections.some((s) => s.name === _userSection))
+			? _userSection
+			: (sections[0]?.name ?? null)
+	);
 
 	const activeSection = $derived(
 		sections.find((s) => s.name === activeSectionName) ?? sections[0] ?? null
@@ -79,7 +70,7 @@
 		activeTab = id as TabId;
 	}
 	function setActiveSection(id: string): void {
-		activeSectionName = id;
+		_userSection = id;
 	}
 	function save(): void {
 		void editor.save();
@@ -107,11 +98,11 @@
 
 {#if active}
 	<aside
-		class="fixed inset-y-0 right-0 z-40 flex w-[40rem] max-w-full flex-col border-l border-base-300 bg-base-100 shadow-xl"
+		class="fixed inset-y-0 right-0 z-40 flex w-[40rem] max-w-full flex-col border-l border-hairline bg-canvas/85 backdrop-blur-2xl shadow-[var(--shadow-soft)]"
 		data-testid="editor-panel"
 	>
 		<div
-			class="flex items-center gap-3 border-b border-base-300 px-4 py-3"
+			class="flex items-center gap-3 border-b border-hairline px-6 py-4"
 			data-testid="editor-panel-header"
 		>
 			<span class="font-mono text-xs opacity-60">{idBadge}</span>
@@ -147,7 +138,7 @@
 			{:else}
 				{#if sectionNav.length > 0}
 					<div
-						class="mb-3 flex flex-wrap gap-1 border-b border-base-300 pb-2"
+						class="mb-4 flex flex-wrap gap-1 border-b border-hairline pb-2"
 						role="tablist"
 						aria-label={t('editor.sectionsAria')}
 						data-testid="editor-section-nav"
@@ -158,9 +149,9 @@
 								type="button"
 								role="tab"
 								aria-selected={isOn}
-								class="rounded px-2 py-1 text-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 {isOn
-									? 'bg-primary text-primary-content'
-									: 'bg-base-200 hover:bg-base-300'}"
+								class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset transition-colors {isOn
+									? 'bg-ink text-canvas'
+									: 'text-muted hover:bg-black/5 hover:text-ink'}"
 								onclick={() => setActiveSection(sec.id)}
 							>
 								{sec.label}
@@ -196,7 +187,7 @@
 		</div>
 
 		<footer
-			class="flex items-center gap-2 border-t border-base-300 px-4 py-3"
+			class="flex items-center gap-3 border-t border-hairline px-6 py-4 bg-surface-soft"
 			data-testid="editor-panel-footer"
 		>
 			{#if isReadOnly}
@@ -207,6 +198,23 @@
 					<Button variant="ghost" size="sm" disabled>{t('common.discard')}</Button>
 				</Tooltip>
 			{:else}
+				<Tooltip text={t('editor.deleteTooltip') ?? 'Delete this issue'} position="top">
+					<Button
+						variant="ghost"
+						size="sm"
+						class="text-error hover:bg-error/10 hover:text-error"
+						onclick={() => {
+							if (editor.activeId !== null) {
+								const id = editor.activeId;
+								editor.close();
+								void issues.remove(id);
+							}
+						}}
+						data-testid="editor-panel-delete"
+					>
+						{t('common.delete') ?? 'Delete'}
+					</Button>
+				</Tooltip>
 				<Button
 					variant="primary"
 					size="sm"
@@ -228,9 +236,15 @@
 			{/if}
 
 			{#if editor.errors.length > 0}
-				<span class="ml-auto text-xs text-error" data-testid="editor-panel-error-count">
-					{t('common.validationErrors', { n: editor.errors.length })}
-				</span>
+				<Tooltip
+					text={editor.errors.map((e) => e.message).join('\n')}
+					position="top"
+					class="ml-auto"
+				>
+					<span class="text-xs text-error cursor-help" data-testid="editor-panel-error-count">
+						{t('common.validationErrors', { n: editor.errors.length })}
+					</span>
+				</Tooltip>
 			{:else if editor.isDirty}
 				<span class="ml-auto text-xs opacity-60">{t('editor.unsaved')}</span>
 			{/if}

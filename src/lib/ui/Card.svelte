@@ -1,8 +1,11 @@
 <!--
-	Card.svelte — daisyUI `.card .card-bordered` container.
+	Card.svelte — S+ Tier Card container.
+
+	Follows Coinbase brand system: rounded-xl, sharp borders or shadow, 
+	no nested cards, flex layout base.
 
 	Props:
-	  compact:  boolean   — toggles `card-compact` for dense layouts
+	  compact:  boolean   — toggles padding for dense layouts
 	  class:    string    — extra utility classes
 	  children: Snippet
 -->
@@ -18,8 +21,6 @@
 	let { compact = false, class: extraClass = '', children }: Props = $props();
 </script>
 
-<div class="card card-bordered bg-base-100 shadow-sm {compact ? 'card-compact' : ''} {extraClass}">
-	<div class="card-body">
-		{#if children}{@render children()}{/if}
-	</div>
+<div class="flex flex-col bg-canvas border border-hairline rounded-xl shadow-sm {compact ? 'p-4' : 'p-8'} {extraClass}">
+	{#if children}{@render children()}{/if}
 </div>

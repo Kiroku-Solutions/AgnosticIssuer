@@ -92,14 +92,17 @@ function buildStub(opts: { recentHandles: HandleRecord[] }): StoreGraph {
 			switchFolder: () => Promise.resolve(null),
 			openRemote: () => Promise.resolve(),
 			refreshRemote: () => Promise.resolve(),
+			clearRemoteCache: () => Promise.resolve(),
 			signOut: () => Promise.resolve()
 		},
 		config: {
 			config: null,
 			status: 'idle',
 			error: null,
+			isReadOnly: false,
 			load: () => Promise.resolve(),
-			refresh: () => Promise.resolve()
+			refresh: () => Promise.resolve(),
+			save: () => Promise.resolve()
 		},
 		templates: {
 			templates: [],
@@ -158,6 +161,16 @@ function buildStub(opts: { recentHandles: HandleRecord[] }): StoreGraph {
 			theme: 'light',
 			setTheme: () => {},
 			toggle: () => {}
+		},
+		ui: {
+			settingsOpen: false,
+			openSettings: () => {},
+			closeSettings: () => {},
+			toggleSettings: () => {},
+			editorOpen: false,
+			openEditor: () => {},
+			closeEditor: () => {},
+			toggleEditor: () => {}
 		}
 	};
 }

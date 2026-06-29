@@ -73,13 +73,20 @@
 
 	async function reBind(record: HandleRecord): Promise<void> {
 		await stores.mode.openLocalFolder(record.handle);
-		await goto(resolve('/local'));
+		await Promise.all([stores.config.load(), stores.templates.load()]);
+		await stores.issues.load();
+		
+		if (stores.config.config === null) {
+			await goto(resolve('/wizard'));
+		} else {
+			await goto(resolve('/local'));
+		}
 	}
 </script>
 
 {#if visible.length > 0}
 	<section data-testid="recent-folders" class="flex flex-col gap-2">
-		<h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/70">
+		<h2 class="text-[11px] font-bold uppercase tracking-widest text-muted">
 			{t('home.recentFolders.title')}
 		</h2>
 		<ul class="flex flex-col gap-1" role="list">
@@ -88,9 +95,9 @@
 				<li
 					data-testid="recent-folder-row"
 					data-record-id={record.id}
-					class="flex items-center gap-3 rounded-md border border-transparent px-2 py-2 hover:bg-base-200 focus-within:border-base-300"
+					class="flex items-center gap-3 rounded-md border border-transparent px-2 py-2 hover:bg-surface-soft transition-colors focus-within:border-primary"
 				>
-					<Folder class="h-5 w-5 shrink-0 opacity-70" aria-hidden="true" />
+					<Folder class="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
 					<button
 						type="button"
 						data-testid="recent-folder-open"

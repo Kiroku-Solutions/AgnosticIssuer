@@ -55,6 +55,10 @@ export { createThemeStore } from './theme.svelte.ts';
 export type { EditorStore } from './editor.svelte.ts';
 export { createEditorStore } from './editor.svelte.ts';
 
+// ─── UI ───────────────────────────────────────────────────────────────────
+export type { UiStore } from './ui.svelte.ts';
+export { createUiStore } from './ui.svelte.ts';
+
 // ─── Errors ────────────────────────────────────────────────────────────────
 // `StoreNotReadyError` and `ConcurrentSaveError` were removed in
 // t1-state-types-layout — see git history. `StateError` is the only error

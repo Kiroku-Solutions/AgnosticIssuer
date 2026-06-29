@@ -77,7 +77,7 @@
 	}
 </script>
 
-<div role="tablist" aria-orientation="horizontal" class="tabs tabs-bordered {extraClass}">
+<div role="tablist" aria-orientation="horizontal" class="flex items-center gap-6 border-b border-hairline w-full {extraClass}">
 	{#each tabs as tab, i (tab.id)}
 		{@const isActive = tab.id === value}
 		<button
@@ -86,9 +86,9 @@
 			id="tab-{tab.id}"
 			aria-selected={isActive}
 			tabindex={isActive ? 0 : -1}
-			class="tab focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 {isActive
-				? 'tab-active'
-				: ''}"
+			class="px-1 py-4 font-sans text-sm font-semibold transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out)] border-b-2 -mb-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset {isActive
+				? 'border-primary text-primary'
+				: 'border-transparent text-muted hover:text-ink'}"
 			onclick={() => focusAndActivate(i)}
 			onkeydown={(e) => onKeydown(e, i)}
 			bind:this={buttonEls[i]}

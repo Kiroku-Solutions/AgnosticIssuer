@@ -51,75 +51,73 @@
 		duration: number | null;
 	};
 
-	let grouped = $state<readonly Row[]>([]);
-	let undated = $state<readonly LoadedIssue[]>([]);
-	let minMs = $state(0);
-	let maxMs = $state(0);
 	const pxPerDay = 2;
 
-	$effect(() => {
-		const all = issues.issues;
-		const f = filter.filter;
-		const groupBy =
-			(
-				config as unknown as {
-					config: { gantt?: { group_by?: string } } | null;
+	const derivedGanttData = $derived(
+		(() => {
+			const all = issues.issues;
+			const f = filter.filter;
+			const groupBy =
+				(
+					config as unknown as {
+						config: { gantt?: { group_by?: string } } | null;
+					}
+				).config?.gantt?.group_by ?? 'issue_type';
+
+			const filtered = all.filter((li) => {
+				if (f.type && li.issue.issueType !== f.type) return false;
+				if (f.q) {
+					const n = f.q.toLowerCase();
+					if (
+						!li.issue.title.toLowerCase().includes(n) &&
+						!li.issue.sections.some((s) => s.markdown.toLowerCase().includes(n))
+					)
+						return false;
 				}
-			).config?.gantt?.group_by ?? 'issue_type';
+				return true;
+			});
 
-		const filtered = all.filter((li) => {
-			if (f.type && li.issue.issueType !== f.type) return false;
-			if (f.q) {
-				const n = f.q.toLowerCase();
-				if (
-					!li.issue.title.toLowerCase().includes(n) &&
-					!li.issue.sections.some((s) => s.markdown.toLowerCase().includes(n))
-				)
-					return false;
+			const dated: LoadedIssue[] = [];
+			const notDated: LoadedIssue[] = [];
+			for (const li of filtered) (li.issue.startDate ? dated : notDated).push(li);
+
+			let lo = Infinity;
+			let hi = -Infinity;
+			for (const li of dated) {
+				const s = Date.parse(li.issue.startDate!);
+				const e = li.issue.endDate
+					? Date.parse(li.issue.endDate)
+					: s + (li.issue.duration ?? 1) * MS_DAY;
+				if (s < lo) lo = s;
+				if (e > hi) hi = e;
 			}
-			return true;
-		});
+			if (!Number.isFinite(lo)) {
+				const now = Date.now();
+				lo = now;
+				hi = now + 30 * MS_DAY;
+			}
+			const minMs = lo - MS_DAY;
+			const maxMs = hi + MS_DAY;
 
-		const dated: LoadedIssue[] = [];
-		const notDated: LoadedIssue[] = [];
-		for (const li of filtered) (li.issue.startDate ? dated : notDated).push(li);
-		undated = notDated;
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity
+			const groups = new Map<string, LoadedIssue[]>();
+			for (const li of dated) {
+				const k = String((li.issue as unknown as Record<string, unknown>)[groupBy] ?? 'unknown');
+				(groups.get(k) ?? groups.set(k, []).get(k)!).push(li);
+			}
+			const out: Row[] = [];
+			for (const [group, items] of groups) {
+				items.sort((a, b) => a.issue.id - b.issue.id);
+				items.forEach((issue, i) => out.push({ group, issue, rowInGroup: i }));
+			}
+			return { grouped: out, undated: notDated, minMs, maxMs };
+		})()
+	);
 
-		let lo = Infinity;
-		let hi = -Infinity;
-		for (const li of dated) {
-			const s = Date.parse(li.issue.startDate!);
-			const e = li.issue.endDate
-				? Date.parse(li.issue.endDate)
-				: s + (li.issue.duration ?? 1) * MS_DAY;
-			if (s < lo) lo = s;
-			if (e > hi) hi = e;
-		}
-		if (!Number.isFinite(lo)) {
-			const now = Date.now();
-			lo = now;
-			hi = now + 30 * MS_DAY;
-		}
-		minMs = lo - MS_DAY;
-		maxMs = hi + MS_DAY;
-
-		// Local accumulator for the bucketing pass. The map is consumed
-		// immediately below and never escapes this `$effect` — a plain
-		// `Map` is correct (the reactive output is `grouped`, the flat
-		// array assigned two lines down).
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const groups = new Map<string, LoadedIssue[]>();
-		for (const li of dated) {
-			const k = String((li.issue as unknown as Record<string, unknown>)[groupBy] ?? 'unknown');
-			(groups.get(k) ?? groups.set(k, []).get(k)!).push(li);
-		}
-		const out: Row[] = [];
-		for (const [group, items] of groups) {
-			items.sort((a, b) => a.issue.id - b.issue.id);
-			items.forEach((issue, i) => out.push({ group, issue, rowInGroup: i }));
-		}
-		grouped = out;
-	});
+	const grouped = $derived(derivedGanttData.grouped);
+	const undated = $derived(derivedGanttData.undated);
+	const minMs = $derived(derivedGanttData.minMs);
+	const maxMs = $derived(derivedGanttData.maxMs);
 
 	function dayStart(ms: number): number {
 		// Local computation: round a millisecond timestamp down to the
@@ -241,7 +239,7 @@
 	{#if isEmpty}
 		<EmptyState title={t('gantt.emptyTitle')} body={t('gantt.emptyBody')} />
 	{:else}
-		<div class="overflow-x-auto rounded border border-base-300 bg-base-100">
+		<div class="overflow-x-auto rounded-xl border border-hairline bg-canvas shadow-sm">
 			<svg
 				aria-roledescription={t('gantt.roleDescription')}
 				aria-label={t('gantt.ariaLabel')}
@@ -287,6 +285,7 @@
 				{/each}
 
 				{#each bars as bar (bar.id)}
+					{@const barDescId = `gantt-bar-desc-${bar.id}`}
 					<g
 						class="cursor-pointer"
 						onclick={() => open(bar.id)}
@@ -299,6 +298,7 @@
 						role="button"
 						tabindex="0"
 						aria-label={t('gantt.barAria', { id: bar.id, title: bar.title })}
+						aria-describedby={barDescId}
 					>
 						<rect
 							x={bar.x}
@@ -322,34 +322,57 @@
 					{/each}
 				</g>
 			</svg>
+			<!--
+				Screen-reader-only prose descriptions for every bar.
+				Each `<span>` is referenced by the matching bar's
+				`aria-describedby`. Mounted once per bar so the ID
+				resolution is stable for assistive tech. `sr-only`
+				keeps the descriptions out of the visual flow without
+				suppressing them from the accessibility tree.
+				(Step 8, NFR-4 — bar-by-bar descriptions.)
+			-->
+			<div class="sr-only" data-testid="gantt-bar-descriptions">
+				{#each bars as bar (bar.id)}
+					<span id={`gantt-bar-desc-${bar.id}`}>
+						{t('gantt.barDescription', {
+							status: bar.status,
+							type: bar.type,
+							group: bar.group,
+							start: bar.startDate ?? '?',
+							end: bar.endDate ?? '',
+							duration: bar.duration ?? 0
+						})}
+					</span>
+				{/each}
+			</div>
 		</div>
 	{/if}
 
-	<details class="rounded bg-base-200 p-3 text-sm">
-		<summary class="cursor-pointer font-semibold">{t('gantt.fallbackSummary')}</summary>
-		<div class="mt-3 overflow-x-auto">
-			<table class="table table-zebra table-xs">
-				<thead>
+	<details class="rounded-xl border border-hairline bg-surface-soft p-5 text-sm mt-8">
+		<summary class="cursor-pointer font-bold text-ink">{t('gantt.fallbackSummary')}</summary>
+		<div class="mt-4 overflow-x-auto border border-hairline rounded-lg bg-canvas shadow-sm">
+			<table class="w-full text-left text-sm whitespace-nowrap">
+				<thead class="bg-surface-soft border-b border-hairline text-[11px] font-bold uppercase tracking-widest text-muted">
 					<tr>
-						<th>{t('gantt.fallbackHeaders.id')}</th>
-						<th>{t('gantt.fallbackHeaders.title')}</th>
-						<th>{t('gantt.fallbackHeaders.type')}</th>
-						<th>{t('gantt.fallbackHeaders.status')}</th>
-						<th>{t('gantt.fallbackHeaders.group')}</th>
-						<th>{t('gantt.fallbackHeaders.start')}</th>
-						<th>{t('gantt.fallbackHeaders.endOrDuration')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.id')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.title')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.type')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.status')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.group')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.start')}</th>
+						<th class="px-4 py-3">{t('gantt.fallbackHeaders.endOrDuration')}</th>
 					</tr>
 				</thead>
-				<tbody>
+				<tbody class="divide-y divide-hairline">
 					{#each bars as bar (bar.id)}
-						<tr class="hover cursor-pointer" onclick={() => open(bar.id)}>
-							<td class="font-mono">{bar.id.toString().padStart(4, '0')}</td>
-							<td>{bar.title}</td>
-							<td>{bar.type}</td>
-							<td>{bar.status}</td>
-							<td>{bar.group}</td>
-							<td>{bar.startDate ?? '—'}</td>
-							<td
+						<tr class="hover:bg-surface-soft transition-colors cursor-pointer text-ink" onclick={() => open(bar.id)}>
+							<td class="font-mono text-xs text-muted px-4 py-3">{bar.id.toString().padStart(4, '0')}</td>
+							<td class="px-4 py-3">{bar.title}</td>
+							<td class="px-4 py-3">{bar.type}</td>
+							<td class="px-4 py-3">{bar.status}</td>
+							<td class="px-4 py-3">{bar.group}</td>
+							<td class="px-4 py-3">{bar.startDate ?? '—'}</td>
+							<td class="px-4 py-3"
 								>{bar.endDate ??
 									(bar.duration ? t('gantt.duration', { n: bar.duration }) : '—')}</td
 							>
@@ -357,20 +380,20 @@
 					{/each}
 					{#each undated as li (li.issue.id)}
 						<tr
-							class="hover cursor-pointer opacity-60"
+							class="hover:bg-surface-soft transition-colors cursor-pointer text-muted"
 							onclick={() => open(brandIssueId(li.issue.id))}
 						>
-							<td class="font-mono">{li.issue.id.toString().padStart(4, '0')}</td>
-							<td>{li.issue.title}</td>
-							<td>{li.issue.issueType}</td>
-							<td>{li.issue.status}</td>
-							<td colspan="2" class="italic">{t('gantt.fallbackNotScheduled')}</td>
-							<td>—</td>
+							<td class="font-mono text-xs px-4 py-3">{li.issue.id.toString().padStart(4, '0')}</td>
+							<td class="px-4 py-3">{li.issue.title}</td>
+							<td class="px-4 py-3">{li.issue.issueType}</td>
+							<td class="px-4 py-3">{li.issue.status}</td>
+							<td colspan="2" class="italic px-4 py-3">{t('gantt.fallbackNotScheduled')}</td>
+							<td class="px-4 py-3">—</td>
 						</tr>
 					{/each}
 					{#if bars.length === 0 && undated.length === 0}
 						<tr>
-							<td colspan="7" class="py-6 text-center opacity-60">{t('gantt.fallbackEmpty')}</td>
+							<td colspan="7" class="py-12 text-center text-muted font-medium italic">{t('gantt.fallbackEmpty')}</td>
 						</tr>
 					{/if}
 				</tbody>

@@ -29,10 +29,10 @@
 </script>
 
 {#if mode.proxyWarning !== null && !acknowledged}
-	<div role="alert" class="alert alert-warning rounded-none border-b border-base-300">
+	<div role="alert" class="flex items-start gap-4 px-6 py-4 bg-[var(--color-cb-yellow)]/10 text-ink border-b border-[var(--color-cb-yellow)]">
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
-			class="h-5 w-5 shrink-0 stroke-current"
+			class="h-5 w-5 shrink-0 text-[var(--color-cb-yellow)]"
 			fill="none"
 			viewBox="0 0 24 24"
 			aria-hidden="true"
@@ -44,14 +44,14 @@
 				d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.85-2.75L13.85 4.92a2 2 0 00-3.7 0L3.15 16.25A2 2 0 005 19z"
 			/>
 		</svg>
-		<span class="text-sm flex-1">{mode.proxyWarning}</span>
+		<span class="text-sm font-sans flex-1 mt-0.5">{mode.proxyWarning}</span>
 		<button
 			type="button"
-			class="btn btn-ghost btn-sm"
+			class="shrink-0 p-1 rounded-full text-muted hover:bg-black/5 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 			aria-label={t('proxy.dismissAria')}
 			onclick={dismiss}
 		>
-			{t('common.dismiss')}
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
 		</button>
 	</div>
 {/if}

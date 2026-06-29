@@ -66,7 +66,7 @@
 	}
 </script>
 
-<ul role="menu" class="menu menu-vertical {extraClass}">
+<ul role="menu" class="flex flex-col gap-1 w-full {extraClass}">
 	{#each items as item, i (item.id)}
 		<li role="none">
 			<button
@@ -74,7 +74,7 @@
 				role="menuitem"
 				aria-disabled={item.disabled || undefined}
 				tabindex={item.disabled ? -1 : 0}
-				class="focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+				class="w-full text-left px-4 py-2 font-sans text-sm rounded-md transition-colors duration-[var(--motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset {item.disabled ? 'opacity-50 cursor-not-allowed text-muted' : 'text-ink hover:bg-surface-soft cursor-pointer'}"
 				onclick={() => activate(item)}
 				onkeydown={(e) => onKeydown(e, i)}
 				bind:this={buttonEls[i]}
@@ -84,6 +84,6 @@
 		</li>
 	{/each}
 	{#if children}
-		<li role="none" class="menu-footer">{@render children()}</li>
+		<li role="none" class="px-4 py-2 mt-2 border-t border-hairline text-sm text-muted">{@render children()}</li>
 	{/if}
 </ul>
